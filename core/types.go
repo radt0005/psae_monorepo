@@ -6,7 +6,8 @@ import (
 
 type BlockArgs struct {
 	Id      uuid.UUID
-	Inputs  []string
+	Name    string
+	Inputs  []uuid.UUID
 	outputs []string
 	Args    map[string]any
 }
@@ -25,7 +26,10 @@ type Block struct {
 
 type BlockInvocation struct {
 	Id      uuid.UUID
-	BlockId uuid.UUID
+	BlockId string
+
+	Inputs    []uuid.UUID
+	Arguments map[string]any
 }
 
 type ExecutionPlan struct {
@@ -40,6 +44,8 @@ const (
 	ExecutionStatusRunning  = "running"
 	ExecutionStatusComplete = "complete"
 	ExecutionStatusError    = "error"
+	ExecutionStatusMap      = "map"
+	ExecutionStatusReduce   = "reduce"
 )
 
 type BlockInvocationResult struct {
@@ -49,5 +55,7 @@ type BlockInvocationResult struct {
 }
 
 type Worker struct {
-	id uuid.UUID
+	Id          uuid.UUID
+	Ip          string
+	Description string
 }

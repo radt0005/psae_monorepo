@@ -1,8 +1,6 @@
 package core
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 )
 
@@ -21,9 +19,13 @@ type Scheduler interface {
 Implement a Scheduler for a single pipeline and a single worker (simplest case)
 */
 type SinglePipelineScheduler struct {
-	Pipeline      Pipeline
-	ExecutionPlan ExecutionPlan
-	Cancelled     bool
+	Pipeline         Pipeline
+	ExecutionPlan    ExecutionPlan
+	Cancelled        bool
+	Mapping          bool
+	ExecutableBlocks []BlockInvocation
+	CompletedBlocks  map[uuid.UUID]BlockInvocationResult
+	PendingBlocks    map[uuid.UUID]BlockInvocation
 }
 
 func (s *SinglePipelineScheduler) AddPipeline(p Pipeline) error {
@@ -32,28 +34,99 @@ func (s *SinglePipelineScheduler) AddPipeline(p Pipeline) error {
 	// build the execution plan
 	plan, err := BuildExecutionPlanFromPipeline(p)
 	if err != nil {
-		fmt.Println("Error Parsing Pipeline")
+		//fmt.Println("Error Parsing Pipeline")
 		return err
 	}
 
 	s.ExecutionPlan = plan
+	for _, item := range p.Blocks {
+
+		invocation := BlockInvocation{
+			Id:        item.Id,
+			BlockId:   item.Name,
+			Inputs:    item.Inputs,
+			Arguments: item.Args,
+		}
+
+		s.PendingBlocks[item.Id] = invocation
+
+	}
 
 	return nil
 }
 
 func (s *SinglePipelineScheduler) CancelPipeline(id uuid.UUID) error {
 	s.Cancelled = true
+	s.PendingBlocks = map[uuid.UUID]BlockInvocation{}
 	return nil
 }
 
 func (s *SinglePipelineScheduler) Update(result BlockInvocationResult) error {
+
+	if result.Status == ExecutionStatusError {
+		// error executing, going to cancel the execution
+		s.CancelPipeline(s.Pipeline.Id)
+	}
+
+	if result.Status == ExecutionStatusComplete {
+		// Add to the list of executable blocks
+		s.CompletedBlocks[result.Id] = result
+
+		for _, value := range s.PendingBlocks {
+
+			executable := true
+
+			for _, item := range value.Inputs {
+
+				_, contains := s.PendingBlocks[item]
+
+				executable = executable && contains
+			}
+
+			if executable {
+				s.ExecutableBlocks = append(s.ExecutableBlocks, value)
+			}
+		}
+
+	}
+
+	if result.Status == ExecutionStatusMap {
+		s.HandleMap(result.Outputs, result.Id)
+	}
+
+	if result.Status == ExecutionStatusReduce {
+		s.HandleReduce(result.Outputs)
+	}
+
 	return nil
+}
+
+func (s *SinglePipelineScheduler) IsReady() bool {
+	return len(s.ExecutableBlocks) > 0
 }
 
 func (s *SinglePipelineScheduler) Next() (BlockInvocation, error) {
 	var invocation BlockInvocation
 
+	if len(s.ExecutableBlocks) > 0 {
+		block := s.ExecutableBlocks[0]
+		s.ExecutableBlocks = s.ExecutableBlocks[1:]
+
+		return block, nil
+	}
+
 	return invocation, nil
+
+}
+
+func (s *SinglePipelineScheduler) HandleMap(targets []string, id uuid.UUID) {
+
+	// extends the current execution plan with the map output
+
+}
+
+func (s *SinglePipelineScheduler) HandleReduce(targets []string) {
+	// handles the map reduce
 
 }
 
