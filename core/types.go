@@ -14,9 +14,9 @@ type BlockArgs struct {
 
 type Pipeline struct {
 	Id      uuid.UUID
-	Blocks  []BlockArgs
 	Version string
 	Name    string
+	Blocks  []BlockArgs
 }
 
 type Block struct {
@@ -25,11 +25,11 @@ type Block struct {
 }
 
 type BlockInvocation struct {
-	Id      uuid.UUID
-	BlockId string
-
-	Inputs    []uuid.UUID
-	Arguments map[string]any
+	Id         uuid.UUID
+	BlockId    string
+	PipelineId uuid.UUID
+	Inputs     []uuid.UUID
+	Arguments  map[string]any
 }
 
 type ExecutionPlan struct {
@@ -49,9 +49,10 @@ const (
 )
 
 type BlockInvocationResult struct {
-	Id      uuid.UUID
-	Status  ExecutionStatus
-	Outputs []string
+	Id         uuid.UUID
+	PipelineId uuid.UUID
+	Status     ExecutionStatus
+	Outputs    []string
 }
 
 type Worker struct {
