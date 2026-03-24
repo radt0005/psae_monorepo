@@ -1,0 +1,20 @@
+{
+    "name": "main",
+    "description": "Creates predictions from the ",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "data_path": {
+          "type": "string",
+          "description": "The file path of the data on disk"
+        },
+        "model_path": {
+          "type": "string",
+          "description": "The file path of the pickled model. Defaults to \"./rf_model.pkl\".",
+          "default": "./rf_model.pkl"
+        }
+      },
+      "required": ["data_path"]
+    }
+  }
+  

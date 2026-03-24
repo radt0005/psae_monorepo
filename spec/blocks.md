@@ -38,9 +38,10 @@ A block is distributed as a directory with the following structure:
 
 ```
 block/
-  block.yaml | block.json
-  run.py | run.R
-  DESCRIPTION.md
+  block.yaml        # Block manifest (required)
+  run.py | run.R    # Entry point (required)
+  DESCRIPTION.md         # Optional documentation
+  requirements.txt | renv.lock  # Optional environment spec
 ```
 
 Only `block.yaml` and the entrypoint script are required.
@@ -92,14 +93,15 @@ outputs:
 Each block invocation runs in a **fresh working directory** created by the runtime.
 
 ```
-/<id>/
+/work/
+  invocation.yaml
   params.yaml
   inputs/
   outputs/
   logs/
 ```
 
-The block’s entrypoint is executed with `/<id>` as the current working directory.
+The block’s entrypoint is executed with `/work` as the current working directory.
 
 All paths referenced in this document are **relative paths**.
 
@@ -178,7 +180,7 @@ Ordering is controlled by the runtime and guaranteed to be stable.
 
 ### 5.4 Scalar Parameters (`params.yaml`)
 
-All scalar inputs are provided via `params.yaml` .
+All scalar inputs are provided via `params.yaml`.
 
 Example:
 
@@ -188,7 +190,7 @@ method: bilinear
 normalize: true
 ```
 
-Blocks should **not** receive parameters via CLI arguments (except the "build" command for bundling the system).
+Blocks should **not** receive parameters via CLI arguments.
 
 ---
 
@@ -240,8 +242,40 @@ inputs:
 
 Blocks may read this file for introspection but should not modify it.
 
+---
 
-## 8. Caching and Checkpointing
+## 8. Language-Specific Notes
+
+### 8.1 R Blocks
+
+- Assume working directory semantics
+- Use relative paths only
+- Activate `renv` inside the block if required
+
+Example:
+
+```r
+library(yaml)
+params <- read_yaml("params.yaml")
+r <- raster::raster("inputs/source/data.tif")
+```
+
+### 8.2 Python Blocks
+
+- Use standard file I/O
+- Virtual environments are managed externally
+
+Example:
+
+```python
+import yaml
+with open("params.yaml") as f:
+    params = yaml.safe_load(f)
+```
+
+---
+
+## 9. Caching and Checkpointing
 
 Blocks are cacheable if:
 
@@ -257,7 +291,7 @@ Cache keys are derived from:
 
 ---
 
-## 9. What Blocks Must NOT Do
+## 10. What Blocks Must NOT Do
 
 Blocks must not:
 
@@ -269,7 +303,7 @@ Blocks must not:
 
 ---
 
-## 10. Summary
+## 11. Summary
 
 This block model provides:
 
