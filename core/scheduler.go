@@ -28,7 +28,6 @@ Implement a Scheduler for a single pipeline and a single worker (simplest case)
 */
 type SinglePipelineScheduler struct {
 	Pipeline         Pipeline
-	ExecutionPlan    ExecutionPlan
 	Cancelled        bool
 	Mapping          bool
 	ExecutableBlocks []BlockInvocation
@@ -40,13 +39,8 @@ func (s *SinglePipelineScheduler) AddPipeline(p Pipeline) error {
 	s.Pipeline = p
 	s.Cancelled = false
 	// build the execution plan
-	plan, err := BuildExecutionPlanFromPipeline(p)
-	if err != nil {
-		//fmt.Println("Error Parsing Pipeline")
-		return err
-	}
+	//plan, err := BuildExecutionPlanFromPipeline(p)
 
-	s.ExecutionPlan = plan
 	for _, item := range p.Blocks {
 
 		invocation := BlockInvocation{

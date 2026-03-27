@@ -9,7 +9,7 @@ The system is based on the concept of "pipelines" and "blocks".  Each data proce
 
 ## Architecture
 
-The system has four components:
+The system has six components:
 1. The scheduler.  This system schedules the execution of blocks on worker nodes.
 2. The worker nodes.  These are independent worker nodes (with a shared file system) that do the actual block execution
 3. The client. This is a web-based GUI where users submit and create jobs using a flowchart-like interface.  

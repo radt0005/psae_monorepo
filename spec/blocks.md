@@ -32,59 +32,130 @@ Blocks **do not**:
 
 ---
 
-## 2. Block Directory Structure
+## 2. Block Collections
 
-A block is distributed as a directory with the following structure:
+Blocks are organized into **collections** -- repositories that group related blocks together and share a common language and build system.  The collection is the unit of distribution and installation.
+
+### 2.1 Collection Structure
+
+The language of a collection is detected from the repository root:
+
+| File              | Language   |
+| ----------------- | ---------- |
+| `Cargo.toml`      | Rust       |
+| `go.mod`          | Go         |
+| `pyproject.toml`  | Python     |
+| `package.json`    | TypeScript (Bun) |
+| *(none of above)* | R          |
+
+Block manifests live in a `blocks/` directory, with the filename matching the block name:
 
 ```
-block/
-  block.yaml        # Block manifest (required)
-  run.py | run.R    # Entry point (required)
-  DESCRIPTION.md         # Optional documentation
-  requirements.txt | renv.lock  # Optional environment spec
+gdal-tools/
+  Cargo.toml                # → language: Rust
+  src/                       # standard Rust source layout
+    lib.rs
+    rasterize.rs
+    reproject.rs
+    clip.rs
+  blocks/
+    rasterize.yaml           # block manifest for "rasterize"
+    reproject.yaml           # block manifest for "reproject"
+    clip.yaml                # block manifest for "clip"
+  docs/                      # optional extended documentation
+    rasterize.md
+    reproject.md
 ```
 
-Only `block.yaml` and the entrypoint script are required.
+For Python:
+```
+my-python-blocks/
+  pyproject.toml
+  src/
+    my_blocks/
+      rasterize.py
+      reproject.py
+  blocks/
+    rasterize.yaml
+    reproject.yaml
+```
+
+For R:
+```
+my-r-blocks/
+  renv.lock
+  R/
+    rasterize.R
+    reproject.R
+  blocks/
+    rasterize.yaml
+    reproject.yaml
+```
+
+No `collection.yaml` is needed.  The CLI discovers everything by scanning the repository: language from the root manifest, blocks from `blocks/*.yaml`, and collection name from the language's own manifest (e.g. the `name` field in `pyproject.toml` or `Cargo.toml`).
+
+### 2.2 Installed Layout
+
+Collections are installed to `~/.spade/blocks/<collection>/<version>/`.  For compiled languages (Rust, Go, Bun), the collection produces a single binary with subcommands.  For interpreted languages, the collection is installed as a package (Python) or directory (R).
 
 ---
 
-## 3. Block Manifest (`block.yaml`)
+## 3. Block Manifest
 
-The manifest declares the block’s interface and execution requirements.
+Each block has a YAML manifest in the collection’s `blocks/` directory.  The filename determines the block name (e.g. `blocks/rasterize.yaml` defines the `rasterize` block).
 
-### 3.1 Minimal Example
+### 3.1 Full Example
 
 ```yaml
-id: raster.reproject
+id: gdal.rasterize
 version: 1.0.0
-language: R
-entrypoint: run.R
+kind: standard
+network: false
+description: Converts vector geometries to raster format using GDAL
+entrypoint: rasterize    # optional override; defaults to filename stem
 
 inputs:
-  source:
+  vectors:
     type: file
-    format: GeoTIFF
-  target_crs:
-    type: string
+    format: GeoJSON
+    description: Vector file containing the geometries to rasterize
+  resolution:
+    type: number
+    description: Output pixel size in CRS units
+  burn_value:
+    type: number
+    description: Value to assign to pixels covered by a geometry
 
 outputs:
   raster:
     type: file
     format: GeoTIFF
+    description: Rasterized output at the requested resolution
 ```
 
----
+### 3.2 Fields
 
-### 3.2 Required Fields
+| Field         | Required | Description                              |
+| ------------- | -------- | ---------------------------------------- |
+| `id`          | Yes      | Globally unique block identifier (conventionally `<collection>.<block>`) |
+| `version`     | Yes      | Semantic version of the block            |
+| `kind`        | No       | Block kind: `standard`, `map`, or `reduce` (default `standard`). See `scheduler.md` for map/reduce semantics. |
+| `network`     | No       | Whether the block requires network access (default `false`) |
+| `description` | No       | Short human-readable description of what the block does |
+| `entrypoint`  | No       | Override for the entrypoint. Defaults to the filename stem (e.g. `rasterize.yaml` → subcommand `rasterize` for compiled languages, or script `rasterize.py`/`rasterize.R` for interpreted). Useful for non-standard entry points such as named scripts in `uv`. |
+| `inputs`      | Yes      | Named input declarations (see section 5) |
+| `outputs`     | Yes      | Named output declarations (see section 6) |
 
-| Field        | Description                              |
-| ------------ | ---------------------------------------- |
-| `id`         | Globally unique block identifier         |
-| `version`    | Semantic version of the block            |
-| `language`   | Execution language (`python`, `r`, etc.) |
-| `entrypoint` | Script executed by the runtime           |
-| `inputs`     | Named input declarations                 |
-| `outputs`    | Named output declarations                |
+### 3.3 Input and Output Declarations
+
+Each named input and output supports the following fields:
+
+| Field         | Required | Description                              |
+| ------------- | -------- | ---------------------------------------- |
+| `type`        | Yes      | The data type (see sections 5.2 and 6.1) |
+| `format`      | No       | File format hint (e.g. `GeoTIFF`, `GeoJSON`, `CSV`) |
+| `description` | No       | Human-readable description of what this input/output represents |
+| `item_type`   | No       | For `collection` types: the type of each item in the collection |
 
 ---
 
@@ -120,15 +191,17 @@ inputs:
   reference:
     type: file
     format: GeoTIFF
+    description: Reference raster to align against
   target:
     type: file
     format: GeoTIFF
+    description: Raster to be aligned
 ```
 
 Runtime layout:
 
 ```
-params.json
+params.yaml
 
 inputs/
   reference/
@@ -136,7 +209,7 @@ inputs/
   target/
     data.tif
 
-output/
+outputs/
 ```
 
 ### 5.2 Input Types
@@ -162,6 +235,7 @@ inputs:
     type: collection
     item_type: file
     format: GeoTIFF
+    description: Collection of raster tiles to process
 ```
 
 Runtime layout:
@@ -205,8 +279,10 @@ outputs:
   raster:
     type: file
     format: GeoTIFF
+    description: Reprojected raster in the target CRS
   summary:
     type: json
+    description: Processing metadata and statistics
 ```
 
 Runtime layout:
@@ -215,8 +291,40 @@ Runtime layout:
 outputs/
   raster/
     data.tif
-  summary.json
+  summary/
+    summary.json
 ```
+
+Each output is placed in a subdirectory matching its declared name, mirroring the convention used for inputs.  This ensures a consistent and predictable layout regardless of output type.
+
+### 6.1 Output Types
+
+| Type         | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `file`       | Single file output                                                          |
+| `directory`  | Directory-based output                                                      |
+| `collection` | Variable-length collection of items                                         |
+| `json`       | JSON data file                                                              |
+| `expansion`  | Map expansion manifest (only valid for `kind: map` blocks). See section 6.2 |
+
+### 6.2 Expansion Outputs (Map Blocks)
+
+Blocks with `kind: map` produce an `expansion` output -- a YAML manifest listing items for the scheduler to fan out over.  The manifest is written to the output subdirectory as `expansion.yaml`:
+
+```yaml
+# outputs/manifest/expansion.yaml
+items:
+  - path: inputs/source/tile_001.tif
+    key: tile_001
+  - path: inputs/source/tile_002.tif
+    key: tile_002
+  - path: inputs/source/tile_003.tif
+    key: tile_003
+```
+
+The `path` field points to the file relative to the map block's working directory.  The `key` field is a human-readable identifier for the item.  The item order must be **deterministic** for a given input to support caching.
+
+See `scheduler.md` for full map/reduce semantics.
 
 The runtime collects, hashes, and persists outputs after successful execution.
 
@@ -291,7 +399,19 @@ Cache keys are derived from:
 
 ---
 
-## 10. What Blocks Must NOT Do
+## 10. Logging
+
+The runtime captures `stdout` and `stderr` from the block process and writes them to the `logs/` directory.  Block authors should use standard output mechanisms for logging (`print` in Python, `cat`/`message` in R, `console.log` in TypeScript, etc.).
+
+---
+
+## 11. Error Handling
+
+If a block exits with a non-zero exit code, the runtime treats the invocation as failed.  The scheduler will **halt the entire pipeline** -- no downstream blocks will be executed.  Logs from the failed block are preserved for debugging.
+
+---
+
+## 12. What Blocks Must NOT Do
 
 Blocks must not:
 
@@ -300,10 +420,11 @@ Blocks must not:
 - Assume original filenames
 - Write outside `outputs/`
 - Depend on global state
+- Access the network (unless `network: true` is declared in `block.yaml`)
 
 ---
 
-## 11. Summary
+## 13. Summary
 
 This block model provides:
 
@@ -313,4 +434,4 @@ This block model provides:
 - Reproducibility and caching
 - Clean scaling to distributed systems
 
-Block authors should be able to focus on **domain logic**, not orchestration or plumbing.  
+Block authors should be able to focus on **domain logic**, not orchestration or plumbing.

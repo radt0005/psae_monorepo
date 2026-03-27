@@ -14,5 +14,15 @@ The user interface for this tool should be easy to use and make creating workflo
 
 The system should have user authentication and limit access to authorized users.
 
-This should be clean and intuitive for users, whether they aim to create custom workflows or use pre-populated ones. 
+This should be clean and intuitive for users, whether they aim to create custom workflows or use pre-populated ones.
+
+## Input/Output Wiring
+
+When a user connects two blocks in the flowchart editor, the UI must resolve which outputs from the upstream block feed into which inputs on the downstream block.
+
+- **Unambiguous connections**: If the types match unambiguously (e.g. one GeoTIFF output to one GeoTIFF input), the connection is made automatically with no user interaction needed.
+- **Ambiguous connections**: If the upstream block has multiple outputs that could satisfy the same input type on the downstream block, the UI should **prompt the user to choose** which output maps to which input.  This produces explicit output references in the pipeline YAML (`block` + `output` form).  The user should not be able to save or submit a pipeline with unresolved ambiguous connections.
+- **Block info**: When connecting blocks, the UI should display the `description` field from each input and output declaration to help users make the correct mapping.  For example, a prompt might show: *"Block 'raster.split' has two GeoTIFF outputs: **tiles** (Individual raster tiles) and **boundary** (Extent polygon rasterized to grid). Which should connect to input **source** (Raster to process)?"*
+
+This ensures that all pipelines produced by the UI are valid and unambiguous without requiring users to understand the underlying resolution algorithm.
 

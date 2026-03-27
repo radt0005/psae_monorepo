@@ -67,12 +67,12 @@ The user begins by using the CLI to initialize the repository. This sets up the 
 
 Then the user defines a function that does the processing they want the block to do. Finally they call the run() function, passing their user-defined function as an argument.  
 
-When the block is called, the run function loads the parameters from the file system in the params.json file, and then scans the `./inputs` directory for folders.  Each directory name corresponds to the name of a function input, so that is used as the name of the file.  This means that for a function input name "raster", the file the function needs is located at `./inputs/raster/*`, and there should only be one file in that directory.  
+When the block is called, the run function loads the parameters from the file system in the params.yaml file, and then scans the `./inputs` directory for folders.  Each directory name corresponds to the name of a function input, so that is used as the name of the file.  This means that for a function input name "raster", the file the function needs is located at `./inputs/raster/*`, and there should only be one file in that directory.  
 
 Once the working directory is scanned for files, the system should be able to call the hanlder function.  In Python, this would look something like this: 
 
 ```python
-import json
+import yaml
 from typing import Callable, Any
 
 def scan_working_directory() -> dict:
@@ -81,10 +81,10 @@ def scan_working_directory() -> dict:
     # code to scan the working directory and put them in the dictionary by parameter name
     return output
 
-with open("./params.json", "r") as file: 
-    params = json.load(file)
+with open("./params.yaml", "r") as file: 
+    params = yaml.safe_load(file)
 
-function_args = params + scan_working_directory()
+function_args = params | scan_working_directory()
 
 ```
 
@@ -100,7 +100,6 @@ from spade import run, File
 
 # the user-defined function
 def handler(file: File):
-    if 
     print("Hello World")
 
 
@@ -112,7 +111,29 @@ if __name__ == "__main__":
 
 In other languages this should be similar.  In Rust and Go (or other compiled languages) this will look slightly different, but the idea is the same (for example, rust might need to use a closure instead of a function).  Also, another variation in TypeScript may need to expose `run()` as an async function.
 
-## Support Languages
+## Output Handling
+
+The `run()` function is responsible for writing the handler's return value to the `outputs/` directory.  After the handler function returns, the library inspects the return value and writes each named output into a subdirectory of `outputs/` matching the output name declared in `block.yaml`.
+
+For example, if the handler returns a `RasterFile`, the `run()` function copies (or moves) the file at the returned path into `outputs/<output_name>/`.  For collections, each item is written into the output subdirectory.
+
+This means block authors only need to return the appropriate typed value from their handler -- the library handles the filesystem layout automatically.
+
+```python
+from spade import run, RasterFile
+
+def handler(source: RasterFile) -> RasterFile:
+    # process the raster and save result to a temporary path
+    result_path = process(source.path)
+    return RasterFile(path=result_path)
+
+if __name__ == "__main__":
+    run(handler)
+```
+
+In this example, `run()` would take the returned `RasterFile` and copy the file at `result_path` into `outputs/raster/` (where `raster` is the output name from `block.yaml`).
+
+## Supported Languages
 
 The library for writing function should be available in the following languages:
 1. Python
@@ -123,11 +144,14 @@ The library for writing function should be available in the following languages:
 
 
 
-## Building
+## Collection Development Workflow
 
-The system should have the ability to build the system for export when the block is called with the "build" argument. For example, calling
+Block collections are developed using standard language toolchains.  There is no separate build step in Spade -- compilation and packaging use the language's native tools (`cargo build`, `go build`, `bun build`, etc.).
 
-```bash
-uv run ./block/main.py build
-```
-The above command should trigger the build, including generating the block.json file.  In the case of the compiled languages, this should run the compiler as well.  This should also run the bun bundler for TypeScript files. R and Python don't have to be compiled, so there are no such requirements.  
+The CLI provides scaffolding and validation:
+- `spade init` creates the collection structure for a chosen language
+- `spade add <name>` scaffolds a new block (manifest + entry point)
+- `spade check` validates all block manifests in the collection
+- `spade upload` packages and uploads the collection for cloud deployment
+
+See `cli.md` for full details on each command.
