@@ -1,7 +1,7 @@
 [project]
-name = "python"
+name = "spade"
 version = "0.1.0"
-description = "Add your description here"
+description = "Spade block authoring library for Python"
 readme = "README.md"
 authors = [
     { name = "krbundy", email = "kenneth.bundy@maine.edu" }
@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.12.5",
+    "pyyaml>=6.0",
     "pytest>=9.0.2",
 ]
 
