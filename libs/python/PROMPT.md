@@ -14,7 +14,7 @@ When the implementation plan is completed, this folder should contain a working,
 This library uses `uv` for package management, and pytest for tests.  Please ensure that tests are developed for all the code, and that they run successfully with `uv run pytest`.  
 
 
-## Instructions
+## Steps
 
 1. Read the specifications in `../../spec`
 2. Read the existing source code in this library
