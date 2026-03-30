@@ -1,30 +1,18 @@
 # Instructions
 
-This folder contains the implementation of the core library for the spade system. The specifications for the system are located in `../spec/`.  Please consult these to have a thorough understanding of the system.
-
-Your task is to create a detailed implementation plan for the documentation website for the spade system based on the specifications in `../spec/` and code in this repository.  Please format the implementation plan as a markdown checklist.  
-
-
-
-After the completion of the implementation plan, this folder should contain a working website with tests.  
-
- ## Example of the Implementation Plan Format
-
-## Phase 1.1
-- [ ] Detailed desctiption of the first item.
-- [ ] Detailed description of the second item.
-
+Please implement the plan in `./IMPLEMENTATION_PLAN.md` with tests.  After the completion of the plan, this folder should contain a working website  spade system ( the spade specifications is in `../spec/`).  Once complete, the website should build successfully.  
 
 ## Steps
+1. Read the implementation plan in `IMPLEMENTATION_PLAN.md`.
+2. Read the specifications in `../spec`.  
+3. Read any relevant documentation
+4. Select the first item from the implementation plan not marked [DONE].
+5. Ensure that the website builds successfully.
+6. If there are any build errors, correct them
+8. Repeat.
+9. When all items are marked done and the code builds successfully, output <promise>COMPLETE</promise>.
 
-1. Read the specifications in `../../spec`
-2. Read the existing source code in this library
-3. Identify the changes to the repository that need to be made
-4. Write the implementation plan to `./IMPLEMENTATION_PLAN.md`
-5. Verify that the implementation is complete, correct, thorough, and unambiguous.
-6. Repeat as needed
-7. When the implementation plan is complete, output <promise>COMPLETE</promise>
 
-## Completion
+## Completion Criteria
 
-When the implementation is complete, detailed, correct, thorough, and unambiguous, please output <promise>COMPLETE</promise>.
+The implementation is complete when all items in the implementation plan have been implementedand marked [DONE] and the code builds successfully.  At that time, please output <promise>COMPLETE</promise>

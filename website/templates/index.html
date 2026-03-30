@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ config.title }} — {{ config.extra.site_tagline }}{% endblock page_title %}
+
+{% block content %}
+
+{# ===== HERO SECTION ===== #}
+<section class="hero">
+  <div class="hero__corner hero__corner--top-left">
+    <span class="corner-value">A</span>
+    <span class="corner-suit">&spades;</span>
+  </div>
+  <div class="hero__corner hero__corner--bottom-right">
+    <span class="corner-value">A</span>
+    <span class="corner-suit">&spades;</span>
+  </div>
+  <div class="hero__content">
+    <svg class="hero__logo" viewBox="0 0 100 120" width="80" height="96">
+      <path d="M50 10 C50 10, 15 45, 15 62 C15 78, 28 88, 42 82 C46 80, 49 76, 50 72 C51 76, 54 80, 58 82 C72 88, 85 78, 85 62 C85 45, 50 10, 50 10 Z" fill="#1a1a1a"/>
+      <path d="M42 82 C38 90, 35 98, 30 105 L70 105 C65 98, 62 90, 58 82 C54 86, 46 86, 42 82 Z" fill="#1a1a1a"/>
+    </svg>
+    <h1 class="hero__title">{{ config.extra.site_tagline }}</h1>
+    <p class="hero__subtitle">Build powerful data pipelines with reusable blocks in any language.</p>
+    <div class="hero__buttons">
+      <a href="{{ config.extra.docs_url }}" class="btn btn--primary">Get Started</a>
+      <a href="{{ config.extra.github_url }}" class="btn btn--secondary">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+{# ===== WHAT IS SPADE? ===== #}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>What is Spade?</h2>
+    </div>
+    <div class="grid-2" style="align-items: center;">
+      <div>
+        <p>Spade is a <strong>data processing system</strong> designed for massive data with first-class geospatial support. It lets you build complex workflows by connecting reusable, isolated computational blocks.</p>
+        <p>Processing steps are independent <strong>blocks</strong> that execute in isolation — each one a sandboxed subprocess with typed inputs and outputs. Write them in Python, R, Go, Rust, or TypeScript.</p>
+        <p>Define your workflows as <strong>declarative YAML pipelines</strong>. The scheduler resolves dependencies and executes blocks in parallel, handling caching, map/reduce operations, and fault recovery automatically.</p>
+      </div>
+      <div class="text-center">
+        <div class="pipeline-diagram">
+          <div class="pipeline-diagram__flow">
+            <div class="pipeline-diagram__step">
+              <div class="tag">Data</div>
+            </div>
+            <div class="pipeline-diagram__arrow">&rarr;</div>
+            <div class="pipeline-diagram__step">
+              <div class="tag">Pipeline</div>
+            </div>
+            <div class="pipeline-diagram__arrow">&rarr;</div>
+            <div class="pipeline-diagram__step">
+              <div class="tag">Blocks</div>
+            </div>
+            <div class="pipeline-diagram__arrow">&rarr;</div>
+            <div class="pipeline-diagram__step">
+              <div class="tag">Results</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider container"><span class="divider__icon">&spades;</span></div>
+
+{# ===== FEATURES SECTION ===== #}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Deal Yourself a Winning Hand</h2>
+      <p>Everything you need to build, run, and scale data processing pipelines.</p>
+    </div>
+    <div class="grid-3">
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&spades;</span>
+        <span class="card__corner card__corner--bottom">&spades;</span>
+        <div class="card__icon suit-icon suit-icon--spade">&spades;</div>
+        <h3 class="card__title">Multi-Language Blocks</h3>
+        <p class="card__description">Write blocks in Python, R, Go, Rust, or TypeScript. Spade handles the rest.</p>
+      </div>
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&diams;</span>
+        <span class="card__corner card__corner--bottom">&diams;</span>
+        <div class="card__icon suit-icon suit-icon--diamond">&diams;</div>
+        <h3 class="card__title">Declarative Pipelines</h3>
+        <p class="card__description">Define workflows as YAML. The scheduler resolves dependencies and parallelizes execution.</p>
+      </div>
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&hearts;</span>
+        <span class="card__corner card__corner--bottom">&hearts;</span>
+        <div class="card__icon suit-icon suit-icon--heart">&hearts;</div>
+        <h3 class="card__title">Geospatial First</h3>
+        <p class="card__description">Native support for raster, vector, and tabular geospatial data through GDAL integration.</p>
+      </div>
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&clubs;</span>
+        <span class="card__corner card__corner--bottom">&clubs;</span>
+        <div class="card__icon suit-icon suit-icon--club">&clubs;</div>
+        <h3 class="card__title">Map/Reduce at Scale</h3>
+        <p class="card__description">Fan out across collections and reduce results back together, automatically.</p>
+      </div>
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&spades;</span>
+        <span class="card__corner card__corner--bottom">&spades;</span>
+        <div class="card__icon suit-icon suit-icon--spade">&spades;</div>
+        <h3 class="card__title">Secure by Default</h3>
+        <p class="card__description">Each block runs in an isolated sandbox with restricted filesystem and network access.</p>
+      </div>
+      <div class="feature-card">
+        <span class="card__corner card__corner--top">&diams;</span>
+        <span class="card__corner card__corner--bottom">&diams;</span>
+        <div class="card__icon suit-icon suit-icon--diamond">&diams;</div>
+        <h3 class="card__title">CLI + Web UI</h3>
+        <p class="card__description">Develop locally with the CLI. Deploy and collaborate through the web interface.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider container"><span class="divider__icon">&spades;</span></div>
+
+{# ===== HOW IT WORKS ===== #}
+<section class="section section--gray">
+  <div class="container">
+    <div class="section-header">
+      <h2>How It Works</h2>
+    </div>
+    <div class="grid-3">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3 class="step-title">Define</h3>
+        <p class="step-description">Write your processing block as a simple function with typed inputs and outputs.</p>
+        <div class="terminal-block" style="margin-top: 1rem; text-align: left; font-size: 0.8rem;">
+          <code>def handler(src: RasterFile)<br>&nbsp;&nbsp;&nbsp;&nbsp;-> RasterFile:<br>&nbsp;&nbsp;result = process(src)<br>&nbsp;&nbsp;return RasterFile(result)</code>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3 class="step-title">Compose</h3>
+        <p class="step-description">Chain blocks into a pipeline using YAML or the visual flowchart editor.</p>
+        <div class="terminal-block" style="margin-top: 1rem; text-align: left; font-size: 0.8rem;">
+          <code>blocks:<br>&nbsp;&nbsp;- name: reproject<br>&nbsp;&nbsp;&nbsp;&nbsp;inputs: [source]<br>&nbsp;&nbsp;- name: analyze<br>&nbsp;&nbsp;&nbsp;&nbsp;inputs: [reproject]</code>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3 class="step-title">Execute</h3>
+        <p class="step-description">The scheduler handles dependencies, parallelism, caching, and sandboxed execution.</p>
+        <div class="terminal-block" style="margin-top: 1rem; text-align: left; font-size: 0.8rem;">
+          <code><span class="terminal-prompt">$</span> spade run pipeline.yaml<br>&#x2713; reproject (2.1s)<br>&#x2713; analyze (4.3s)<br>Pipeline complete!</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider container"><span class="divider__icon">&spades;</span></div>
+
+{# ===== CODE EXAMPLES ===== #}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Simple by Design</h2>
+      <p>Type-safe inputs and outputs. Automatic parameter loading. Zero boilerplate.</p>
+    </div>
+    <div class="code-tabs">
+      <div class="code-tabs__buttons"></div>
+      <div class="code-tabs__panels">
+        {{ section.content | safe }}
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider container"><span class="divider__icon">&spades;</span></div>
+
+{# ===== USE CASES ===== #}
+<section class="section section--gray">
+  <div class="container">
+    <div class="section-header">
+      <h2>Built for Real-World Data</h2>
+    </div>
+    <div class="grid-3">
+      <div class="use-case-card">
+        <h3 class="card__title">Remote Sensing</h3>
+        <p class="card__description">Processing satellite imagery at scale, including reprojection, tiling, and analysis across massive raster datasets.</p>
+        <a href="{{ get_url(path='@/use-cases/remote-sensing.md') }}" class="card__link">Learn More &rarr;</a>
+      </div>
+      <div class="use-case-card">
+        <h3 class="card__title">Geospatial ETL</h3>
+        <p class="card__description">Extracting, transforming, and loading spatial datasets across formats and coordinate systems at any scale.</p>
+        <a href="{{ get_url(path='@/use-cases/geospatial-etl.md') }}" class="card__link">Learn More &rarr;</a>
+      </div>
+      <div class="use-case-card">
+        <h3 class="card__title">Scientific Pipelines</h3>
+        <p class="card__description">Reproducible research workflows combining data from multiple providers and processing steps.</p>
+        <a href="{{ get_url(path='@/use-cases/scientific-pipelines.md') }}" class="card__link">Learn More &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider container"><span class="divider__icon">&spades;</span></div>
+
+{# ===== CTA / GETTING STARTED ===== #}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Ready to Play?</h2>
+      <p>Get started in minutes with the Spade CLI.</p>
+    </div>
+    <div class="text-center">
+      <div class="terminal-block" style="max-width: 500px; margin: 0 auto 2rem;">
+        <code>
+          <span class="terminal-prompt">$</span> spade init python<br>
+          <span class="terminal-prompt">$</span> spade add my-block<br>
+          <span class="terminal-prompt">$</span> spade run pipeline.yaml
+        </code>
+      </div>
+      <div class="hero__buttons">
+        <a href="{{ config.extra.docs_url }}" class="btn btn--primary">Read the Docs</a>
+        <a href="{{ config.extra.github_url }}" class="btn btn--secondary">View on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock content %}

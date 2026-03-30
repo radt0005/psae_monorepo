@@ -1,0 +1,226 @@
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.75rem;
+  border-radius: $radius-md;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+
+  &:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+}
+
+.btn--primary {
+  background-color: $color-red;
+  color: $color-white;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red-dark;
+    border-color: $color-red-dark;
+    color: $color-white;
+  }
+}
+
+.btn--secondary {
+  background-color: $color-white;
+  color: $color-black;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red;
+    color: $color-white;
+  }
+}
+
+.btn--outline {
+  background-color: transparent;
+  color: $color-red;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red;
+    color: $color-white;
+  }
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: $radius-sm;
+  background-color: $color-gray-light;
+  color: $color-gray-dark;
+  margin-right: $space-xs;
+  margin-bottom: $space-xs;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: $space-xl 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e0e0e0;
+  }
+
+  .divider__icon {
+    margin: 0 $space-md;
+    color: $color-red;
+    font-size: 1.25rem;
+  }
+}
+
+.suit-icon {
+  display: inline-block;
+  font-style: normal;
+  line-height: 1;
+
+  &--spade { color: $color-black; }
+  &--heart { color: $color-red; }
+  &--diamond { color: $color-red; }
+  &--club { color: $color-black; }
+}
+
+.terminal-block {
+  background-color: #2b303b;
+  border-radius: $radius-md;
+  padding: $space-lg;
+  font-family: $font-mono;
+  font-size: 0.9rem;
+  color: #c0c5ce;
+  line-height: 1.8;
+
+  .terminal-prompt {
+    color: $color-red-light;
+  }
+}
+
+// Code tabs
+.code-tabs {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.code-tabs__buttons {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.code-tab {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  font-family: $font-body;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $color-gray;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: $color-black;
+  }
+
+  &.active {
+    color: $color-red;
+    border-bottom-color: $color-red;
+  }
+}
+
+.code-panel {
+  display: none;
+
+  &.active {
+    display: block;
+  }
+
+  pre {
+    border-radius: 0 0 $radius-md $radius-md;
+    margin-bottom: 0;
+  }
+}
+
+// Pipeline diagram
+.pipeline-diagram {
+  padding: $space-xl;
+}
+
+.pipeline-diagram__flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-md;
+  flex-wrap: wrap;
+}
+
+.pipeline-diagram__step {
+  .tag {
+    font-size: 1rem;
+    padding: 0.5rem 1.25rem;
+    background-color: $color-white;
+    border: 2px solid $color-black;
+    border-radius: $radius-md;
+  }
+}
+
+.pipeline-diagram__arrow {
+  font-size: 1.5rem;
+  color: $color-red;
+}
+
+// Scroll animations
+.animate-ready {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+// Page content styling
+.page-content {
+  h2 {
+    margin-top: $space-xl;
+  }
+
+  h3 {
+    margin-top: $space-lg;
+  }
+
+  ul, ol {
+    margin-bottom: $space-md;
+    padding-left: $space-lg;
+  }
+
+  ul {
+    list-style-type: disc;
+  }
+
+  ol {
+    list-style-type: decimal;
+  }
+
+  li {
+    margin-bottom: $space-sm;
+    line-height: 1.6;
+  }
+}

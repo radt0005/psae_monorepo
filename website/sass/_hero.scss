@@ -1,0 +1,80 @@
+.hero {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: $color-white;
+  overflow: hidden;
+  padding: $space-xxl 0;
+}
+
+.hero__content {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 $space-lg;
+  position: relative;
+  z-index: 2;
+}
+
+.hero__logo {
+  width: 80px;
+  height: auto;
+  margin: 0 auto $space-lg;
+}
+
+.hero__title {
+  font-size: 4rem;
+  font-family: $font-heading;
+  font-weight: 700;
+  margin-bottom: $space-md;
+  color: $color-black;
+}
+
+.hero__subtitle {
+  font-size: 1.35rem;
+  color: $color-gray;
+  margin-bottom: $space-xl;
+  line-height: 1.6;
+}
+
+.hero__buttons {
+  display: flex;
+  gap: $space-md;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+// Playing card corner elements
+.hero__corner {
+  position: absolute;
+  font-family: $font-heading;
+  color: $color-red;
+  opacity: 0.15;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-align: center;
+
+  .corner-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .corner-suit {
+    display: block;
+    font-size: 1.5rem;
+  }
+}
+
+.hero__corner--top-left {
+  top: 2rem;
+  left: 2rem;
+}
+
+.hero__corner--bottom-right {
+  bottom: 2rem;
+  right: 2rem;
+  transform: rotate(180deg);
+}

@@ -1,0 +1,114 @@
+.card {
+  background: $color-white;
+  border: $card-border;
+  border-radius: $radius-md;
+  padding: $space-lg;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: $card-shadow-hover;
+    transform: translateY(-4px);
+  }
+}
+
+.card__icon {
+  font-size: 2rem;
+  margin-bottom: $space-md;
+  line-height: 1;
+}
+
+.card__title {
+  font-family: $font-heading;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: $space-sm;
+}
+
+.card__description {
+  color: $color-gray;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.card__link {
+  display: inline-block;
+  margin-top: $space-md;
+  color: $color-red;
+  font-weight: 600;
+
+  &:hover {
+    color: $color-red-light;
+  }
+}
+
+// Corner accents like playing card indices
+.card__corner {
+  position: absolute;
+  font-size: 0.75rem;
+  color: $color-red;
+  opacity: 0.3;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card__corner--top {
+  top: $space-sm;
+  left: $space-sm;
+}
+
+.card__corner--bottom {
+  bottom: $space-sm;
+  right: $space-sm;
+  transform: rotate(180deg);
+}
+
+// Feature card variant
+.feature-card {
+  @extend .card;
+  text-align: center;
+
+  .card__icon {
+    font-size: 2.5rem;
+  }
+}
+
+// Use case card
+.use-case-card {
+  @extend .card;
+  padding: $space-xl $space-lg;
+}
+
+// Step card for "how it works"
+.step-card {
+  text-align: center;
+  padding: $space-lg;
+
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: $color-red;
+    color: $color-white;
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: $space-md;
+  }
+
+  .step-title {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: $space-sm;
+  }
+
+  .step-description {
+    color: $color-gray;
+    font-size: 0.95rem;
+  }
+}

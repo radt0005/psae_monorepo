@@ -12,7 +12,9 @@ This application will be at https://docs.spade.app, and the main product page wi
 
 Note that much of the readers of this documentation will be researchers, not developers.  Please make sure that all of the documentation is thorough, free of jargon, and easy to understand.
 
-After the completion of the implementation plan, this folder should contain a working website that builds.  
+It should also include information and specifications for writing YAML pipelines.  All of this should be searchable.
+
+After the completion of the implementation plan, this folder should contain a working website that builds successfully.  
 
 The website is based on the `zola` website builder. Please read the documentation as needed.  
 

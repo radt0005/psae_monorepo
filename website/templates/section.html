@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ section.title }} — {{ config.title }}{% endblock page_title %}
+
+{% block content %}
+<div style="height: 64px;"></div>
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h1>{{ section.title }}</h1>
+      {% if section.description %}
+      <p>{{ section.description }}</p>
+      {% endif %}
+    </div>
+    {% if section.content %}
+    <div class="page-content" style="max-width: 800px; margin: 0 auto 3rem;">
+      {{ section.content | safe }}
+    </div>
+    {% endif %}
+    <div class="grid-3">
+      {% for page in section.pages %}
+      <div class="card">
+        <h3 class="card__title">
+          <a href="{{ page.permalink }}">{{ page.title }}</a>
+        </h3>
+        {% if page.description %}
+        <p class="card__description">{{ page.description }}</p>
+        {% endif %}
+        <a href="{{ page.permalink }}" class="card__link">Read More &rarr;</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock content %}

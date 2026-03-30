@@ -1,0 +1,63 @@
+body {
+  font-family: $font-body;
+  font-size: 16px;
+  line-height: 1.6;
+  color: $color-black;
+  background-color: $color-white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-heading;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: $space-md;
+}
+
+h1 { font-size: 3.5rem; }
+h2 { font-size: 2.5rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+p {
+  margin-bottom: $space-md;
+}
+
+a {
+  color: $color-red;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: $color-red-light;
+    text-decoration: underline;
+  }
+}
+
+strong {
+  font-weight: 700;
+}
+
+code {
+  font-family: $font-mono;
+  font-size: 0.9em;
+  background-color: $color-gray-light;
+  padding: 0.15em 0.4em;
+  border-radius: $radius-sm;
+}
+
+pre {
+  background-color: $color-black;
+  color: $color-white;
+  padding: $space-lg;
+  border-radius: $radius-md;
+  margin-bottom: $space-lg;
+  overflow-x: auto;
+
+  code {
+    background: none;
+    padding: 0;
+    font-size: 0.875rem;
+    color: inherit;
+  }
+}

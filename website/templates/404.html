@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block page_title %}Card Not Found — {{ config.title }}{% endblock page_title %}
+
+{% block content %}
+<div style="height: 64px;"></div>
+<section class="section" style="min-height: 60vh; display: flex; align-items: center;">
+  <div class="container text-center">
+    <div style="font-size: 6rem; margin-bottom: 1rem; opacity: 0.3;">&spades;</div>
+    <h1>Card Not Found</h1>
+    <p style="font-size: 1.25rem; color: #888; margin-bottom: 2rem;">Looks like this card isn't in the deck.</p>
+    <a href="{{ config.base_url }}" class="btn btn--primary">Back to Home</a>
+  </div>
+</section>
+{% endblock content %}

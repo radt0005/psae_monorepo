@@ -1,0 +1,19 @@
+{% macro card(title, description, icon="&spades;") %}
+<div class="card">
+  <span class="card__corner card__corner--top">{{ icon }}</span>
+  <span class="card__corner card__corner--bottom">{{ icon }}</span>
+  <div class="card__icon">{{ icon }}</div>
+  <h3 class="card__title">{{ title }}</h3>
+  <p class="card__description">{{ description }}</p>
+</div>
+{% endmacro card %}
+
+{% macro feature_card(title, description, icon="&spades;") %}
+<div class="feature-card">
+  <span class="card__corner card__corner--top">{{ icon }}</span>
+  <span class="card__corner card__corner--bottom">{{ icon }}</span>
+  <div class="card__icon">{{ icon }}</div>
+  <h3 class="card__title">{{ title }}</h3>
+  <p class="card__description">{{ description }}</p>
+</div>
+{% endmacro feature_card %}
