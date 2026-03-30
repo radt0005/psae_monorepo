@@ -2,10 +2,9 @@
 
 This folder contains the implementation of the core library for the spade system. The specifications for the system are located in `../spec/`.  Please consult these to have a thorough understanding of the system.
 
-Your task is to create a detailed implementation plan for the {item} based on the specifications in `../spec/`.  Please format the implementation plan as a markdown checklist.  
+Your task is to create a detailed implementation plan for the worker based on the specifications in `../spec/`.  Please format the implementation plan as a markdown checklist.  
 
-T
-After the completion of the implementation plan, this folder should contain a working {thing} with tests.  
+After the completion of the implementation plan, this folder should contain a working Go program with tests.  
 
  ## Example of the Implementation Plan Format
 

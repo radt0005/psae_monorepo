@@ -104,6 +104,9 @@
       "#build": [
         "./"
       ],
+      "#build/*": [
+        "./*"
+      ],
       "#internal/nuxt/paths": [
         "../node_modules/nuxt/dist/core/runtime/nitro/paths"
       ],
@@ -123,7 +126,10 @@
         "./vue-router"
       ],
       "#tailwind-config": [
-        "./tailwind"
+        "./tailwind.config"
+      ],
+      "#tailwind-config/*": [
+        "./tailwind.config/*"
       ],
       "#nuxt-icon-server-bundle": [
         "./nuxt-icon-server-bundle"

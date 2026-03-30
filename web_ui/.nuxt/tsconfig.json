@@ -123,7 +123,7 @@
         "./tailwind.config/*"
       ],
       "#app-manifest": [
-        "./manifest/meta/0479da45-fb7b-4c86-a714-0a77fdcd8ca7.json"
+        "./manifest/meta/dev.json"
       ],
       "#components": [
         "./components"
