@@ -1,0 +1,6 @@
+id: base.map_files
+version: 0.1.0
+kind: map
+entrypoint: map_files
+inputs: {}
+outputs: {}
