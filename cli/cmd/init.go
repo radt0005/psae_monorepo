@@ -1,0 +1,199 @@
+package cmd
+
+import (
+	"core"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/spf13/cobra"
+)
+
+var initLanguage string
+
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Create a new block collection in the current directory",
+	Long:  `Scaffolds a new block collection project structure based on the selected language.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runInit()
+	},
+}
+
+func init() {
+	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "", "Language for the collection (rust, go, python, typescript, r)")
+	rootCmd.AddCommand(initCmd)
+}
+
+func runInit() error {
+	lang := initLanguage
+	if lang == "" {
+		// Non-interactive fallback: require flag
+		return fmt.Errorf("language is required (use --language flag): rust, go, python, typescript, r")
+	}
+
+	collectionLang := core.CollectionLanguage(lang)
+	dirName := filepath.Base(mustGetwd())
+
+	switch collectionLang {
+	case core.CollectionLanguageRust:
+		return scaffoldRust(dirName)
+	case core.CollectionLanguageGo:
+		return scaffoldGo(dirName)
+	case core.CollectionLanguagePython:
+		return scaffoldPython(dirName)
+	case core.CollectionLanguageTypeScript:
+		return scaffoldTypeScript(dirName)
+	case core.CollectionLanguageR:
+		return scaffoldR(dirName)
+	default:
+		return fmt.Errorf("unsupported language: %s (supported: rust, go, python, typescript, r)", lang)
+	}
+}
+
+func mustGetwd() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return wd
+}
+
+func scaffoldRust(name string) error {
+	cargoToml := fmt.Sprintf(`[package]
+name = "%s"
+version = "0.1.0"
+edition = "2021"
+`, name)
+
+	if err := os.WriteFile("Cargo.toml", []byte(cargoToml), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("src", 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile("src/lib.rs", []byte("// Block collection library\n"), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("blocks", 0755); err != nil {
+		return err
+	}
+	fmt.Println("Created Rust collection:")
+	fmt.Println("  Cargo.toml")
+	fmt.Println("  src/lib.rs")
+	fmt.Println("  blocks/")
+	return nil
+}
+
+func scaffoldGo(name string) error {
+	goMod := fmt.Sprintf("module %s\n\ngo %s\n", name, goVersion())
+
+	if err := os.WriteFile("go.mod", []byte(goMod), 0644); err != nil {
+		return err
+	}
+	mainGo := `package main
+
+func main() {
+	// Block collection entry point
+}
+`
+	if err := os.WriteFile("main.go", []byte(mainGo), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("blocks", 0755); err != nil {
+		return err
+	}
+	fmt.Println("Created Go collection:")
+	fmt.Println("  go.mod")
+	fmt.Println("  main.go")
+	fmt.Println("  blocks/")
+	return nil
+}
+
+func scaffoldPython(name string) error {
+	pkgName := strings.ReplaceAll(name, "-", "_")
+	pyproject := fmt.Sprintf(`[project]
+name = "%s"
+version = "0.1.0"
+requires-python = ">=3.10"
+`, name)
+
+	if err := os.WriteFile("pyproject.toml", []byte(pyproject), 0644); err != nil {
+		return err
+	}
+	pkgDir := filepath.Join("src", pkgName)
+	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(pkgDir, "__init__.py"), []byte(""), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("blocks", 0755); err != nil {
+		return err
+	}
+	fmt.Println("Created Python collection:")
+	fmt.Println("  pyproject.toml")
+	fmt.Printf("  src/%s/__init__.py\n", pkgName)
+	fmt.Println("  blocks/")
+	return nil
+}
+
+func scaffoldTypeScript(name string) error {
+	packageJSON := fmt.Sprintf(`{
+  "name": "%s",
+  "version": "0.1.0",
+  "main": "src/index.ts"
+}
+`, name)
+
+	if err := os.WriteFile("package.json", []byte(packageJSON), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("src", 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("blocks", 0755); err != nil {
+		return err
+	}
+	fmt.Println("Created TypeScript collection:")
+	fmt.Println("  package.json")
+	fmt.Println("  src/")
+	fmt.Println("  blocks/")
+	return nil
+}
+
+func scaffoldR(name string) error {
+	renvLock := `{
+  "R": {
+    "Version": "4.3.0"
+  },
+  "Packages": {}
+}
+`
+	if err := os.WriteFile("renv.lock", []byte(renvLock), 0644); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("R", 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll("blocks", 0755); err != nil {
+		return err
+	}
+	fmt.Println("Created R collection:")
+	fmt.Println("  renv.lock")
+	fmt.Println("  R/")
+	fmt.Println("  blocks/")
+	return nil
+}
+
+func goVersion() string {
+	ver := runtime.Version()
+	ver = strings.TrimPrefix(ver, "go")
+	parts := strings.Split(ver, ".")
+	if len(parts) >= 2 {
+		return parts[0] + "." + parts[1]
+	}
+	return ver
+}
