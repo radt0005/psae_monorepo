@@ -1,0 +1,27 @@
+Package: spade
+Title: Spade Block Authoring Library for R
+Version: 0.1.0
+Authors@R: person("Spade", "Developers", email = "dev@spade.dev",
+    role = c("aut", "cre"))
+Description: Runtime library for authoring Spade blocks in R. Provides S4
+    types for file and directory inputs/outputs, a run() function that handles
+    parameter loading, input scanning, handler invocation, and output writing,
+    and a build() function for generating block manifests from function signatures.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    yaml,
+    methods
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Collate: 
+    'build.R'
+    'output.R'
+    'run.R'
+    'scanning.R'
+    'spade_types.R'
+    'zzz.R'
+    'types.R'

@@ -1,0 +1,13 @@
+import(methods)
+importFrom(yaml, read_yaml)
+
+# Types
+exportClasses(File, Directory, RasterFile, VectorFile, TabularFile, JsonFile,
+              FileCollection, RasterFileCollection, VectorFileCollection, TabularFileCollection)
+
+# Constructors (same name as classes)
+export(File, Directory, RasterFile, VectorFile, TabularFile, JsonFile,
+       FileCollection, RasterFileCollection, VectorFileCollection, TabularFileCollection)
+
+# Core functions
+export(run, build, spade_types, "spade_types<-")

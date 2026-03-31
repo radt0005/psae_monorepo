@@ -89,7 +89,7 @@ libs/R/
 
 ### 1.1 Create `DESCRIPTION`
 
-- [ ] Create `DESCRIPTION` file with the following fields:
+- [x]Create `DESCRIPTION` file with the following fields:
   ```
   Package: spade
   Title: Spade Block Authoring Library for R
@@ -112,7 +112,7 @@ libs/R/
 
 ### 1.2 Create `NAMESPACE`
 
-- [ ] Create initial `NAMESPACE` file that will be replaced by roxygen2-generated version. For now, manually list exports:
+- [x]Create initial `NAMESPACE` file that will be replaced by roxygen2-generated version. For now, manually list exports:
   ```
   import(methods)
   importFrom(yaml, read_yaml)
@@ -131,7 +131,7 @@ libs/R/
 
 ### 1.3 Create `.Rbuildignore`
 
-- [ ] Create `.Rbuildignore` to exclude non-package files:
+- [x]Create `.Rbuildignore` to exclude non-package files:
   ```
   ^extract_args\.R$
   ^PROMPT\.md$
@@ -142,11 +142,11 @@ libs/R/
 
 ### 1.4 Create `LICENSE`
 
-- [ ] Create MIT `LICENSE` file.
+- [x]Create MIT `LICENSE` file.
 
 ### 1.5 Create test infrastructure
 
-- [ ] Create `tests/testthat.R`:
+- [x]Create `tests/testthat.R`:
   ```r
   library(testthat)
   library(spade)
@@ -155,15 +155,15 @@ libs/R/
 
 ### 1.6 Create R/ directory
 
-- [ ] Create `R/` directory for package source files.
+- [x]Create `R/` directory for package source files.
 
 ### 1.7 Create tests/testthat/ directory
 
-- [ ] Create `tests/testthat/` directory for test files.
+- [x]Create `tests/testthat/` directory for test files.
 
 ### 1.8 Create man/ directory
 
-- [ ] Create `man/` directory for documentation (will be populated by roxygen2).
+- [x]Create `man/` directory for documentation (will be populated by roxygen2).
 
 ---
 
@@ -171,17 +171,17 @@ libs/R/
 
 ### 2.1 Base Classes
 
-- [ ] Define the `File` S4 class with a single `path` slot (character string):
+- [x]Define the `File` S4 class with a single `path` slot (character string):
   ```r
   setClass("File", slots = list(path = "character"))
   ```
 
-- [ ] Define the `Directory` S4 class with a single `path` slot (character string):
+- [x]Define the `Directory` S4 class with a single `path` slot (character string):
   ```r
   setClass("Directory", slots = list(path = "character"))
   ```
 
-- [ ] Create constructor functions for both:
+- [x]Create constructor functions for both:
   ```r
   File <- function(path) new("File", path = path)
   Directory <- function(path) new("Directory", path = path)
@@ -189,25 +189,25 @@ libs/R/
 
 ### 2.2 File Subtypes
 
-- [ ] Define `RasterFile` inheriting from `File`:
+- [x]Define `RasterFile` inheriting from `File`:
   ```r
   setClass("RasterFile", contains = "File")
   RasterFile <- function(path) new("RasterFile", path = path)
   ```
 
-- [ ] Define `VectorFile` inheriting from `File`:
+- [x]Define `VectorFile` inheriting from `File`:
   ```r
   setClass("VectorFile", contains = "File")
   VectorFile <- function(path) new("VectorFile", path = path)
   ```
 
-- [ ] Define `TabularFile` inheriting from `File`:
+- [x]Define `TabularFile` inheriting from `File`:
   ```r
   setClass("TabularFile", contains = "File")
   TabularFile <- function(path) new("TabularFile", path = path)
   ```
 
-- [ ] Define `JsonFile` inheriting from `File`:
+- [x]Define `JsonFile` inheriting from `File`:
   ```r
   setClass("JsonFile", contains = "File")
   JsonFile <- function(path) new("JsonFile", path = path)
@@ -215,25 +215,25 @@ libs/R/
 
 ### 2.3 Collection Types
 
-- [ ] Define `FileCollection` with a `paths` slot (character vector):
+- [x]Define `FileCollection` with a `paths` slot (character vector):
   ```r
   setClass("FileCollection", slots = list(paths = "character"))
   FileCollection <- function(paths) new("FileCollection", paths = paths)
   ```
 
-- [ ] Define `RasterFileCollection` inheriting from `FileCollection`:
+- [x]Define `RasterFileCollection` inheriting from `FileCollection`:
   ```r
   setClass("RasterFileCollection", contains = "FileCollection")
   RasterFileCollection <- function(paths) new("RasterFileCollection", paths = paths)
   ```
 
-- [ ] Define `VectorFileCollection` inheriting from `FileCollection`:
+- [x]Define `VectorFileCollection` inheriting from `FileCollection`:
   ```r
   setClass("VectorFileCollection", contains = "FileCollection")
   VectorFileCollection <- function(paths) new("VectorFileCollection", paths = paths)
   ```
 
-- [ ] Define `TabularFileCollection` inheriting from `FileCollection`:
+- [x]Define `TabularFileCollection` inheriting from `FileCollection`:
   ```r
   setClass("TabularFileCollection", contains = "FileCollection")
   TabularFileCollection <- function(paths) new("TabularFileCollection", paths = paths)
@@ -241,7 +241,7 @@ libs/R/
 
 ### 2.4 Validity Methods
 
-- [ ] Add `setValidity()` for `File` to ensure `path` is a non-empty length-1 character:
+- [x]Add `setValidity()` for `File` to ensure `path` is a non-empty length-1 character:
   ```r
   setValidity("File", function(object) {
     if (length(object@path) != 1 || !nzchar(object@path)) {
@@ -252,7 +252,7 @@ libs/R/
   })
   ```
 
-- [ ] Add `setValidity()` for `FileCollection` to ensure `paths` is a character vector:
+- [x]Add `setValidity()` for `FileCollection` to ensure `paths` is a character vector:
   ```r
   setValidity("FileCollection", function(object) {
     if (!is.character(object@paths)) {
@@ -265,7 +265,7 @@ libs/R/
 
 ### 2.5 Show Methods
 
-- [ ] Define `show()` methods for `File` and `FileCollection` for friendly printing:
+- [x]Define `show()` methods for `File` and `FileCollection` for friendly printing:
   ```r
   setMethod("show", "File", function(object) {
     cat(sprintf("<%s> %s\n", class(object), object@path))
@@ -281,7 +281,7 @@ libs/R/
 
 ### 3.1 `spade_types()` Getter
 
-- [ ] Define `spade_types()` to retrieve type annotations from a function:
+- [x]Define `spade_types()` to retrieve type annotations from a function:
   ```r
   spade_types <- function(fn) {
     attr(fn, "spade_types", exact = TRUE)
@@ -290,7 +290,7 @@ libs/R/
 
 ### 3.2 `spade_types<-()` Setter
 
-- [ ] Define replacement function `spade_types<-()` to attach type annotations:
+- [x]Define replacement function `spade_types<-()` to attach type annotations:
   ```r
   `spade_types<-` <- function(fn, value) {
     stopifnot(is.function(fn))
@@ -303,7 +303,7 @@ libs/R/
 
 ### 3.3 `get_type_hints()` Internal Helper
 
-- [ ] Define an internal function that extracts a type hints list from a function, returning a named list mapping parameter names to class name strings. Returns an empty list if no `spade_types` attribute is set:
+- [x]Define an internal function that extracts a type hints list from a function, returning a named list mapping parameter names to class name strings. Returns an empty list if no `spade_types` attribute is set:
   ```r
   get_type_hints <- function(fn) {
     hints <- spade_types(fn)
@@ -315,7 +315,7 @@ libs/R/
 
 ### 3.4 `get_return_type()` Internal Helper
 
-- [ ] Define an internal function to extract the return type string:
+- [x]Define an internal function to extract the return type string:
   ```r
   get_return_type <- function(fn) {
     hints <- spade_types(fn)
@@ -330,7 +330,7 @@ libs/R/
 
 ### 4.1 Parameter Loading
 
-- [ ] Implement `load_params()` to read scalar parameters from `params.yaml`:
+- [x]Implement `load_params()` to read scalar parameters from `params.yaml`:
   ```r
   load_params <- function() {
     params_path <- "params.yaml"
@@ -344,7 +344,7 @@ libs/R/
 
 ### 4.2 Input Directory Scanning
 
-- [ ] Implement `scan_inputs()` to scan `./inputs/` and build typed arguments:
+- [x]Implement `scan_inputs()` to scan `./inputs/` and build typed arguments:
   ```r
   scan_inputs <- function(type_hints = list()) {
     inputs_dir <- "inputs"
@@ -412,7 +412,7 @@ libs/R/
 
 ### 4.3 Combining Parameters and Inputs
 
-- [ ] Implement `build_function_args()` to merge params and file inputs:
+- [x]Implement `build_function_args()` to merge params and file inputs:
   ```r
   build_function_args <- function(fn) {
     type_hints <- get_type_hints(fn)
@@ -435,7 +435,7 @@ libs/R/
 
 ### 5.1 Type-to-Default-Name Mapping
 
-- [ ] Define the mapping from S4 class names to default output directory names:
+- [x]Define the mapping from S4 class names to default output directory names:
   ```r
   .type_to_default_name <- list(
     File = "file",
@@ -453,7 +453,7 @@ libs/R/
 
 ### 5.2 Manifest Reading
 
-- [ ] Implement `read_block_manifest()` to read the block manifest for output declarations:
+- [x]Implement `read_block_manifest()` to read the block manifest for output declarations:
   ```r
   read_block_manifest <- function() {
     # Check environment variable first
@@ -477,7 +477,7 @@ libs/R/
 
 ### 5.3 Output Name Inference
 
-- [ ] Implement `infer_output_name()` to determine the output directory name from a return value's class:
+- [x]Implement `infer_output_name()` to determine the output directory name from a return value's class:
   ```r
   infer_output_name <- function(value) {
     cls <- class(value)
@@ -490,7 +490,7 @@ libs/R/
 
 ### 5.4 Single Output Writing
 
-- [ ] Implement `write_single_output()` to write one output value to `outputs/<name>/`:
+- [x]Implement `write_single_output()` to write one output value to `outputs/<name>/`:
   ```r
   write_single_output <- function(name, value) {
     output_dir <- file.path("outputs", name)
@@ -520,7 +520,7 @@ libs/R/
 
 ### 5.5 Main Output Writing
 
-- [ ] Implement `write_outputs()` to handle all return value patterns:
+- [x]Implement `write_outputs()` to handle all return value patterns:
   ```r
   write_outputs <- function(result, manifest_outputs = NULL) {
     if (is.null(result)) return(invisible(NULL))
@@ -554,7 +554,7 @@ libs/R/
 
 ### 6.1 Implementation
 
-- [ ] Implement the main `run()` function:
+- [x]Implement the main `run()` function:
   ```r
   run <- function(fn) {
     # 1. Build complete arguments from params.yaml + inputs/ directory
@@ -599,7 +599,7 @@ libs/R/
 
 ### 7.1 Type-to-Manifest Mapping
 
-- [ ] Define the mapping from R type names to manifest attribute dictionaries:
+- [x]Define the mapping from R type names to manifest attribute dictionaries:
   ```r
   .r_type_to_manifest <- list(
     File = list(type = "file"),
@@ -621,7 +621,7 @@ libs/R/
 
 ### 7.2 Type-to-Output-Name Mapping
 
-- [ ] Define the mapping from R type names to default output names (reuse `.type_to_default_name` from output.R or define a shared location):
+- [x]Define the mapping from R type names to default output names (reuse `.type_to_default_name` from output.R or define a shared location):
   ```r
   .type_to_output_name <- list(
     File = "file",
@@ -639,7 +639,7 @@ libs/R/
 
 ### 7.3 `build()` Implementation
 
-- [ ] Implement `build()` to generate a block manifest list from a handler function's type annotations:
+- [x]Implement `build()` to generate a block manifest list from a handler function's type annotations:
   ```r
   build <- function(fn) {
     hints <- spade_types(fn)
@@ -699,7 +699,7 @@ libs/R/
 
 ### 8.1 Package-Level Documentation
 
-- [ ] Create `R/zzz.R` with package-level roxygen documentation:
+- [x]Create `R/zzz.R` with package-level roxygen documentation:
   ```r
   #' spade: Spade Block Authoring Library for R
   #'
@@ -720,7 +720,7 @@ libs/R/
 
 ### 9.1 Test Helpers (`tests/testthat/helper-setup.R`)
 
-- [ ] Create shared test helper functions:
+- [x]Create shared test helper functions:
   ```r
   # Create a mock Spade working directory with inputs/, outputs/, logs/
   setup_work_dir <- function() {
@@ -769,67 +769,67 @@ libs/R/
 
 ### 9.2 Type Tests (`tests/testthat/test-types.R`)
 
-- [ ] Test `File` creation with valid path
-- [ ] Test `File` slot access via `@path`
-- [ ] Test `Directory` creation and slot access
-- [ ] Test `RasterFile` inherits from `File` (`is(obj, "File")` returns `TRUE`)
-- [ ] Test `VectorFile` inherits from `File`
-- [ ] Test `TabularFile` inherits from `File`
-- [ ] Test `JsonFile` inherits from `File`
-- [ ] Test `FileCollection` creation with character vector of paths
-- [ ] Test `RasterFileCollection` inherits from `FileCollection`
-- [ ] Test `VectorFileCollection` inherits from `FileCollection`
-- [ ] Test `TabularFileCollection` inherits from `FileCollection`
-- [ ] Test empty collection is valid (`FileCollection(paths = character(0))`)
-- [ ] Test `File` validity check rejects empty path
-- [ ] Test `show()` method prints readable output
+- [x]Test `File` creation with valid path
+- [x]Test `File` slot access via `@path`
+- [x]Test `Directory` creation and slot access
+- [x]Test `RasterFile` inherits from `File` (`is(obj, "File")` returns `TRUE`)
+- [x]Test `VectorFile` inherits from `File`
+- [x]Test `TabularFile` inherits from `File`
+- [x]Test `JsonFile` inherits from `File`
+- [x]Test `FileCollection` creation with character vector of paths
+- [x]Test `RasterFileCollection` inherits from `FileCollection`
+- [x]Test `VectorFileCollection` inherits from `FileCollection`
+- [x]Test `TabularFileCollection` inherits from `FileCollection`
+- [x]Test empty collection is valid (`FileCollection(paths = character(0))`)
+- [x]Test `File` validity check rejects empty path
+- [x]Test `show()` method prints readable output
 
 ### 9.3 Scanning Tests (`tests/testthat/test-scanning.R`)
 
-- [ ] **`test_load_params_basic`**: Write a `params.yaml` with scalar values (`buffer_distance: 30, method: bilinear`), verify they are loaded correctly as a named list.
-- [ ] **`test_load_params_empty_file`**: Empty `params.yaml` returns empty list.
-- [ ] **`test_load_params_missing_file`**: No `params.yaml` file returns empty list.
-- [ ] **`test_scan_single_file_input`**: Create `inputs/raster/data.tif`, scan with type hint `list(raster = "RasterFile")`, verify result is a `RasterFile` instance with correct path.
-- [ ] **`test_scan_untyped_single_file`**: Create `inputs/source/data.tif`, scan with no type hints, verify result defaults to `File`.
-- [ ] **`test_scan_directory_input`**: Create `inputs/source/` with files, scan with `list(source = "Directory")`, verify `Directory` with path pointing to the subdirectory.
-- [ ] **`test_scan_collection_input`**: Create `inputs/tiles/` with 3 files, scan with `list(tiles = "RasterFileCollection")`, verify collection has 3 paths.
-- [ ] **`test_scan_multiple_inputs`**: Create two input subdirectories, verify both are discovered.
-- [ ] **`test_scan_empty_dir_raises`**: Empty input subdirectory raises an error with informative message.
-- [ ] **`test_scan_untyped_multiple_files`**: Multiple files without type hint defaults to `FileCollection`.
-- [ ] **`test_scan_no_inputs_dir`**: Non-existent `inputs/` directory returns empty list.
-- [ ] **`test_build_function_args_merge`**: Verify params and inputs are merged, with inputs taking precedence.
-- [ ] **`test_build_function_args_inputs_precedence`**: When a param name collides with an input name, the input wins.
+- [x]**`test_load_params_basic`**: Write a `params.yaml` with scalar values (`buffer_distance: 30, method: bilinear`), verify they are loaded correctly as a named list.
+- [x]**`test_load_params_empty_file`**: Empty `params.yaml` returns empty list.
+- [x]**`test_load_params_missing_file`**: No `params.yaml` file returns empty list.
+- [x]**`test_scan_single_file_input`**: Create `inputs/raster/data.tif`, scan with type hint `list(raster = "RasterFile")`, verify result is a `RasterFile` instance with correct path.
+- [x]**`test_scan_untyped_single_file`**: Create `inputs/source/data.tif`, scan with no type hints, verify result defaults to `File`.
+- [x]**`test_scan_directory_input`**: Create `inputs/source/` with files, scan with `list(source = "Directory")`, verify `Directory` with path pointing to the subdirectory.
+- [x]**`test_scan_collection_input`**: Create `inputs/tiles/` with 3 files, scan with `list(tiles = "RasterFileCollection")`, verify collection has 3 paths.
+- [x]**`test_scan_multiple_inputs`**: Create two input subdirectories, verify both are discovered.
+- [x]**`test_scan_empty_dir_raises`**: Empty input subdirectory raises an error with informative message.
+- [x]**`test_scan_untyped_multiple_files`**: Multiple files without type hint defaults to `FileCollection`.
+- [x]**`test_scan_no_inputs_dir`**: Non-existent `inputs/` directory returns empty list.
+- [x]**`test_build_function_args_merge`**: Verify params and inputs are merged, with inputs taking precedence.
+- [x]**`test_build_function_args_inputs_precedence`**: When a param name collides with an input name, the input wins.
 
 ### 9.4 Output Tests (`tests/testthat/test-output.R`)
 
-- [ ] **`test_infer_output_name_file`**: `File` -> `"file"`
-- [ ] **`test_infer_output_name_raster`**: `RasterFile` -> `"raster"`
-- [ ] **`test_infer_output_name_vector`**: `VectorFile` -> `"vector"`
-- [ ] **`test_infer_output_name_json`**: `JsonFile` -> `"json"`
-- [ ] **`test_infer_output_name_collection`**: `FileCollection` -> `"files"`
-- [ ] **`test_infer_output_name_raster_collection`**: `RasterFileCollection` -> `"rasters"`
-- [ ] **`test_write_outputs_none`**: `NULL` result produces no output files.
-- [ ] **`test_write_single_file_output`**: `RasterFile(path = ...)` writes to `outputs/raster/`.
-- [ ] **`test_write_file_with_manifest`**: Single file with manifest uses manifest output name.
-- [ ] **`test_write_dict_output`**: Named list of outputs writes multiple subdirectories.
-- [ ] **`test_write_collection_output`**: `RasterFileCollection(paths = ...)` writes all files.
-- [ ] **`test_write_directory_output`**: `Directory(path = ...)` copies directory contents.
-- [ ] **`test_write_preserves_filename`**: Original filename is preserved in output.
-- [ ] **`test_read_manifest_none`**: No manifest returns `NULL`.
-- [ ] **`test_read_manifest_block_yaml`**: `block.yaml` in CWD returns outputs section.
-- [ ] **`test_read_manifest_env_var`**: `SPADE_BLOCK_MANIFEST` env var path is used.
+- [x]**`test_infer_output_name_file`**: `File` -> `"file"`
+- [x]**`test_infer_output_name_raster`**: `RasterFile` -> `"raster"`
+- [x]**`test_infer_output_name_vector`**: `VectorFile` -> `"vector"`
+- [x]**`test_infer_output_name_json`**: `JsonFile` -> `"json"`
+- [x]**`test_infer_output_name_collection`**: `FileCollection` -> `"files"`
+- [x]**`test_infer_output_name_raster_collection`**: `RasterFileCollection` -> `"rasters"`
+- [x]**`test_write_outputs_none`**: `NULL` result produces no output files.
+- [x]**`test_write_single_file_output`**: `RasterFile(path = ...)` writes to `outputs/raster/`.
+- [x]**`test_write_file_with_manifest`**: Single file with manifest uses manifest output name.
+- [x]**`test_write_dict_output`**: Named list of outputs writes multiple subdirectories.
+- [x]**`test_write_collection_output`**: `RasterFileCollection(paths = ...)` writes all files.
+- [x]**`test_write_directory_output`**: `Directory(path = ...)` copies directory contents.
+- [x]**`test_write_preserves_filename`**: Original filename is preserved in output.
+- [x]**`test_read_manifest_none`**: No manifest returns `NULL`.
+- [x]**`test_read_manifest_block_yaml`**: `block.yaml` in CWD returns outputs section.
+- [x]**`test_read_manifest_env_var`**: `SPADE_BLOCK_MANIFEST` env var path is used.
 
 ### 9.5 Run Integration Tests (`tests/testthat/test-run.R`)
 
-- [ ] **`test_run_simple_handler`**: Handler with one File input, verify it is called with correct args.
-- [ ] **`test_run_with_params_and_inputs`**: Handler receives both scalar params and typed file inputs.
-- [ ] **`test_run_with_typed_inputs`**: Handler with `RasterFile` type hints receives correctly typed objects.
-- [ ] **`test_run_with_output`**: Handler returns `RasterFile`, verify file is written to `outputs/`.
-- [ ] **`test_run_with_dict_output`**: Handler returns named list of outputs, verify both are written.
-- [ ] **`test_run_handler_exception_propagates`**: Handler that calls `stop()` propagates the error.
-- [ ] **`test_run_no_return_value`**: Handler with no return produces no output files.
-- [ ] **`test_run_filters_extra_params`**: Extra params not in handler signature are filtered out.
-- [ ] **`test_run_full_workflow`**: End-to-end test:
+- [x]**`test_run_simple_handler`**: Handler with one File input, verify it is called with correct args.
+- [x]**`test_run_with_params_and_inputs`**: Handler receives both scalar params and typed file inputs.
+- [x]**`test_run_with_typed_inputs`**: Handler with `RasterFile` type hints receives correctly typed objects.
+- [x]**`test_run_with_output`**: Handler returns `RasterFile`, verify file is written to `outputs/`.
+- [x]**`test_run_with_dict_output`**: Handler returns named list of outputs, verify both are written.
+- [x]**`test_run_handler_exception_propagates`**: Handler that calls `stop()` propagates the error.
+- [x]**`test_run_no_return_value`**: Handler with no return produces no output files.
+- [x]**`test_run_filters_extra_params`**: Extra params not in handler signature are filtered out.
+- [x]**`test_run_full_workflow`**: End-to-end test:
   1. Set up working directory with `params.yaml` and multiple inputs
   2. Define handler with typed inputs and return value
   3. Call `run(handler)`
@@ -837,16 +837,16 @@ libs/R/
 
 ### 9.6 Build Tests (`tests/testthat/test-build.R`)
 
-- [ ] **`test_build_simple_function`**: Function with `File` type hint, verify manifest has correct input.
-- [ ] **`test_build_typed_inputs`**: Function with `RasterFile` and `VectorFile` hints, verify format fields.
-- [ ] **`test_build_scalar_inputs`**: Function with `character`, `integer`, `logical` hints, verify types.
-- [ ] **`test_build_with_return_type`**: Function with `.return` type hint, verify output declaration.
-- [ ] **`test_build_with_description`**: Function with `spade_description` attribute, verify description field.
-- [ ] **`test_build_no_type_hints`**: Function without `spade_types`, verify empty inputs/outputs.
-- [ ] **`test_build_collection_input`**: Function with `RasterFileCollection` hint, verify collection type.
-- [ ] **`test_build_no_return_type`**: No `.return` in hints, verify empty outputs.
-- [ ] **`test_build_float_input`**: `numeric` type hint maps to `"number"`.
-- [ ] **`test_build_mixed_inputs`**: Function with mixed file and scalar inputs, verify all present.
+- [x]**`test_build_simple_function`**: Function with `File` type hint, verify manifest has correct input.
+- [x]**`test_build_typed_inputs`**: Function with `RasterFile` and `VectorFile` hints, verify format fields.
+- [x]**`test_build_scalar_inputs`**: Function with `character`, `integer`, `logical` hints, verify types.
+- [x]**`test_build_with_return_type`**: Function with `.return` type hint, verify output declaration.
+- [x]**`test_build_with_description`**: Function with `spade_description` attribute, verify description field.
+- [x]**`test_build_no_type_hints`**: Function without `spade_types`, verify empty inputs/outputs.
+- [x]**`test_build_collection_input`**: Function with `RasterFileCollection` hint, verify collection type.
+- [x]**`test_build_no_return_type`**: No `.return` in hints, verify empty outputs.
+- [x]**`test_build_float_input`**: `numeric` type hint maps to `"number"`.
+- [x]**`test_build_mixed_inputs`**: Function with mixed file and scalar inputs, verify all present.
 
 ---
 
@@ -854,17 +854,17 @@ libs/R/
 
 ### 10.1 Full Test Suite
 
-- [ ] Run `Rscript -e 'devtools::test()'` or `R CMD check` and verify all tests pass.
-- [ ] Verify test count is >= 50 tests (comparable to Python's 65).
+- [x]Run `Rscript -e 'devtools::test()'` or `R CMD check` and verify all tests pass.
+- [x]Verify test count is >= 50 tests (comparable to Python's 65).
 
 ### 10.2 Package Check
 
-- [ ] Run `R CMD check --as-cran` to verify the package passes standard checks.
-- [ ] Fix any NOTEs, WARNINGs, or ERRORs.
+- [x]Run `R CMD check --as-cran` to verify the package passes standard checks.
+- [x]Fix any NOTEs, WARNINGs, or ERRORs.
 
 ### 10.3 Example Verification
 
-- [ ] Verify the "Hello World" example from the spec works:
+- [x]Verify the "Hello World" example from the spec works:
   ```r
   library(spade)
 
@@ -875,7 +875,7 @@ libs/R/
   run(handler)
   ```
 
-- [ ] Verify a typed example works:
+- [x]Verify a typed example works:
   ```r
   library(spade)
 
@@ -895,9 +895,9 @@ libs/R/
 
 ### 10.4 Roxygen Documentation
 
-- [ ] Add roxygen2 comments to all exported functions and classes.
-- [ ] Generate `man/` pages with `roxygen2::roxygenize()`.
-- [ ] Regenerate `NAMESPACE` from roxygen2 tags.
+- [x]Add roxygen2 comments to all exported functions and classes.
+- [x]Generate `man/` pages with `roxygen2::roxygenize()`.
+- [x]Regenerate `NAMESPACE` from roxygen2 tags.
 
 ---
 

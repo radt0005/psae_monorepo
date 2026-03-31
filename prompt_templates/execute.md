@@ -1,6 +1,6 @@
 # Instructions
 
-Please implement the plan in `./IMPLEMENTATION_PLAN.md` with tests.  After the completion of the plan, this folder should contain a worker {item} based on the specifications in `../spec/`.  All tests should passs and the code should build successfully.  
+Please implement the plan in `./IMPLEMENTATION_PLAN.md` with tests.  After the completion of the plan, this folder should contain a working {item} based on the specifications in `../spec/`.  All tests should passs and the code should build successfully.  
 
 ## Steps
 1. Read the implementation plan in `IMPLEMENTATION_PLAN.md`.
