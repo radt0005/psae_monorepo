@@ -1,0 +1,382 @@
+// Admonition / callout boxes
+.admonition {
+  padding: $space-md $space-lg;
+  margin: $space-md 0 $space-lg;
+  border-left: 4px solid $color-blue;
+  border-radius: 0 $radius-sm $radius-sm 0;
+  background-color: $color-blue-light;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.admonition-title {
+  display: block;
+  font-weight: 700;
+  margin-bottom: $space-sm;
+  font-size: 0.9rem;
+}
+
+.admonition.note {
+  border-left-color: $color-blue;
+  background-color: $color-blue-light;
+  .admonition-title { color: $color-blue; }
+}
+
+.admonition.warning {
+  border-left-color: $color-yellow;
+  background-color: $color-yellow-light;
+  .admonition-title { color: darken($color-yellow, 10%); }
+}
+
+.admonition.tip {
+  border-left-color: $color-green;
+  background-color: $color-green-light;
+  .admonition-title { color: $color-green; }
+}
+
+.admonition.important {
+  border-left-color: $color-red;
+  background-color: $color-red-bg;
+  .admonition-title { color: $color-red; }
+}
+
+// Code blocks
+pre {
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: $space-sm;
+  right: $space-sm;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #c0c5ce;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: $radius-sm;
+  padding: 2px $space-sm;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: $color-white;
+  }
+}
+
+// Breadcrumbs
+.breadcrumbs {
+  font-size: 0.85rem;
+  color: $color-gray;
+  margin-bottom: $space-lg;
+
+  a {
+    color: $color-gray;
+    &:hover { color: $color-red; }
+  }
+
+  .breadcrumb-sep {
+    margin: 0 $space-sm;
+    color: #d0d0d0;
+  }
+}
+
+// Cards (for landing page and section indexes)
+.card {
+  background: $color-white;
+  border: $card-border;
+  border-radius: $radius-md;
+  padding: $space-lg;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: $card-shadow-hover;
+    transform: translateY(-4px);
+  }
+}
+
+.card__icon {
+  font-size: 2rem;
+  margin-bottom: $space-md;
+  line-height: 1;
+}
+
+.card__title {
+  font-family: $font-heading;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: $space-sm;
+
+  a {
+    color: $color-black;
+    &:hover {
+      color: $color-red;
+      text-decoration: none;
+    }
+  }
+}
+
+.card__description {
+  color: $color-gray;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.card__link {
+  display: inline-block;
+  margin-top: $space-md;
+  color: $color-red;
+  font-weight: 600;
+  font-size: 0.875rem;
+
+  &:hover {
+    color: $color-red-light;
+    text-decoration: none;
+  }
+}
+
+.card__corner {
+  position: absolute;
+  font-size: 0.75rem;
+  color: $color-red;
+  opacity: 0.3;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card__corner--top {
+  top: $space-sm;
+  left: $space-sm;
+}
+
+.card__corner--bottom {
+  bottom: $space-sm;
+  right: $space-sm;
+  transform: rotate(180deg);
+}
+
+// Language tabs
+.lang-tabs {
+  margin: $space-lg 0;
+}
+
+.lang-tabs__buttons {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.lang-tab-btn {
+  padding: $space-sm $space-md;
+  border: none;
+  background: none;
+  font-family: $font-body;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $color-gray;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: $color-black;
+  }
+
+  &.active {
+    color: $color-red;
+    border-bottom-color: $color-red;
+  }
+}
+
+.lang-tab-panel {
+  display: none;
+
+  &.active {
+    display: block;
+  }
+
+  pre {
+    border-radius: 0 0 $radius-md $radius-md;
+    margin-bottom: 0;
+    margin-top: 0;
+  }
+}
+
+// Divider
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: $space-xl 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e0e0e0;
+  }
+
+  .divider__icon {
+    margin: 0 $space-md;
+    color: $color-red;
+    font-size: 1.25rem;
+  }
+}
+
+// Buttons
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.75rem;
+  border-radius: $radius-md;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+
+  &:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+}
+
+.btn--primary {
+  background-color: $color-red;
+  color: $color-white;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red-dark;
+    border-color: $color-red-dark;
+    color: $color-white;
+  }
+}
+
+.btn--secondary {
+  background-color: $color-white;
+  color: $color-black;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red;
+    color: $color-white;
+  }
+}
+
+.btn--outline {
+  background-color: transparent;
+  color: $color-red;
+  border-color: $color-red;
+
+  &:hover {
+    background-color: $color-red;
+    color: $color-white;
+  }
+}
+
+// Hero section for landing page
+.docs-hero {
+  padding: $space-xxl $space-lg $space-xl;
+  text-align: center;
+  max-width: $content-max-width;
+  margin: 0 auto;
+
+  h1 {
+    font-size: 2.75rem;
+    border: none;
+    padding: 0;
+    margin-bottom: $space-md;
+  }
+
+  p {
+    font-size: 1.125rem;
+    color: $color-gray;
+    max-width: 600px;
+    margin: 0 auto $space-lg;
+    line-height: 1.7;
+  }
+}
+
+// Anchor links
+.zola-anchor {
+  margin-left: $space-sm;
+  color: $color-gray;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  text-decoration: none;
+  font-weight: 400;
+
+  &:hover {
+    color: $color-red;
+    text-decoration: none;
+  }
+}
+
+h1:hover .zola-anchor,
+h2:hover .zola-anchor,
+h3:hover .zola-anchor,
+h4:hover .zola-anchor,
+h5:hover .zola-anchor,
+h6:hover .zola-anchor {
+  opacity: 1;
+}
+
+// Edit link
+.edit-link {
+  display: inline-block;
+  margin-top: $space-lg;
+  font-size: 0.85rem;
+  color: $color-gray;
+
+  &:hover {
+    color: $color-red;
+  }
+}
+
+// Section index cards grid
+.section-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $space-lg;
+  margin-top: $space-lg;
+}
+
+// Footer
+.site-footer {
+  background-color: $color-black;
+  color: $color-white;
+  padding: $space-lg 0;
+  text-align: center;
+  font-size: 0.85rem;
+
+  a {
+    color: $color-gray;
+    &:hover {
+      color: $color-red-light;
+      text-decoration: none;
+    }
+  }
+
+  .footer__content {
+    max-width: $container-max-width;
+    margin: 0 auto;
+    padding: 0 $space-lg;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer__spade {
+    color: $color-red;
+    font-size: 1rem;
+  }
+}

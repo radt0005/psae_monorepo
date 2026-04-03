@@ -1,0 +1,53 @@
+{# Recursive sidebar navigation macro #}
+{% macro sidebar_nav(sections, current_path) %}
+{% for s in sections %}
+  {% set section = get_section(path=s) %}
+  {% set is_ancestor = current_path is starting_with(section.path) %}
+  <div class="sidebar-nav__section">
+    <div class="sidebar-nav__heading">
+      <button class="sidebar-nav__toggle {% if is_ancestor %}sidebar-nav__toggle--expanded{% endif %}" aria-label="Toggle section">&#9654;</button>
+      <a href="{{ section.permalink }}">{{ section.title }}</a>
+    </div>
+    <div class="sidebar-nav__children {% if is_ancestor %}sidebar-nav__children--expanded{% endif %}">
+      {% for page in section.pages %}
+      <div class="sidebar-nav__item">
+        <a href="{{ page.permalink }}" class="sidebar-nav__link {% if current_path == page.path %}active{% endif %}">{{ page.title }}</a>
+      </div>
+      {% endfor %}
+      {% for subsection_path in section.subsections %}
+        {% set subsection = get_section(path=subsection_path) %}
+        {% set sub_is_ancestor = current_path is starting_with(subsection.path) %}
+        <div class="sidebar-nav__section" style="margin-top: 0.25rem;">
+          <div class="sidebar-nav__heading" style="font-size: 0.8rem;">
+            <button class="sidebar-nav__toggle {% if sub_is_ancestor %}sidebar-nav__toggle--expanded{% endif %}" aria-label="Toggle section">&#9654;</button>
+            <a href="{{ subsection.permalink }}">{{ subsection.title }}</a>
+          </div>
+          <div class="sidebar-nav__children {% if sub_is_ancestor %}sidebar-nav__children--expanded{% endif %}">
+            {% for page in subsection.pages %}
+            <div class="sidebar-nav__item">
+              <a href="{{ page.permalink }}" class="sidebar-nav__link {% if current_path == page.path %}active{% endif %}">{{ page.title }}</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+{% endmacro sidebar_nav %}
+
+{# Table of contents macro #}
+{% macro toc(toc_entries) %}
+{% if toc_entries %}
+<ul class="toc-list">
+  {% for entry in toc_entries %}
+  <li>
+    <a href="#{{ entry.id }}">{{ entry.title }}</a>
+    {% if entry.children %}
+      {{ self::toc(toc_entries=entry.children) }}
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro toc %}

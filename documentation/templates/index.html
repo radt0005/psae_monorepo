@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }} - {{ config.title }}{% endblock title %}
+{% block description %}{{ config.description }}{% endblock description %}
+
+{% block body %}
+<div class="landing-layout">
+  <div class="docs-hero">
+    {{ section.content | safe }}
+  </div>
+
+  <div class="container">
+    <div class="section-cards">
+      {% set getting_started = get_section(path="getting-started/_index.md") %}
+      <a href="{{ getting_started.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&spades;</span>
+        <span class="card__corner card__corner--bottom">&spades;</span>
+        <h3 class="card__title">{{ getting_started.title }}</h3>
+        <p class="card__description">{{ getting_started.description | default(value="Install Spade, run your first pipeline, and create your first block.") }}</p>
+        <span class="card__link">Get Started &rarr;</span>
+      </a>
+
+      {% set concepts = get_section(path="concepts/_index.md") %}
+      <a href="{{ concepts.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&diams;</span>
+        <span class="card__corner card__corner--bottom">&diams;</span>
+        <h3 class="card__title">{{ concepts.title }}</h3>
+        <p class="card__description">{{ concepts.description | default(value="Learn about blocks, pipelines, map/reduce, and how Spade executes your workflows.") }}</p>
+        <span class="card__link">Explore &rarr;</span>
+      </a>
+
+      {% set pipelines = get_section(path="pipelines/_index.md") %}
+      <a href="{{ pipelines.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&hearts;</span>
+        <span class="card__corner card__corner--bottom">&hearts;</span>
+        <h3 class="card__title">{{ pipelines.title }}</h3>
+        <p class="card__description">{{ pipelines.description | default(value="Complete reference for writing YAML pipeline files.") }}</p>
+        <span class="card__link">Read Reference &rarr;</span>
+      </a>
+
+      {% set cli = get_section(path="cli/_index.md") %}
+      <a href="{{ cli.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&clubs;</span>
+        <span class="card__corner card__corner--bottom">&clubs;</span>
+        <h3 class="card__title">{{ cli.title }}</h3>
+        <p class="card__description">{{ cli.description | default(value="Reference for all spade CLI commands.") }}</p>
+        <span class="card__link">View Commands &rarr;</span>
+      </a>
+
+      {% set libraries = get_section(path="libraries/_index.md") %}
+      <a href="{{ libraries.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&spades;</span>
+        <span class="card__corner card__corner--bottom">&spades;</span>
+        <h3 class="card__title">{{ libraries.title }}</h3>
+        <p class="card__description">{{ libraries.description | default(value="Python, R, TypeScript, Go, and Rust libraries for building blocks.") }}</p>
+        <span class="card__link">Choose Language &rarr;</span>
+      </a>
+
+      {% set tutorials = get_section(path="tutorials/_index.md") %}
+      <a href="{{ tutorials.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&diams;</span>
+        <span class="card__corner card__corner--bottom">&diams;</span>
+        <h3 class="card__title">{{ tutorials.title }}</h3>
+        <p class="card__description">{{ tutorials.description | default(value="Step-by-step walkthroughs for common tasks.") }}</p>
+        <span class="card__link">Follow Tutorials &rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <div style="height: 4rem;"></div>
+</div>
+{% endblock body %}

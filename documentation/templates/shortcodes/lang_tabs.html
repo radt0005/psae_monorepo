@@ -1,0 +1,28 @@
+<div class="lang-tabs">
+<div class="lang-tabs__buttons">
+{% set panels = body | split(pat="<!-- tab:") %}
+{% for panel in panels %}
+  {% if panel %}
+    {% set parts = panel | split(pat=" -->") %}
+    {% set lang = parts | first %}
+    {% if loop.first %}
+    <button class="lang-tab-btn active" data-lang="{{ lang }}">{{ lang }}</button>
+    {% else %}
+    <button class="lang-tab-btn" data-lang="{{ lang }}">{{ lang }}</button>
+    {% endif %}
+  {% endif %}
+{% endfor %}
+</div>
+{% for panel in panels %}
+  {% if panel %}
+    {% set parts = panel | split(pat=" -->") %}
+    {% set lang = parts | first %}
+    {% set content = parts | slice(start=1) | join(sep=" -->") %}
+    {% if loop.first %}
+    <div class="lang-tab-panel active" data-lang="{{ lang }}">{{ content | safe }}</div>
+    {% else %}
+    <div class="lang-tab-panel" data-lang="{{ lang }}">{{ content | safe }}</div>
+    {% endif %}
+  {% endif %}
+{% endfor %}
+</div>

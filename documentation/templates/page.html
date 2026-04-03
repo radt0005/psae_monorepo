@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "macros/nav.html" as nav_macros %}
+
+{% block title %}{{ page.title }} - {{ config.title }}{% endblock title %}
+{% block description %}{{ page.description | default(value=config.description) }}{% endblock description %}
+
+{% block body %}
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="sidebar-nav">
+      {{ nav_macros::sidebar_nav(
+        sections=[
+          "getting-started/_index.md",
+          "concepts/_index.md",
+          "pipelines/_index.md",
+          "cli/_index.md",
+          "libraries/_index.md",
+          "tutorials/_index.md"
+        ],
+        current_path=page.path
+      ) }}
+    </nav>
+  </aside>
+
+  <main class="docs-main">
+    <div class="docs-content">
+      <h1>{{ page.title }}</h1>
+
+      {{ page.content | safe }}
+
+      {# Previous / Next navigation #}
+      {% if page.lower or page.higher %}
+      <nav class="page-nav">
+        {% if page.higher %}
+        <a href="{{ page.higher.permalink }}" class="page-nav__link">
+          <span class="page-nav__label">&larr; Previous</span>
+          <span class="page-nav__title">{{ page.higher.title }}</span>
+        </a>
+        {% endif %}
+        {% if page.lower %}
+        <a href="{{ page.lower.permalink }}" class="page-nav__link page-nav__link--next">
+          <span class="page-nav__label">Next &rarr;</span>
+          <span class="page-nav__title">{{ page.lower.title }}</span>
+        </a>
+        {% endif %}
+      </nav>
+      {% endif %}
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    {% if page.toc %}
+    <div class="toc-heading">On this page</div>
+    {{ nav_macros::toc(toc_entries=page.toc) }}
+    {% endif %}
+  </aside>
+</div>
+
+<button class="sidebar-toggle" aria-label="Toggle sidebar">&#9776;</button>
+{% endblock body %}

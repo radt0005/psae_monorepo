@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "macros/nav.html" as nav_macros %}
+
+{% block title %}{{ section.title }} - {{ config.title }}{% endblock title %}
+{% block description %}{{ section.description | default(value=config.description) }}{% endblock description %}
+
+{% block body %}
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="sidebar-nav">
+      {{ nav_macros::sidebar_nav(
+        sections=[
+          "getting-started/_index.md",
+          "concepts/_index.md",
+          "pipelines/_index.md",
+          "cli/_index.md",
+          "libraries/_index.md",
+          "tutorials/_index.md"
+        ],
+        current_path=section.path
+      ) }}
+    </nav>
+  </aside>
+
+  <main class="docs-main">
+    <div class="docs-content">
+      <h1>{{ section.title }}</h1>
+
+      {% if section.content %}
+        {{ section.content | safe }}
+      {% endif %}
+
+      {% if section.pages %}
+      <div class="section-cards">
+        {% for page in section.pages %}
+        <a href="{{ page.permalink }}" class="card" style="text-decoration: none;">
+          <h3 class="card__title">{{ page.title }}</h3>
+          {% if page.description %}
+          <p class="card__description">{{ page.description }}</p>
+          {% endif %}
+          <span class="card__link">Read &rarr;</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if section.subsections %}
+      <div class="section-cards" style="margin-top: 2rem;">
+        {% for subsection_path in section.subsections %}
+          {% set subsection = get_section(path=subsection_path) %}
+          <a href="{{ subsection.permalink }}" class="card" style="text-decoration: none;">
+            <h3 class="card__title">{{ subsection.title }}</h3>
+            {% if subsection.description %}
+            <p class="card__description">{{ subsection.description }}</p>
+            {% endif %}
+            <span class="card__link">Explore &rarr;</span>
+          </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    {% if section.toc %}
+    <div class="toc-heading">On this page</div>
+    {{ nav_macros::toc(toc_entries=section.toc) }}
+    {% endif %}
+  </aside>
+</div>
+
+<button class="sidebar-toggle" aria-label="Toggle sidebar">&#9776;</button>
+{% endblock body %}

@@ -1,0 +1,194 @@
+.container {
+  max-width: $container-max-width;
+  margin: 0 auto;
+  padding: 0 $space-lg;
+}
+
+// Documentation page three-column layout
+.docs-layout {
+  display: grid;
+  grid-template-columns: $sidebar-width 1fr $toc-width;
+  min-height: calc(100vh - $header-height);
+  padding-top: $header-height;
+}
+
+.docs-main {
+  padding: $space-xl $space-xl;
+  max-width: 860px;
+  min-width: 0; // Prevent overflow
+}
+
+// Landing page layout (no sidebar)
+.landing-layout {
+  padding-top: $header-height;
+}
+
+// Content area styling
+.docs-content {
+  max-width: $content-max-width;
+
+  h1 {
+    margin-bottom: $space-lg;
+    padding-bottom: $space-md;
+    border-bottom: 2px solid $color-gray-light;
+  }
+
+  h2 {
+    margin-top: $space-xl;
+    margin-bottom: $space-md;
+    padding-bottom: $space-sm;
+    border-bottom: 1px solid $color-gray-light;
+  }
+
+  h3 {
+    margin-top: $space-lg;
+  }
+
+  h4 {
+    margin-top: $space-md;
+  }
+
+  ul, ol {
+    margin-bottom: $space-md;
+    padding-left: $space-lg;
+  }
+
+  ul { list-style-type: disc; }
+  ol { list-style-type: decimal; }
+
+  li {
+    margin-bottom: $space-sm;
+    line-height: 1.7;
+  }
+
+  li > ul, li > ol {
+    margin-top: $space-sm;
+    margin-bottom: 0;
+  }
+
+  blockquote {
+    border-left: 4px solid $color-red;
+    padding: $space-md $space-lg;
+    margin: $space-md 0 $space-lg;
+    background-color: $color-gray-light;
+    border-radius: 0 $radius-sm $radius-sm 0;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: $space-lg;
+
+    th, td {
+      padding: $space-sm $space-md;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    th {
+      font-weight: 700;
+      background-color: $color-gray-light;
+      position: sticky;
+      top: $header-height;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba($color-gray-light, 0.5);
+    }
+  }
+
+  img {
+    border-radius: $radius-md;
+    margin: $space-md 0;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: $space-xl 0;
+  }
+}
+
+// Section index grids
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $space-lg;
+  margin-top: $space-lg;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-lg;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: $space-xl;
+
+  h2 {
+    margin-bottom: $space-sm;
+    border: none;
+  }
+
+  p {
+    font-size: 1.125rem;
+    color: $color-gray;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+// Prev/next navigation
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $space-xxl;
+  padding-top: $space-lg;
+  border-top: 1px solid #e0e0e0;
+  gap: $space-lg;
+}
+
+.page-nav__link {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+  padding: $space-md;
+  border: $card-border;
+  border-radius: $radius-md;
+  transition: all 0.2s ease;
+  max-width: 50%;
+
+  &:hover {
+    border-color: $color-red;
+    box-shadow: $card-shadow;
+    text-decoration: none;
+  }
+}
+
+.page-nav__label {
+  font-size: 0.8rem;
+  color: $color-gray;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.page-nav__title {
+  font-family: $font-heading;
+  font-weight: 700;
+  color: $color-red;
+}
+
+.page-nav__link--next {
+  text-align: right;
+  margin-left: auto;
+}

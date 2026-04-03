@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
+  <meta property="og:title" content="{% block og_title %}{{ config.title }}{% endblock og_title %}">
+  <meta property="og:description" content="{{ config.description }}">
+  <meta property="og:type" content="website">
+  <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ get_url(path='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ get_url(path='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  {% block header %}
+  <header class="site-header">
+    <nav class="nav">
+      <a href="{{ config.extra.product_url }}" class="nav__logo">
+        <svg viewBox="0 0 100 120" width="24" height="29">
+          <path d="M50 10 C50 10, 15 45, 15 62 C15 78, 28 88, 42 82 C46 80, 49 76, 50 72 C51 76, 54 80, 58 82 C72 88, 85 78, 85 62 C85 45, 50 10, 50 10 Z" fill="#1a1a1a"/>
+          <path d="M42 82 C38 90, 35 98, 30 105 L70 105 C65 98, 62 90, 58 82 C54 86, 46 86, 42 82 Z" fill="#1a1a1a"/>
+        </svg>
+        Spade<span class="nav__logo-suffix">Docs</span>
+      </a>
+      <div class="nav__search" style="position: relative;">
+        <input type="text" id="header-search-input" placeholder="Search docs... (Ctrl+K)" autocomplete="off">
+        <div id="search-results" class="search-results"></div>
+      </div>
+      <button class="nav__toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav__links">
+        <a href="{{ config.base_url | safe }}" class="nav__link nav__link--active">Docs</a>
+        <a href="{{ config.extra.product_url }}" class="nav__link">Home</a>
+        <a href="{{ config.extra.github_repo }}" class="nav__link">GitHub</a>
+      </div>
+    </nav>
+  </header>
+  {% endblock header %}
+
+  {% block body %}{% endblock body %}
+
+  {% block footer %}
+  <footer class="site-footer">
+    <div class="footer__content">
+      <span>&copy; {{ now() | date(format="%Y") }} Spade Project</span>
+      <span><a href="{{ config.extra.product_url }}">spade.app</a> &middot; <a href="{{ config.extra.github_repo }}">GitHub</a></span>
+      <span class="footer__spade">&spades;</span>
+    </div>
+  </footer>
+  {% endblock footer %}
+
+  <script src="{{ get_url(path='js/main.js') }}"></script>
+  <script src="{{ get_url(path='js/search.js') }}"></script>
+</body>
+</html>
