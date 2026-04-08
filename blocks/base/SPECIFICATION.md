@@ -19,18 +19,19 @@ These should have common operations for working with tabular data.  Internally, 
 These blocks are as follows: 
 1. Filter operations on rows (like a SQL WHERE clause)
 2. Filter columns (select only certain columns and drop the rest)
-3. Aggregations (mean, median, mode, percentiles, counts, )
+3. Aggregations (mean, median, mode, percentiles, counts, and many more)
 4. grouping operations (Group By)
 
 ## Map operations
 
 There should be blocks for the following types of map operations
 1. Apply one or more blocks to each member of a file collection
+2. Repeat for a list of inputs (e.g. a list of strings or numbers).  Could be useful for processing across states (e.g. `["NY", "MI"]`) or running a simulation multiple times in parallel
 
 ## Reduce Operations
 
 There should be a few types of reducers based on how the outputs are to be combined
-1. Return the outputs back to being a FileCollection (this is trivial, just moves outputs back together); it should be the minimum viable reducer.
+1. Return the outputs back to being a FileCollection (this is almost trivial, just moves outputs back together); it should be the minimum viable reducer.
 2. Stack tables (concatenate dataframes, like R's `rbind`)
 3. SQL JOIN the outputs (not using actual SQL necessarily, just using that to express the idea of joining the tables in that fashion)
 
@@ -38,4 +39,4 @@ There should be a few types of reducers based on how the outputs are to be combi
 
 ## Hints
 
-See `../../skill.md` for a skill using the CLI to make blocks.
+See `../../skills/spade` for a skill on how to do work with the spade system.
