@@ -1,0 +1,23 @@
+id: base.select_columns
+version: 0.1.0
+kind: standard
+network: false
+description: Project a subset of columns from a table, keeping or dropping them.
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  columns:
+    type: string
+    description: Comma-separated column names.
+  mode:
+    type: string
+    description: Either "keep" (default) or "drop".
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Projected table.

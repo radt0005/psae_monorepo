@@ -1,0 +1,19 @@
+id: base.map_list
+version: 0.1.0
+kind: map
+network: false
+description: >-
+  Fan out over a literal list of scalar values (strings, numbers, booleans).
+  Each value is materialised as a small JSON file recorded in the
+  expansion manifest.
+
+inputs:
+  values:
+    type: string
+    description: >-
+      JSON-encoded array of scalars, e.g. '["NY","MI","CA"]' or '[1,2,3]'.
+
+outputs:
+  manifest:
+    type: expansion
+    description: Expansion manifest with one item per input value.

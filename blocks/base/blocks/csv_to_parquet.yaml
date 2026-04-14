@@ -1,0 +1,23 @@
+id: base.csv_to_parquet
+version: 0.1.0
+kind: standard
+network: false
+description: Convert a CSV file to Parquet.
+
+inputs:
+  table:
+    type: file
+    format: CSV
+    description: Source CSV file.
+  delimiter:
+    type: string
+    description: Field delimiter (single ASCII character). Defaults to ",".
+  has_header:
+    type: boolean
+    description: Whether the input CSV has a header row. Defaults to true.
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Parquet encoding of the input CSV.

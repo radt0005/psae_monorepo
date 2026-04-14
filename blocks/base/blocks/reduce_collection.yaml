@@ -1,0 +1,19 @@
+id: base.reduce_collection
+version: 0.1.0
+kind: reduce
+network: false
+description: >-
+  Minimum-viable reducer: gather the outputs of N mapped invocations back
+  into a single file collection for downstream consumption.
+
+inputs:
+  items:
+    type: collection
+    item_type: file
+    description: Outputs of the upstream mapped block.
+
+outputs:
+  result:
+    type: collection
+    item_type: file
+    description: The same items, regrouped as a collection.

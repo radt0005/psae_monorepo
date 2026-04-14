@@ -1,6 +1,16 @@
 id: base.map_files
 version: 0.1.0
 kind: map
-entrypoint: map_files
-inputs: {}
-outputs: {}
+network: false
+description: Enumerate files in a collection for parallel fan-out.
+
+inputs:
+  source:
+    type: collection
+    item_type: file
+    description: Collection of files to fan out over.
+
+outputs:
+  manifest:
+    type: expansion
+    description: Expansion manifest with one item per input file.

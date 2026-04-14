@@ -1,0 +1,23 @@
+id: base.reduce_stack
+version: 0.1.0
+kind: reduce
+network: false
+description: Concatenate a collection of tables row-wise (R's rbind).
+
+inputs:
+  tables:
+    type: collection
+    item_type: file
+    format: Parquet
+    description: Tables to stack.
+  strict:
+    type: boolean
+    description: >-
+      When true, require identical schemas across all tables. When false
+      (default), diagonally-concatenate and fill missing columns with null.
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Stacked table.

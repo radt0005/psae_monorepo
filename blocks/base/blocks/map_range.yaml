@@ -1,0 +1,22 @@
+id: base.map_range
+version: 0.1.0
+kind: map
+network: false
+description: >-
+  Fan out over a numeric range [start, end) with a configurable step.
+
+inputs:
+  start:
+    type: number
+    description: Inclusive start of the range.
+  end:
+    type: number
+    description: Exclusive end of the range.
+  step:
+    type: number
+    description: Step between items. Defaults to 1.
+
+outputs:
+  manifest:
+    type: expansion
+    description: Expansion manifest with one item per value in the range.

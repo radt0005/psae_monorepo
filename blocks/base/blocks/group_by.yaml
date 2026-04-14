@@ -1,0 +1,27 @@
+id: base.group_by
+version: 0.1.0
+kind: standard
+network: false
+description: >-
+  Group a table by one or more columns and compute aggregations per group.
+  Convenience wrapper around base.aggregate that promotes group columns to
+  a dedicated parameter.
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  group_columns:
+    type: string
+    description: Comma-separated list of grouping columns (required, non-empty).
+  aggregations:
+    type: string
+    description: >-
+      JSON list of aggregation specs (same format as base.aggregate).
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Grouped table with one row per group.

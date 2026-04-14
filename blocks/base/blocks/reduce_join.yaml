@@ -1,0 +1,25 @@
+id: base.reduce_join
+version: 0.1.0
+kind: reduce
+network: false
+description: >-
+  Join a collection of tables left-to-right on one or more key columns.
+
+inputs:
+  tables:
+    type: collection
+    item_type: file
+    format: Parquet
+    description: Tables to join, processed in lexicographic order of filename.
+  on:
+    type: string
+    description: Comma-separated list of key column names.
+  how:
+    type: string
+    description: One of "inner" (default), "left", "right", "outer".
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Joined table.

@@ -1,0 +1,29 @@
+id: base.aggregate
+version: 0.1.0
+kind: standard
+network: false
+description: Compute aggregations over a table, optionally grouped.
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  aggregations:
+    type: string
+    description: >-
+      JSON list of aggregation specs. Each spec is an object with keys
+      "column", "function" (mean, median, mode, sum, min, max, count,
+      count_distinct, std, var, percentile), optional "p" (for percentile),
+      and optional "as" (alias).
+  group_by:
+    type: string
+    description: >-
+      Comma-separated list of grouping columns. Empty (the default) means
+      aggregate the whole table into a single row.
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Aggregated table.

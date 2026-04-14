@@ -1,0 +1,20 @@
+id: base.filter_rows
+version: 0.1.0
+kind: standard
+network: false
+description: Filter rows of a table by a SQL WHERE-style predicate.
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  expression:
+    type: string
+    description: SQL WHERE-style predicate, e.g. "age > 30 AND state = 'NY'".
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: Rows of the input table matching the predicate.
