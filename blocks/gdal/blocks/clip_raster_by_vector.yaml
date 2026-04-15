@@ -1,0 +1,28 @@
+id: gdal.clip_raster_by_vector
+version: 0.1.0
+kind: standard
+network: false
+description: Clip a raster to a vector boundary (gdalwarp -cutline).
+entrypoint: clip_raster_by_vector
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Raster to clip.
+  boundary:
+    type: file
+    format: GeoJSON
+    description: Vector boundary defining the clip region.
+  crop_to_cutline:
+    type: boolean
+    description: Shrink the output extent to the cutline bounding box. Default true.
+  all_touched:
+    type: boolean
+    description: Include pixels touched by the cutline rather than centroid coverage. Default false.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Clipped raster.

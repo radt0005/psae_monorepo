@@ -1,0 +1,22 @@
+id: gdal.vector_identity
+version: 0.1.0
+kind: standard
+network: false
+description: Identity overlay — A ∩ B and A \ B, preserving A's attributes.
+entrypoint: vector_identity
+
+inputs:
+  a:
+    type: file
+    format: GeoJSON
+    description: Base vector layer (A).
+  b:
+    type: file
+    format: GeoJSON
+    description: Method vector layer (B).
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Identity overlay of A with B.

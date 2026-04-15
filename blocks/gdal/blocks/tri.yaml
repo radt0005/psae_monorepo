@@ -1,0 +1,21 @@
+id: gdal.tri
+version: 0.1.0
+kind: standard
+network: false
+description: Compute the Terrain Ruggedness Index from a DEM (gdaldem TRI).
+entrypoint: tri
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+  algorithm:
+    type: string
+    description: TRI algorithm. "Wilson" (default) or "Riley".
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: TRI raster.

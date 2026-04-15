@@ -1,0 +1,25 @@
+id: gdal.build_vrt
+version: 0.1.0
+kind: standard
+network: false
+description: Build a GDAL Virtual Raster (VRT) from a collection of rasters.
+entrypoint: build_vrt
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Collection of input rasters to assemble into the VRT.
+  resolution:
+    type: string
+    description: One of highest, lowest, average, or user (default highest).
+  separate:
+    type: boolean
+    description: Stack sources as separate bands instead of a mosaic. Default false.
+
+outputs:
+  vrt:
+    type: file
+    format: VRT
+    description: Virtual raster referencing the input collection.

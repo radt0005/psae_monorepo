@@ -1,0 +1,21 @@
+id: gdal.compare
+version: 0.1.0
+kind: standard
+network: false
+description: Compare two rasters and report differences as JSON.
+entrypoint: compare
+
+inputs:
+  golden:
+    type: file
+    format: GeoTIFF
+    description: Reference raster.
+  new:
+    type: file
+    format: GeoTIFF
+    description: Raster to compare against the reference.
+
+outputs:
+  report:
+    type: json
+    description: JSON report of structural and pixel-level differences.

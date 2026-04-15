@@ -1,0 +1,24 @@
+id: gdal.add_overviews
+version: 0.1.0
+kind: standard
+network: false
+description: Build internal pyramid overviews on a raster (gdaladdo).
+entrypoint: add_overviews
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster. A copy is made; the source is not modified.
+  levels:
+    type: string
+    description: Space-separated decimation factors, e.g. "2 4 8 16". Default "2 4 8 16".
+  resampling:
+    type: string
+    description: Resampling method for the overviews (default average).
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Raster with overviews attached.

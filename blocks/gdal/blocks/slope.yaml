@@ -1,0 +1,25 @@
+id: gdal.slope
+version: 0.1.0
+kind: standard
+network: false
+description: Compute slope from a DEM (gdaldem slope).
+entrypoint: slope
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+  scale:
+    type: number
+    description: Ratio of vertical units to horizontal units (default 1).
+  slope_format:
+    type: string
+    description: >-
+      'degree' (default) or 'percent'.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Slope raster.

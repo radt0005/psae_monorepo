@@ -1,0 +1,31 @@
+id: gdal.rasterize
+version: 0.1.0
+kind: standard
+network: false
+description: Burn vector geometries into a raster (gdal_rasterize).
+entrypoint: rasterize
+
+inputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Vector file whose geometries will be rasterized.
+  reference:
+    type: file
+    format: GeoTIFF
+    description: Reference raster whose extent, CRS, and pixel grid define the output.
+  burn_value:
+    type: number
+    description: Constant value to burn into covered pixels (default 1).
+  attribute:
+    type: string
+    description: Optional attribute name; when set, pixel values come from this attribute instead of burn_value.
+  all_touched:
+    type: boolean
+    description: Burn pixels touched by the geometry rather than centroid coverage. Default false.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Rasterized output aligned to the reference raster.

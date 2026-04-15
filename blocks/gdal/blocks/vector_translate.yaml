@@ -1,0 +1,30 @@
+id: gdal.vector_translate
+version: 0.1.0
+kind: standard
+network: false
+description: Convert vector format, reproject, or filter (ogr2ogr).
+entrypoint: vector_translate
+
+inputs:
+  source:
+    type: file
+    format: GeoJSON
+    description: Input vector file.
+  output_format:
+    type: string
+    description: OGR output driver short name. Default GeoJSON.
+  target_crs:
+    type: string
+    description: Target CRS (e.g. "EPSG:4326"). Empty = preserve source CRS.
+  where:
+    type: string
+    description: SQL WHERE clause to filter features. Empty = no filter.
+  sql:
+    type: string
+    description: OGR SQL statement to run on the source. Overrides "where" when set.
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Translated vector file.

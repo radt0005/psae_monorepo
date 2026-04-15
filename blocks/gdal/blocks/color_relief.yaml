@@ -1,0 +1,23 @@
+id: gdal.color_relief
+version: 0.1.0
+kind: standard
+network: false
+description: Apply a color ramp to a raster (gdaldem color-relief).
+entrypoint: color_relief
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster (typically a DEM).
+  color_ramp:
+    type: file
+    description: >-
+      GDAL color text file. Each line is "<value> R G B [A]" with values
+      matching the source's band values.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: 3- or 4-band RGB(A) raster.

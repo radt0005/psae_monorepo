@@ -1,0 +1,24 @@
+id: gdal.fill_nodata
+version: 0.1.0
+kind: standard
+network: false
+description: Interpolate missing-data pixels from surrounding neighbours (gdal_fillnodata).
+entrypoint: fill_nodata
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Raster with nodata pixels to fill.
+  max_distance:
+    type: number
+    description: Maximum search distance in pixels (default 100).
+  smoothing_iterations:
+    type: number
+    description: Number of 3x3 smoothing iterations applied after fill (default 0).
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Raster with nodata filled.

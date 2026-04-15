@@ -1,0 +1,22 @@
+id: gdal.vector_difference
+version: 0.1.0
+kind: standard
+network: false
+description: Geometric difference A \ B — features in A with the overlap of B removed.
+entrypoint: vector_difference
+
+inputs:
+  a:
+    type: file
+    format: GeoJSON
+    description: Base vector layer (A).
+  b:
+    type: file
+    format: GeoJSON
+    description: Vector layer whose geometry is removed from A (B).
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Difference A \ B.

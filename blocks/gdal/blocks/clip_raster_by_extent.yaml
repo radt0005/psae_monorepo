@@ -1,0 +1,30 @@
+id: gdal.clip_raster_by_extent
+version: 0.1.0
+kind: standard
+network: false
+description: Clip a raster to a bounding box in its source CRS.
+entrypoint: clip_raster_by_extent
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Raster to clip.
+  xmin:
+    type: number
+    description: Minimum X (source CRS units).
+  ymin:
+    type: number
+    description: Minimum Y (source CRS units).
+  xmax:
+    type: number
+    description: Maximum X (source CRS units).
+  ymax:
+    type: number
+    description: Maximum Y (source CRS units).
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Clipped raster.

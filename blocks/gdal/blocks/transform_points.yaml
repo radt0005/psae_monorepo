@@ -1,0 +1,30 @@
+id: gdal.transform_points
+version: 0.1.0
+kind: standard
+network: false
+description: Transform a tabular file of coordinates between two CRSs (gdaltransform).
+entrypoint: transform_points
+
+inputs:
+  points:
+    type: file
+    format: CSV
+    description: Input CSV with x, y (and optional z) columns.
+  source_crs:
+    type: string
+    description: Source CRS (e.g. "EPSG:4326").
+  target_crs:
+    type: string
+    description: Target CRS (e.g. "EPSG:32618").
+  x_field:
+    type: string
+    description: Name of the X column in the CSV (default "x").
+  y_field:
+    type: string
+    description: Name of the Y column in the CSV (default "y").
+
+outputs:
+  points:
+    type: file
+    format: CSV
+    description: Output CSV with columns x, y and (when present) z in the target CRS.

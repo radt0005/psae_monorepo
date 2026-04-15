@@ -1,0 +1,28 @@
+id: gdal.proximity
+version: 0.1.0
+kind: standard
+network: false
+description: Compute a distance-to-features raster (gdal_proximity).
+entrypoint: proximity
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Source raster whose non-zero / target-value pixels are the "features".
+  target_values:
+    type: string
+    description: Comma-separated list of target pixel values. Empty = non-zero pixels.
+  distance_units:
+    type: string
+    description: >-
+      'pixel' (default) or 'georef' (projection units).
+  max_distance:
+    type: number
+    description: Maximum distance to report. 0 = unlimited.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Float32 raster of distances to the nearest feature.

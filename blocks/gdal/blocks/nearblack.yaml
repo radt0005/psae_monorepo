@@ -1,0 +1,27 @@
+id: gdal.nearblack
+version: 0.1.0
+kind: standard
+network: false
+description: Convert near-black/white pixels at raster edges to exact black/white or nodata.
+entrypoint: nearblack
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster.
+  near:
+    type: number
+    description: Tolerance around the target color (default 15).
+  white:
+    type: boolean
+    description: Target near-white instead of near-black pixels. Default false.
+  set_alpha:
+    type: boolean
+    description: Add an alpha band where collar pixels become transparent. Default false.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Raster with edge pixels cleaned up.

@@ -1,0 +1,20 @@
+id: gdal.info
+version: 0.1.0
+kind: standard
+network: false
+description: Report raster metadata as JSON (gdalinfo).
+entrypoint: info
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster.
+  compute_stats:
+    type: boolean
+    description: Compute per-band statistics (min/max/mean/stddev). Default false.
+
+outputs:
+  metadata:
+    type: json
+    description: Raster metadata including CRS, bounds, bands, data type, and nodata.

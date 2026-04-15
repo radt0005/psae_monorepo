@@ -1,0 +1,25 @@
+id: gdal.merge
+version: 0.1.0
+kind: standard
+network: false
+description: Mosaic multiple rasters into a single raster.
+entrypoint: merge
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Collection of input rasters to mosaic.
+  resampling:
+    type: string
+    description: Resampling method used where sources overlap. Default nearest.
+  output_format:
+    type: string
+    description: GDAL output driver short name (default GTiff).
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Mosaiced raster.

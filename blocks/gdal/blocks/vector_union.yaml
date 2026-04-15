@@ -1,0 +1,22 @@
+id: gdal.vector_union
+version: 0.1.0
+kind: standard
+network: false
+description: Union of two vector layers (ogr_layer_algebra Union).
+entrypoint: vector_union
+
+inputs:
+  a:
+    type: file
+    format: GeoJSON
+    description: First vector layer (A).
+  b:
+    type: file
+    format: GeoJSON
+    description: Second vector layer (B).
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Union of A and B.

@@ -1,0 +1,33 @@
+id: gdal.hillshade
+version: 0.1.0
+kind: standard
+network: false
+description: Generate a hillshade raster from a DEM (gdaldem hillshade).
+entrypoint: hillshade
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+  azimuth:
+    type: number
+    description: Azimuth of the light source in degrees (default 315).
+  altitude:
+    type: number
+    description: Altitude of the light source in degrees (default 45).
+  z_factor:
+    type: number
+    description: Vertical exaggeration applied to elevations (default 1).
+  scale:
+    type: number
+    description: Ratio of vertical units to horizontal units (default 1).
+  multidirectional:
+    type: boolean
+    description: Use multi-directional shading. Default false.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Hillshade raster.

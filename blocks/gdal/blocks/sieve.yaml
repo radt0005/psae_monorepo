@@ -1,0 +1,24 @@
+id: gdal.sieve
+version: 0.1.0
+kind: standard
+network: false
+description: Remove connected raster regions smaller than a threshold (gdal_sieve).
+entrypoint: sieve
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Categorical or integer raster to sieve.
+  threshold:
+    type: number
+    description: Minimum region size in pixels. Regions smaller than this are replaced by a neighbour value.
+  connectedness:
+    type: number
+    description: Pixel connectedness, 4 (default) or 8.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Sieved raster.

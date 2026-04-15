@@ -1,0 +1,18 @@
+id: gdal.roughness
+version: 0.1.0
+kind: standard
+network: false
+description: Compute terrain roughness from a DEM (gdaldem roughness).
+entrypoint: roughness
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Roughness raster.

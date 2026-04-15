@@ -1,0 +1,18 @@
+id: gdal.tpi
+version: 0.1.0
+kind: standard
+network: false
+description: Compute the Topographic Position Index from a DEM (gdaldem TPI).
+entrypoint: tpi
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: TPI raster.

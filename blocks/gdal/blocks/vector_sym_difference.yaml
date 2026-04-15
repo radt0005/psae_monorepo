@@ -1,0 +1,22 @@
+id: gdal.vector_sym_difference
+version: 0.1.0
+kind: standard
+network: false
+description: Symmetric difference of two vector layers (ogr_layer_algebra SymDifference).
+entrypoint: vector_sym_difference
+
+inputs:
+  a:
+    type: file
+    format: GeoJSON
+    description: First vector layer (A).
+  b:
+    type: file
+    format: GeoJSON
+    description: Second vector layer (B).
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Symmetric difference (A \ B) ∪ (B \ A).

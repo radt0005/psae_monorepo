@@ -1,0 +1,30 @@
+id: gdal.contour
+version: 0.1.0
+kind: standard
+network: false
+description: Generate contour lines from a raster (gdal_contour).
+entrypoint: contour
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster (typically a DEM).
+  band:
+    type: number
+    description: Band index (1-based). Default 1.
+  interval:
+    type: number
+    description: Contour interval in raster value units (default 1.0).
+  base:
+    type: number
+    description: Base contour elevation (default 0).
+  field_name:
+    type: string
+    description: Attribute name carrying the contour elevation. Default "elev".
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Contour lines with one attribute holding the elevation.

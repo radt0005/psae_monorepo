@@ -1,0 +1,27 @@
+id: gdal.polygonize
+version: 0.1.0
+kind: standard
+network: false
+description: Convert raster regions of equal value into polygon features (gdal_polygonize).
+entrypoint: polygonize
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster to polygonize.
+  band:
+    type: number
+    description: Band index (1-based) to polygonize. Default 1.
+  field_name:
+    type: string
+    description: Attribute name for the pixel value on each output polygon. Default "DN".
+  connectedness:
+    type: number
+    description: Pixel connectedness, 4 (default) or 8.
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Polygon features with one attribute carrying the source pixel value.

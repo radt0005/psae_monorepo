@@ -1,0 +1,38 @@
+id: gdal.translate
+version: 0.1.0
+kind: standard
+network: false
+description: Convert raster format, subset, scale, or resize using gdal_translate.
+entrypoint: translate
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster.
+  output_format:
+    type: string
+    description: GDAL output driver short name (default GTiff). Other common values are COG, VRT, HFA, NetCDF.
+  output_type:
+    type: string
+    description: >-
+      Output data type. One of Byte, UInt16, Int16, UInt32, Int32, Float32,
+      Float64, CInt16, CInt32, CFloat32, CFloat64. Empty = preserve source.
+  width:
+    type: number
+    description: Output width in pixels. 0 = preserve source width.
+  height:
+    type: number
+    description: Output height in pixels. 0 = preserve source height.
+  scale_min:
+    type: number
+    description: Source minimum for linear rescaling. Leave unset to skip rescaling.
+  scale_max:
+    type: number
+    description: Source maximum for linear rescaling. Leave unset to skip rescaling.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Translated raster.

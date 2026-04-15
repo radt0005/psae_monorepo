@@ -1,0 +1,27 @@
+id: gdal.location_info
+version: 0.1.0
+kind: standard
+network: false
+description: Read raster band values at a point (gdallocationinfo).
+entrypoint: location_info
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster.
+  x:
+    type: number
+    description: Query X coordinate.
+  y:
+    type: number
+    description: Query Y coordinate.
+  coord_system:
+    type: string
+    description: >-
+      'georef' (default) uses map coordinates; 'pixel' uses pixel/line indices.
+
+outputs:
+  values:
+    type: json
+    description: JSON object with the query point and per-band values.

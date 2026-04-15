@@ -1,0 +1,24 @@
+id: gdal.aspect
+version: 0.1.0
+kind: standard
+network: false
+description: Compute aspect from a DEM (gdaldem aspect).
+entrypoint: aspect
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input DEM raster.
+  zero_for_flat:
+    type: boolean
+    description: Write 0 for flat areas instead of -9999. Default false.
+  trigonometric:
+    type: boolean
+    description: Return trigonometric angle (0=East) instead of azimuth (0=North). Default false.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Aspect raster.

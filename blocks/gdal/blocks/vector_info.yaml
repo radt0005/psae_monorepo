@@ -1,0 +1,17 @@
+id: gdal.vector_info
+version: 0.1.0
+kind: standard
+network: false
+description: Report vector metadata as JSON (ogrinfo).
+entrypoint: vector_info
+
+inputs:
+  source:
+    type: file
+    format: GeoJSON
+    description: Input vector file.
+
+outputs:
+  metadata:
+    type: json
+    description: Metadata report including layer count, feature count, schema, and extent.

@@ -1,0 +1,22 @@
+id: gdal.tile_index
+version: 0.1.0
+kind: standard
+network: false
+description: Build a vector tile index (footprint polygons) for a collection of rasters.
+entrypoint: tile_index
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Collection of rasters to index.
+  location_field:
+    type: string
+    description: Attribute name to store the source raster path (default "location").
+
+outputs:
+  index:
+    type: file
+    format: GeoJSON
+    description: Vector index of raster footprints.

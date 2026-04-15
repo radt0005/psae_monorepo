@@ -1,0 +1,22 @@
+id: gdal.reduce_mosaic
+version: 0.1.0
+kind: reduce
+network: false
+description: Mosaic a collection of rasters back into one raster (fan-in after a map).
+entrypoint: reduce_mosaic
+
+inputs:
+  tiles:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Rasters produced by the upstream mapped blocks.
+  resampling:
+    type: string
+    description: Resampling method used where tiles overlap. Default nearest.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Single mosaiced raster.

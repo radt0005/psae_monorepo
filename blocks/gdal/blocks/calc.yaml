@@ -1,0 +1,27 @@
+id: gdal.calc
+version: 0.1.0
+kind: standard
+network: false
+description: Evaluate a NumPy expression over a raster (gdal_calc).
+entrypoint: calc
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster (exposed as variable "A" in the expression).
+  expression:
+    type: string
+    description: NumPy expression using the variable "A", e.g. "A * 2 + 1" or "(A > 50) * 1".
+  output_type:
+    type: string
+    description: Output data type (Byte, Float32, etc). Default Float32.
+  nodata:
+    type: number
+    description: Output nodata value. Leave unset to skip.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Raster with the expression evaluated.

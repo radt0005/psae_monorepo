@@ -1,0 +1,16 @@
+id: gdal.srs_info
+version: 0.1.0
+kind: standard
+network: false
+description: Report CRS metadata in multiple forms (gdalsrsinfo).
+entrypoint: srs_info
+
+inputs:
+  crs:
+    type: string
+    description: CRS value — e.g. "EPSG:4326", a WKT string, or a PROJ string.
+
+outputs:
+  metadata:
+    type: json
+    description: CRS metadata including WKT, PROJ, EPSG authority, and axis info.

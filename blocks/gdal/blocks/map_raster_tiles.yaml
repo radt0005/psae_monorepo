@@ -1,0 +1,18 @@
+id: gdal.map_raster_tiles
+version: 0.1.0
+kind: map
+network: false
+description: Enumerate a raster collection for per-tile fan-out.
+entrypoint: map_raster_tiles
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Collection of raster tiles to fan out over.
+
+outputs:
+  manifest:
+    type: expansion
+    description: Expansion manifest with one item per input tile.

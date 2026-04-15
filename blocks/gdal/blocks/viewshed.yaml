@@ -1,0 +1,33 @@
+id: gdal.viewshed
+version: 0.1.0
+kind: standard
+network: false
+description: Compute a viewshed raster from an observer point (gdal_viewshed).
+entrypoint: viewshed
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: DEM or height raster.
+  observer_x:
+    type: number
+    description: Observer X coordinate in the DEM's CRS.
+  observer_y:
+    type: number
+    description: Observer Y coordinate in the DEM's CRS.
+  observer_height:
+    type: number
+    description: Observer height above the DEM surface (default 1.6 m).
+  target_height:
+    type: number
+    description: Target height above the DEM surface (default 0.0 m).
+  max_distance:
+    type: number
+    description: Maximum line-of-sight distance in CRS units. 0 = unlimited.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Binary viewshed raster (visible vs. hidden pixels).

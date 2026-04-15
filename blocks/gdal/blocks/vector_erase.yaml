@@ -1,0 +1,22 @@
+id: gdal.vector_erase
+version: 0.1.0
+kind: standard
+network: false
+description: Erase features of A by B (ogr_layer_algebra Erase). Alias of gdal.vector_difference.
+entrypoint: vector_erase
+
+inputs:
+  a:
+    type: file
+    format: GeoJSON
+    description: Base vector layer (A).
+  b:
+    type: file
+    format: GeoJSON
+    description: Vector layer whose geometry is erased from A (B).
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: A with B erased.

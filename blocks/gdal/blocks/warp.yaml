@@ -1,0 +1,32 @@
+id: gdal.warp
+version: 0.1.0
+kind: standard
+network: false
+description: Reproject, resample, or warp a raster using gdalwarp.
+entrypoint: warp
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster.
+  target_crs:
+    type: string
+    description: Target CRS (e.g. "EPSG:4326", WKT, or PROJ string). Empty = preserve source CRS.
+  resolution:
+    type: number
+    description: Target pixel size in target CRS units. 0 = preserve source resolution.
+  resampling:
+    type: string
+    description: >-
+      Resampling method. One of nearest, bilinear, cubic, cubicspline,
+      lanczos, average, mode, max, min, med, q1, q3, sum, rms. Default nearest.
+  output_format:
+    type: string
+    description: GDAL output driver short name (default GTiff).
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Warped raster.

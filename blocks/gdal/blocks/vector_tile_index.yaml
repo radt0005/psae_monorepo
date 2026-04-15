@@ -1,0 +1,22 @@
+id: gdal.vector_tile_index
+version: 0.1.0
+kind: standard
+network: false
+description: Build a vector footprint index for a collection of vector files (ogrtindex).
+entrypoint: vector_tile_index
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoJSON
+    description: Collection of vector files to index.
+  location_field:
+    type: string
+    description: Attribute name storing the source path (default "location").
+
+outputs:
+  index:
+    type: file
+    format: GeoJSON
+    description: Per-source extent polygons with a path attribute.

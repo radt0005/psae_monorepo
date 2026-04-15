@@ -1,0 +1,22 @@
+id: gdal.vector_merge
+version: 0.1.0
+kind: standard
+network: false
+description: Merge a collection of vector files into a single layer.
+entrypoint: vector_merge
+
+inputs:
+  sources:
+    type: collection
+    item_type: file
+    format: GeoJSON
+    description: Collection of vector files to merge.
+  output_format:
+    type: string
+    description: OGR output driver short name. Default GeoJSON.
+
+outputs:
+  vectors:
+    type: file
+    format: GeoJSON
+    description: Merged vector file.

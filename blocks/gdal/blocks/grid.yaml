@@ -1,0 +1,38 @@
+id: gdal.grid
+version: 0.1.0
+kind: standard
+network: false
+description: Interpolate scattered point data onto a regular raster grid (gdal_grid).
+entrypoint: grid
+
+inputs:
+  points:
+    type: file
+    format: CSV
+    description: CSV with columns x, y, z.
+  algorithm:
+    type: string
+    description: >-
+      Interpolation algorithm spec, e.g. "invdist:power=2.0:radius1=0:radius2=0".
+      Common: invdist, average, nearest, linear. Default "invdist:power=2.0".
+  width:
+    type: number
+    description: Output width in pixels (default 64).
+  height:
+    type: number
+    description: Output height in pixels (default 64).
+  z_field:
+    type: string
+    description: Column/attribute name carrying the value to grid (default "z").
+  x_field:
+    type: string
+    description: Column name for the X coordinate (default "x").
+  y_field:
+    type: string
+    description: Column name for the Y coordinate (default "y").
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Gridded raster.

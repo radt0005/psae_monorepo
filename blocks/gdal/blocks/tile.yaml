@@ -1,0 +1,26 @@
+id: gdal.tile
+version: 0.1.0
+kind: standard
+network: false
+description: Generate XYZ/TMS tiles for web mapping (gdal2tiles).
+entrypoint: tile
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Input raster to tile.
+  zoom:
+    type: string
+    description: Zoom levels to generate, e.g. "0-5" or "3-10". Default "0-5".
+  profile:
+    type: string
+    description: Tile profile. One of mercator, geodetic, raster. Default mercator.
+  resampling:
+    type: string
+    description: Resampling method (default average).
+
+outputs:
+  tiles:
+    type: directory
+    description: Directory of generated tiles in XYZ layout.
