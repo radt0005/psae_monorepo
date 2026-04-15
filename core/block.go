@@ -199,7 +199,23 @@ func ResolveEntrypoint(entry BlockRegistryEntry) (string, []string, error) {
 		binPath := filepath.Join(entry.InstalledPath, entry.CollectionName)
 		return binPath, []string{entrypoint}, nil
 	case CollectionLanguagePython:
-		return "uv", []string{"run", entrypoint}, nil
+		// Block handlers live at src/<module>/<entrypoint>.py and each one
+		// ends in `if __name__ == "__main__": run(handler)`, so we invoke
+		// them as modules. Default the module to the collection name with
+		// hyphens→underscores (setuptools convention). If `entrypoint`
+		// already contains a dot, treat it as a fully-qualified module
+		// path and pass it through verbatim.
+		moduleSpec := entrypoint
+		if !strings.Contains(moduleSpec, ".") {
+			pkgModule := strings.ReplaceAll(entry.CollectionName, "-", "_")
+			moduleSpec = pkgModule + "." + entrypoint
+		}
+		return "uv", []string{
+			"run",
+			"--project", entry.InstalledPath,
+			"--no-sync",
+			"-m", moduleSpec,
+		}, nil
 	case CollectionLanguageR:
 		return "Rscript", []string{entrypoint}, nil
 	default:

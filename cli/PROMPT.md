@@ -1,6 +1,8 @@
 # Instructions
 
-Please implement the plan in `./IMPLEMENTATION_PLAN.md` with tests.  After the completion of the plan, this folder should contain a working command line interface based on the specifications in `../spec/`.  All tests should passs and the code should build successfully.  
+Please verify that the implementation plan in `./IMPLEMENTATION_PLAN.md` has been completely implemented.  After the completion of the plan, this folder should contain a working command line interface based on the specifications in `../spec/`.  All tests should passs and the code should build successfully.  
+
+The base blocks and client-specific libraries are completed, so please make sure that the CLI matches those interfaces and systems.  
 
 ## Steps
 1. Read the implementation plan in `IMPLEMENTATION_PLAN.md`.

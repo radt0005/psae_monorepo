@@ -13,7 +13,7 @@ spade setup                  Set up the local environment (~/.spade/, registry)
 spade init -l <language>     Scaffold a new block collection in the current directory
 spade add <name>             Add a block to the current collection
 spade check [pipeline.yaml]  Validate a pipeline file or the current collection
-spade install <git-url>      Install a block collection from a git repository
+spade install <git-url|path> Install a block collection from a git repo or local directory
 spade run <pipeline.yaml>    Run a pipeline locally
 spade upload                 Validate and package the current collection for upload
 ```
@@ -122,17 +122,24 @@ Exit code is non-zero on validation failure; errors are printed to stderr.
 
 ---
 
-## `spade install <git-url>`
+## `spade install <git-url | path>`
 
 ```
 spade install https://github.com/example/gdal-blocks.git
 spade install file:///path/to/local/repo
+spade install .                  # install from the current directory
+spade install ./my-collection    # install from a local path
 ```
 
-Installs a block collection from a git repository. The process:
+Installs a block collection from a git repository **or** a local directory. The source argument chooses the mode:
 
-1. Shallow-clone the repo into a temp directory.
-2. Detect the language from the repo root.
+- If it looks like a URL (`http://`, `https://`, `git://`, `ssh://`, `file://`) or an SCP-style git ref (`git@host:path`), it is treated as a **git URL**.
+- Otherwise it is treated as a **local path**. The path must exist and be a directory; it does not need to be a git repository.
+
+The process:
+
+1. **Source acquisition.** Git URLs are shallow-cloned into a temp directory. Local paths are used in place — no clone happens and the build runs in the user's working tree, so `cargo`, `go`, `uv`, and `bun` can reuse their incremental caches.
+2. Detect the language from the source root.
 3. Discover blocks by scanning `blocks/*.yaml`.
 4. Read the collection name and version from the language manifest.
 5. Run the language-specific build:
@@ -217,7 +224,7 @@ spade add classify
 spade check
 
 # Install it locally so the registry can find the blocks
-spade install file://$PWD
+spade install .
 
 # Write a pipeline
 $EDITOR pipeline.yaml

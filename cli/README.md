@@ -91,16 +91,18 @@ Pipeline validation checks: unique block IDs, valid references, acyclic dependen
 
 Collection validation checks: required manifest fields, valid input/output types, block ID conventions, entrypoint resolution, and map/reduce constraints.
 
-### `spade install <git-url>`
+### `spade install <git-url | path>`
 
-Installs a block collection from a git repository.
+Installs a block collection from a git repository or a local directory.
 
 ```bash
 spade install https://github.com/example/gdal-blocks.git
 spade install file:///path/to/local/repo
+spade install .                  # install from current directory
+spade install ./my-collection    # install from a local path
 ```
 
-The process: clone, detect language, discover blocks, build, install to `~/.spade/blocks/<collection>/<version>/`, and register in the block registry.
+Git URLs are shallow-cloned into a temp directory. Local paths are built in place — no clone is performed and the directory does not need to be a git repository. Either way, the collection is language-detected, built, copied to `~/.spade/blocks/<collection>/<version>/`, and registered in the block registry.
 
 ### `spade run <pipeline.yaml>`
 

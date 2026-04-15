@@ -57,13 +57,18 @@ Validates a pipeline file or block collection:
   5. Map blocks output the `expansion` type, reduce blocks accept `collection` inputs
 
 
-## `spade install <git-url>`
+## `spade install <source>`
 
-Installs a block collection from a git repository.  The process:
+Installs a block collection from a git repository or a local directory.  `<source>` may be:
 
-1. Clone the repository using `git`
-2. Detect the language from the repository root (`Cargo.toml`, `pyproject.toml`, `go.mod`, `package.json`, or R)
-3. Discover all blocks by scanning `blocks/*.yaml`
+- A git URL (`http://`, `https://`, `git://`, `ssh://`, `file://`, or `git@host:path`) — the repository is shallow-cloned into a temp directory.
+- A local path (including `.`, `./sub`, and absolute paths) — the directory is used in place. It does not need to be a git repository.
+
+The process:
+
+1. Acquire the source: clone the repository (git URL) or use the local directory as-is.
+2. Detect the language from the source root (`Cargo.toml`, `pyproject.toml`, `go.mod`, `package.json`, or R).
+3. Discover all blocks by scanning `blocks/*.yaml`.
 4. Run the language-specific install:
    - **Rust**: `cargo build --release` (produces a single binary with subcommands)
    - **Go**: `go build` (produces a single binary with subcommands)
@@ -72,7 +77,7 @@ Installs a block collection from a git repository.  The process:
    - **R**: `Rscript setup.R` if present, otherwise install `renv` dependencies
 5. Install to `~/.spade/blocks/<collection>/<version>/`
 
-The version is read from the language's own manifest (e.g. `Cargo.toml`, `pyproject.toml`).  Multiple versions of the same collection can be installed side by side.
+The version is read from the language's own manifest (e.g. `Cargo.toml`, `pyproject.toml`).  Multiple versions of the same collection can be installed side by side.  Local-path installs build in place, so native toolchains reuse their incremental caches.
 
 
 ## `spade run <pipeline.yaml>`
