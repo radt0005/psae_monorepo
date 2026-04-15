@@ -1,0 +1,21 @@
+id: data.naturalearth_raster
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download a Natural Earth raster dataset at the requested scale and
+  theme. Natural Earth only ships rasters at 10m and 50m scales.
+
+inputs:
+  scale:
+    type: string
+    description: Scale — 10m or 50m.
+  theme:
+    type: string
+    description: Theme identifier, e.g. HYP_HR_SR_OB_DR.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: Extracted raster (typically a GeoTIFF).

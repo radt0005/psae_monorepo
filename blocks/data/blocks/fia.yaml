@@ -1,0 +1,33 @@
+id: data.fia
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download US Forest Service Forest Inventory and Analysis (FIA) public
+  data from the USFS DataMart in CSV format. Defaults to the full
+  national archive; a specific state can be selected.
+
+inputs:
+  state:
+    type: string
+    description: >-
+      Two-letter state/territory code or "all" for the entire country
+      (default). Accepted values: all, AL, AK, AZ, AR, CA, CO, CT, DE,
+      FL, GA, HI, ID, IL, IN, IA, KS, KY, LA, ME, MD, MA, MI, MN, MS,
+      MO, MT, NE, NV, NH, NJ, NM, NY, NC, ND, OH, OK, OR, PA, RI, SC,
+      SD, TN, TX, UT, VT, VA, WA, WV, WI, WY, DC, PR, VI, GU, AS, MP.
+  tables:
+    type: string
+    description: >-
+      Optional comma-separated list of FIA table names to extract (e.g.
+      "PLOT,TREE,COND"). Leave blank to extract all tables from the
+      archive.
+
+outputs:
+  tables:
+    type: collection
+    item_type: file
+    format: CSV
+    description: >-
+      One CSV file per extracted FIA table. Filenames mirror the FIA
+      naming convention (<STATE>_<TABLE>.csv).

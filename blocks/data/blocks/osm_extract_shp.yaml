@@ -1,0 +1,17 @@
+id: data.osm_extract_shp
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download an OpenStreetMap extract as Geofabrik's free shapefile bundle.
+
+inputs:
+  region:
+    type: string
+    description: Geofabrik region slug, e.g. north-america/us/oregon.
+
+outputs:
+  vector:
+    type: directory
+    format: Shapefile
+    description: Extracted shapefile directory (layers ship as separate .shp files).

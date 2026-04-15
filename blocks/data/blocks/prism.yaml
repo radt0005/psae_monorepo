@@ -1,0 +1,35 @@
+id: data.prism
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download PRISM climate normals / monthly / daily rasters for a date
+  range at a given variable and cadence. Rasters are extracted as BIL
+  (no GDAL dependency in this collection); convert downstream with
+  gdal.translate if GeoTIFF is required.
+
+inputs:
+  variable:
+    type: string
+    description: One of ppt, tmean, tmin, tmax, tdmean, vpdmin, vpdmax.
+  start:
+    type: string
+    description: Start date as YYYY-MM-DD.
+  end:
+    type: string
+    description: End date as YYYY-MM-DD.
+  resolution:
+    type: string
+    description: 4km or 800m (800m is paywalled and will error cleanly).
+  cadence:
+    type: string
+    description: daily, monthly, or annual (default monthly).
+
+outputs:
+  rasters:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: >-
+      One raster per period within [start, end]. Archives are extracted
+      as BIL; convert to GeoTIFF with gdal.translate downstream if needed.

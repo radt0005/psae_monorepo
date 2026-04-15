@@ -1,0 +1,29 @@
+id: data.census_tiger
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download US Census TIGER/Line shapefiles for a given year and layer.
+  National-scope layers ignore `state`; state-scoped layers require it.
+
+inputs:
+  year:
+    type: number
+    description: TIGER/Line vintage year (2010 to current).
+  layer:
+    type: string
+    description: >-
+      Layer name, e.g. states, counties, tracts, block_groups, blocks,
+      zcta, roads, primary_roads, primary_secondary_roads, rails, places,
+      urban_areas, cousub.
+  state:
+    type: string
+    description: >-
+      State FIPS code (2 digits) or 2-letter code; required for state-
+      scoped layers, ignored otherwise.
+
+outputs:
+  vector:
+    type: directory
+    format: Shapefile
+    description: Extracted shapefile directory (.shp, .dbf, .shx, .prj).

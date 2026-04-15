@@ -1,0 +1,21 @@
+id: data.nhd
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download USGS National Hydrography Dataset (NHD) data for a given
+  HUC-4 or HUC-8 watershed.
+
+inputs:
+  huc:
+    type: string
+    description: HUC-4 or HUC-8 watershed code (numeric, 4 or 8 digits).
+  resolution:
+    type: string
+    description: One of medium or high (default).
+
+outputs:
+  dataset:
+    type: directory
+    format: GeoPackage
+    description: NHD GeoPackage (or FileGDB) extracted to a directory.

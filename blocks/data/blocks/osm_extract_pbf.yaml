@@ -1,0 +1,18 @@
+id: data.osm_extract_pbf
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download an OpenStreetMap extract in `.osm.pbf` format from Geofabrik.
+
+inputs:
+  region:
+    type: string
+    description: >-
+      Geofabrik region slug, e.g. north-america/us/oregon or europe/germany.
+
+outputs:
+  file:
+    type: file
+    format: OSMPBF
+    description: OpenStreetMap protocol-buffer binary file (.osm.pbf).

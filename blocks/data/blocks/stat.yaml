@@ -1,0 +1,19 @@
+id: data.stat
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Fetch object metadata (size, last-modified, etag, content-type) for a
+  single URI.
+
+inputs:
+  uri:
+    type: string
+    description: URI of the object to stat.
+
+outputs:
+  metadata:
+    type: json
+    description: >-
+      JSON object with fields key, size, last_modified, etag?,
+      content_type?.

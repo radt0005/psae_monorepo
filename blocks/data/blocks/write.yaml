@@ -1,0 +1,26 @@
+id: data.write
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Write a single local file to any supported backend. The destination
+  backend is inferred from the URI scheme. Fails if the destination
+  exists unless `overwrite` is true.
+
+inputs:
+  file:
+    type: file
+    description: Local file to upload.
+  uri:
+    type: string
+    description: Destination URI (e.g. s3://bucket/key, file:///abs/path).
+  overwrite:
+    type: boolean
+    description: If true, overwrite an existing destination. Defaults to false.
+
+outputs:
+  receipt:
+    type: json
+    description: >-
+      JSON receipt of the write, containing the destination URI, the
+      number of bytes written, and the sha256 of the uploaded content.

@@ -1,0 +1,27 @@
+id: data.usgs_3dep
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Fetch USGS 3D Elevation Program (3DEP) raster tiles overlapping an
+  AOI. Returns a collection of tiles; compose downstream with
+  gdal.merge or gdal.build_vrt if a single raster is needed.
+
+inputs:
+  aoi:
+    type: file
+    format: GeoJSON
+    description: Area of interest polygon (GeoJSON FeatureCollection or Feature).
+  resolution:
+    type: string
+    description: One of 1m, 10m, 30m, 60m.
+  product:
+    type: string
+    description: 3DEP product, e.g. DEM (default).
+
+outputs:
+  rasters:
+    type: collection
+    item_type: file
+    format: GeoTIFF
+    description: Collection of 3DEP tile rasters overlapping the AOI.

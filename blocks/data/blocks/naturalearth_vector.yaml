@@ -1,0 +1,26 @@
+id: data.naturalearth_vector
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download a Natural Earth vector (cultural or physical) dataset at the
+  requested scale and theme.
+
+inputs:
+  scale:
+    type: string
+    description: Scale — one of 10m, 50m, 110m.
+  category:
+    type: string
+    description: Category — cultural or physical.
+  theme:
+    type: string
+    description: >-
+      Theme identifier, e.g. admin_0_countries, rivers_lake_centerlines,
+      populated_places.
+
+outputs:
+  vector:
+    type: directory
+    format: Shapefile
+    description: Extracted shapefile directory.

@@ -1,0 +1,23 @@
+id: data.ssurgo
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download USDA SSURGO soils data for a survey area or a whole state.
+  Exactly one of `area` or `state` must be provided.
+
+inputs:
+  area:
+    type: string
+    description: >-
+      SSURGO survey area symbol (e.g. CA077). Mutually exclusive with
+      `state`.
+  state:
+    type: string
+    description: Two-letter state code for a full-state bulk download.
+
+outputs:
+  dataset:
+    type: directory
+    format: FileGDB
+    description: Extracted SSURGO FileGDB (or shapefile) directory.

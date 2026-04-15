@@ -1,0 +1,25 @@
+id: data.nlcd
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Download a National Land Cover Database (NLCD) raster product.
+  Full CONUS rasters are very large (> 5 GB); expect to clip with a
+  downstream gdal.clip_raster_by_vector block in most pipelines.
+
+inputs:
+  year:
+    type: number
+    description: NLCD vintage year (2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019, 2021).
+  product:
+    type: string
+    description: One of land_cover, impervious, canopy.
+  region:
+    type: string
+    description: One of CONUS (default), AK, HI, PR.
+
+outputs:
+  raster:
+    type: file
+    format: GeoTIFF
+    description: NLCD product as a single GeoTIFF (or whatever MRLC ships).

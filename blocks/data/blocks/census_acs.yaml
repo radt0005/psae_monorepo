@@ -1,0 +1,33 @@
+id: data.census_acs
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Query the US Census ACS Data API and write the result as CSV. The
+  API requires a key; supply it via the CENSUS_API_KEY environment
+  variable (pending proper secrets integration).
+
+inputs:
+  year:
+    type: number
+    description: ACS vintage year.
+  dataset:
+    type: string
+    description: ACS dataset (acs1 or acs5).
+  table:
+    type: string
+    description: ACS table ID (e.g. B01003).
+  geography:
+    type: string
+    description: Geography predicate (e.g. "state:*", "county:*&in=state:06").
+  variables:
+    type: string
+    description: >-
+      Optional comma-separated list of variable IDs. Defaults to
+      NAME,<table>_001E.
+
+outputs:
+  table:
+    type: file
+    format: CSV
+    description: Response rendered as CSV (first row = column headers).

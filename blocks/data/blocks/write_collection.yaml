@@ -1,0 +1,27 @@
+id: data.write_collection
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Write every file in a local collection to a remote prefix, preserving
+  basenames. Fails fast on the first error (partial writes are left in
+  place; re-run with a cleanup step if needed).
+
+inputs:
+  files:
+    type: collection
+    item_type: file
+    description: Local files to upload.
+  uri:
+    type: string
+    description: Destination URI prefix (trailing slash recommended).
+  overwrite:
+    type: boolean
+    description: If true, overwrite existing destinations. Defaults to false.
+
+outputs:
+  receipts:
+    type: json
+    description: >-
+      JSON array of per-file receipts, each with the destination URI,
+      bytes, and sha256 of the uploaded content.

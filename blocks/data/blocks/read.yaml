@@ -1,0 +1,30 @@
+id: data.read
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Fetch a single object from any supported backend (S3, GCS, Azure Blob,
+  HTTP(S), SFTP, local, WebDAV, Google Drive, OneDrive, Dropbox). The
+  backend is inferred from the URI scheme and hidden from the user.
+
+inputs:
+  uri:
+    type: string
+    description: >-
+      URI of the object to fetch (e.g. s3://bucket/key, https://host/path,
+      file:///abs/path, /abs/path). A bare absolute path is accepted as
+      file://.
+  format:
+    type: string
+    description: >-
+      Optional format hint (GeoTIFF, GeoJSON, CSV, Parquet, ...). Recorded
+      in the invocation sidecar for downstream reference; not used to
+      validate the bytes. Empty string means "unknown".
+
+outputs:
+  file:
+    type: file
+    description: >-
+      The fetched object. No format is set on the manifest because it is
+      determined at runtime; wire this output explicitly in downstream
+      pipelines.

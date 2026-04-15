@@ -1,0 +1,35 @@
+id: data.read_collection
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Fetch multiple objects matching a URI prefix or a simple glob
+  (single `*` in the trailing segment). Backend is inferred from the
+  scheme. Use `max_items` to guard against accidentally listing millions
+  of keys.
+
+inputs:
+  uri:
+    type: string
+    description: >-
+      URI prefix or glob (e.g. s3://bucket/prefix/, https://host/dir/,
+      file:///abs/path/, /abs/path/*.csv). `**` is rejected explicitly
+      because recursive listing is easy to misuse.
+  format:
+    type: string
+    description: Optional format hint recorded for downstream reference.
+  max_items:
+    type: number
+    description: >-
+      Maximum number of items to fetch. 0 means unlimited. If the
+      backend returns more than this, the block errors out so users must
+      opt in to larger fetches.
+
+outputs:
+  files:
+    type: collection
+    item_type: file
+    description: >-
+      Fetched objects, one file per listed key. Keys with slashes are
+      flattened (slashes become underscores) so everything lives at one
+      level.

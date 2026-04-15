@@ -1,0 +1,21 @@
+id: data.list
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  List objects under a URI prefix, optionally recursively. Returns a
+  JSON array of { key, size, last_modified?, etag? } entries, sorted
+  by key.
+
+inputs:
+  uri:
+    type: string
+    description: URI prefix to list.
+  recursive:
+    type: boolean
+    description: If true, walk subprefixes. Defaults to false.
+
+outputs:
+  listing:
+    type: json
+    description: JSON array of listing entries sorted by key.
