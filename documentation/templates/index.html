@@ -56,6 +56,15 @@
         <span class="card__link">Choose Language &rarr;</span>
       </a>
 
+      {% set blocks = get_section(path="blocks/_index.md") %}
+      <a href="{{ blocks.permalink }}" class="card" style="text-decoration: none;">
+        <span class="card__corner card__corner--top">&hearts;</span>
+        <span class="card__corner card__corner--bottom">&hearts;</span>
+        <h3 class="card__title">{{ blocks.title }}</h3>
+        <p class="card__description">{{ blocks.description | default(value="Reference for built-in blocks: base data processing, data import, and GDAL geospatial operations.") }}</p>
+        <span class="card__link">Browse Blocks &rarr;</span>
+      </a>
+
       {% set tutorials = get_section(path="tutorials/_index.md") %}
       <a href="{{ tutorials.permalink }}" class="card" style="text-decoration: none;">
         <span class="card__corner card__corner--top">&diams;</span>

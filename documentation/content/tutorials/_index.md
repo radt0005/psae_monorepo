@@ -1,7 +1,7 @@
 +++
 title = "Tutorials"
 description = "Step-by-step walkthroughs for common tasks."
-weight = 6
+weight = 7
 sort_by = "weight"
 insert_anchor_links = "right"
 +++

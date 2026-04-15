@@ -16,4 +16,5 @@ Blocks can be written in **Python**, **R**, **TypeScript**, **Go**, or **Rust** 
 - **[Pipeline Reference](/pipelines/)** — Complete reference for writing YAML pipeline files
 - **[CLI Reference](/cli/)** — Documentation for every `spade` command
 - **[Block Development Libraries](/libraries/)** — Language-specific guides for Python, R, TypeScript, Go, and Rust
+- **[Block Catalog](/blocks/)** — Reference for the built-in `base`, `data`, and `gdal` block collections
 - **[Tutorials](/tutorials/)** — End-to-end walkthroughs for common tasks
