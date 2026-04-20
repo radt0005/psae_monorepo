@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -105,8 +107,10 @@ func runPipeline(pipelinePath string) error {
 		pipelineBlockByID[b.Id] = b
 	}
 
-	// Track output hashes for caching
-	outputHashesByBlock := make(map[uuid.UUID]map[string]string)
+	// Track output hashes for caching.  Keyed by InvocationID (the
+	// `<uuid>.<index>` form for mapped invocations) so each mapped
+	// invocation gets its own entry.
+	outputHashesByInvocation := make(map[string]map[string]string)
 
 	totalBlocks := len(pipeline.Blocks)
 	completedCount := 0
@@ -130,23 +134,34 @@ func runPipeline(pipelinePath string) error {
 
 		manifest := manifests[invocation.BlockId]
 		regEntry := registryEntries[invocation.BlockId]
+		invID := invocation.InvocationID()
 
 		blockLabel := invocation.BlockId
 		if invocation.MapIndex != nil {
 			blockLabel = fmt.Sprintf("%s[%d]", invocation.BlockId, *invocation.MapIndex)
 		}
 
-		// Cache check
-		inputHashes := buildInputHashes(invocation, outputHashesByBlock, pipelineBlockByID)
-		cacheKey, cacheErr := core.ComputeCacheKey(manifest.ID, manifest.Version, inputHashes, invocation.Arguments)
+		// Cache check.  The cache key includes MapIndex so that each mapped
+		// invocation (which consumes a different expansion item) gets its
+		// own cache entry rather than sharing one with its siblings.
+		inputHashes := buildInputHashes(invocation, outputHashesByInvocation, pipelineBlockByID)
+		cacheArgs := invocation.Arguments
+		if invocation.MapIndex != nil {
+			cacheArgs = make(map[string]any, len(invocation.Arguments)+1)
+			for k, v := range invocation.Arguments {
+				cacheArgs[k] = v
+			}
+			cacheArgs["__map_index__"] = *invocation.MapIndex
+		}
+		cacheKey, cacheErr := core.ComputeCacheKey(manifest.ID, manifest.Version, inputHashes, cacheArgs)
 		if cacheErr == nil {
 			if _, found := core.CacheLookup(cacheKey, cacheDir); found {
 				// Restore from cache
-				workDir := filepath.Join(pipelineDir, invocation.Id.String())
+				workDir := filepath.Join(pipelineDir, invID)
 				if err := os.MkdirAll(filepath.Join(workDir, "outputs"), 0755); err == nil {
 					if err := core.CacheRestore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir); err == nil {
 						outputHashes, _ := core.CollectOutputs(workDir)
-						outputHashesByBlock[invocation.Id] = outputHashes
+						outputHashesByInvocation[invID] = outputHashes
 						outputs := make([]string, 0, len(outputHashes))
 						for name := range outputHashes {
 							outputs = append(outputs, name)
@@ -191,8 +206,8 @@ func runPipeline(pipelinePath string) error {
 
 			resolvedInputs, resolveErr := core.ResolveInputs(pipelineBlock, depManifests, manifest)
 			if resolveErr == nil {
-				workDir := filepath.Join(pipelineDir, invocation.Id.String())
-				core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir)
+				workDir := filepath.Join(pipelineDir, invID)
+				core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir, invocation, manifest, depManifests)
 			}
 		}
 
@@ -203,13 +218,16 @@ func runPipeline(pipelinePath string) error {
 			return fmt.Errorf("executing block %s: %w", blockLabel, err)
 		}
 
-		// Cache store on success
-		if result.Status == core.ExecutionStatusComplete {
-			workDir := filepath.Join(pipelineDir, invocation.Id.String())
+		// Record output hashes on success (for Complete and Map results).
+		// Map blocks return ExecutionStatusMap but still produce outputs —
+		// their expansion manifest must be hashed so downstream mapped
+		// blocks get distinct cache keys across pipelines.
+		if result.Status == core.ExecutionStatusComplete || result.Status == core.ExecutionStatusMap {
+			workDir := filepath.Join(pipelineDir, invID)
 			outputHashes, _ := core.CollectOutputs(workDir)
-			outputHashesByBlock[invocation.Id] = outputHashes
+			outputHashesByInvocation[invID] = outputHashes
 
-			if cacheErr == nil {
+			if result.Status == core.ExecutionStatusComplete && cacheErr == nil {
 				core.CacheStore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir)
 			}
 		}
@@ -235,7 +253,7 @@ func runPipeline(pipelinePath string) error {
 	return nil
 }
 
-func buildInputHashes(invocation core.BlockInvocation, outputHashes map[uuid.UUID]map[string]string, _ map[uuid.UUID]core.PipelineBlock) map[string]string {
+func buildInputHashes(invocation core.BlockInvocation, outputHashes map[string]map[string]string, _ map[uuid.UUID]core.PipelineBlock) map[string]string {
 	result := make(map[string]string)
 	for _, input := range invocation.Inputs {
 		var depID uuid.UUID
@@ -247,17 +265,39 @@ func buildInputHashes(invocation core.BlockInvocation, outputHashes map[uuid.UUI
 		if depID == uuid.Nil {
 			continue
 		}
-		if hashes, ok := outputHashes[depID]; ok {
+		depKey := depID.String()
+		// Resolve the dep to one or more actual invocation IDs:
+		//   - exact <uuid>           → non-mapped dep or map block
+		//   - <uuid>.<currentIdx>    → peer in same map context
+		//   - <uuid>.*               → gather every mapped sibling (for reduce)
+		var depInvocationIDs []string
+		if _, ok := outputHashes[depKey]; ok {
+			depInvocationIDs = []string{depKey}
+		} else if invocation.MapIndex != nil {
+			peer := fmt.Sprintf("%s.%d", depKey, *invocation.MapIndex)
+			if _, ok := outputHashes[peer]; ok {
+				depInvocationIDs = []string{peer}
+			}
+		}
+		if len(depInvocationIDs) == 0 {
+			prefix := depKey + "."
+			for id := range outputHashes {
+				if strings.HasPrefix(id, prefix) {
+					depInvocationIDs = append(depInvocationIDs, id)
+				}
+			}
+			sort.Strings(depInvocationIDs)
+		}
+		for _, depInvID := range depInvocationIDs {
+			hashes := outputHashes[depInvID]
 			if input.Output != "" {
-				// Explicit ref: only include the specific named output
 				if hash, ok := hashes[input.Output]; ok {
-					key := fmt.Sprintf("%s:%s", depID, input.Output)
+					key := fmt.Sprintf("%s:%s", depInvID, input.Output)
 					result[key] = hash
 				}
 			} else {
-				// Bare ref: include all outputs from this dependency
 				for name, hash := range hashes {
-					key := fmt.Sprintf("%s:%s", depID, name)
+					key := fmt.Sprintf("%s:%s", depInvID, name)
 					result[key] = hash
 				}
 			}

@@ -1,0 +1,17 @@
+id: 019dac92-480c-78e8-8032-b51ce325bc6c
+name: base_map_range
+version: "1.0"
+description: Fan out over numeric range 1..5 and reduce
+blocks:
+- id: 019dac92-480c-76af-8030-e00c5ccc87e4
+  name: base.map_range
+  inputs: []
+  args:
+    start: 1
+    end: 5
+    step: 1
+- id: 019dac92-480c-7501-8031-62cf7a60d896
+  name: base.reduce_collection
+  inputs:
+  - 019dac92-480c-76af-8030-e00c5ccc87e4
+  args: {}

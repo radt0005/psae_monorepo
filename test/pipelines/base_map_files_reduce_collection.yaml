@@ -1,0 +1,29 @@
+id: 019dac92-480a-71c9-8022-04aa5feef0af
+name: base_map_files_reduce_collection
+version: "1.0"
+description: Map over CSV collection, convert each to Parquet, reduce to collection
+blocks:
+- id: 019dac92-480a-7628-801e-3f6505c109a6
+  name: data.read_collection
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data*.csv
+    format: CSV
+    max_items: 10
+- id: 019dac92-480a-75e0-801f-58b735dcbc34
+  name: base.map_files
+  inputs:
+  - 019dac92-480a-7628-801e-3f6505c109a6
+  args: {}
+- id: 019dac92-480a-7ddd-8020-ae8910e36759
+  name: base.csv_to_parquet
+  inputs:
+  - 019dac92-480a-75e0-801f-58b735dcbc34
+  args:
+    delimiter: ','
+    has_header: true
+- id: 019dac92-480a-778a-8021-60dd83528610
+  name: base.reduce_collection
+  inputs:
+  - 019dac92-480a-7ddd-8020-ae8910e36759
+  args: {}

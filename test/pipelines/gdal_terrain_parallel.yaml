@@ -1,0 +1,35 @@
+id: 019dac92-4818-73b4-808c-017c77818b90
+name: gdal_terrain_parallel
+version: "1.0"
+description: 'Parallel terrain analysis: hillshade + slope + aspect from single DEM'
+blocks:
+- id: 019dac92-4818-7b6b-8088-c49f63c73238
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
+    format: GeoTIFF
+- id: 019dac92-4818-71a6-8089-de32282b12c3
+  name: gdal.hillshade
+  inputs:
+  - 019dac92-4818-7b6b-8088-c49f63c73238
+  args:
+    azimuth: 315
+    altitude: 45
+    z_factor: 1
+    scale: 1
+    multidirectional: false
+- id: 019dac92-4818-7b80-808a-c4aa6ab7d782
+  name: gdal.slope
+  inputs:
+  - 019dac92-4818-7b6b-8088-c49f63c73238
+  args:
+    scale: 1
+    slope_format: degree
+- id: 019dac92-4818-7024-808b-2cbcb4ff472f
+  name: gdal.aspect
+  inputs:
+  - 019dac92-4818-7b6b-8088-c49f63c73238
+  args:
+    zero_for_flat: false
+    trigonometric: false

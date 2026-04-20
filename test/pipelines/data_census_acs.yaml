@@ -1,0 +1,14 @@
+id: 019dac92-4825-7b48-80f1-a5dfc4a5f334
+name: data_census_acs
+version: "1.0"
+description: '[NETWORK] Query Census ACS population data'
+blocks:
+- id: 019dac92-4825-7403-80f0-7867ceb76e08
+  name: data.census_acs
+  inputs: []
+  args:
+    year: 2022
+    dataset: acs5
+    table: B01003
+    geography: state:*
+    variables: ''

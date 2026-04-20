@@ -1,0 +1,27 @@
+id: 019dac92-481b-7338-80a7-01a95ff6510b
+name: gdal_vector_intersection
+version: "1.0"
+description: Intersection of two vector layers
+blocks:
+- id: 019dac92-481b-706f-80a4-1e59795b4809
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
+    format: GeoJSON
+- id: 019dac92-481b-7e42-80a5-ab27dfde676c
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
+    format: GeoJSON
+- id: 019dac92-481b-7257-80a6-b4e85f0d48d9
+  name: gdal.vector_intersection
+  inputs:
+  - block: 019dac92-481b-706f-80a4-1e59795b4809
+    output: file
+    as: a
+  - block: 019dac92-481b-7e42-80a5-ab27dfde676c
+    output: file
+    as: b
+  args: {}

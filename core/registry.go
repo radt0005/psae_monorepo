@@ -139,7 +139,7 @@ func (r *BlockRegistry) RebuildFromFilesystem(blocksDir string) error {
 				entry := BlockRegistryEntry{
 					CollectionName:    collection.Name(),
 					CollectionVersion: version.Name(),
-					BlockName:         manifest.ID,
+					BlockName:         blockNameFromID(manifest.ID),
 					BlockID:           manifest.ID,
 					Language:          string(lang),
 					Entrypoint:        manifest.Entrypoint,

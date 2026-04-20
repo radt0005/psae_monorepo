@@ -1,0 +1,27 @@
+id: 019dac92-481d-768a-80b3-af7950f84bbc
+name: gdal_vector_identity
+version: "1.0"
+description: Identity overlay A with B
+blocks:
+- id: 019dac92-481d-7744-80b0-d90117360554
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
+    format: GeoJSON
+- id: 019dac92-481d-7442-80b1-4a0054cc93fd
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
+    format: GeoJSON
+- id: 019dac92-481d-770f-80b2-6fdf7b95afab
+  name: gdal.vector_identity
+  inputs:
+  - block: 019dac92-481d-7744-80b0-d90117360554
+    output: file
+    as: a
+  - block: 019dac92-481d-7442-80b1-4a0054cc93fd
+    output: file
+    as: b
+  args: {}

@@ -1,0 +1,106 @@
+=== Step 1: Generating fixtures and pipelines ===
+=== Spade Integration Test Generator ===
+
+Fixtures created in /home/krbundy/GitHub/psae_monorepo/test/fixtures
+
+Generated 83 pipelines in /home/krbundy/GitHub/psae_monorepo/test/pipelines
+
+  Local pipelines:   69
+  Network pipelines: 14
+  Total:             83
+
+=== Pipeline summary ===
+  Local pipelines:   69
+  Network pipelines: 14
+  Selected to run:   69  (mode=local)
+
+  RUN    base_aggregate                                     OK
+  RUN    base_csv_to_parquet                                OK
+  RUN    base_filter_rows                                   OK
+  RUN    base_filter_select_aggregate                       OK
+  RUN    base_group_by                                      OK
+  RUN    base_map_files_reduce_collection                   OK
+  RUN    base_map_files_reduce_join                         FAIL (exit 1)
+  RUN    base_map_files_reduce_stack                        OK
+  RUN    base_map_list                                      OK
+  RUN    base_map_range                                     OK
+  RUN    base_parquet_to_csv                                OK
+  RUN    base_select_columns                                OK
+  RUN    data_list                                          OK
+  RUN    data_read_collection                               OK
+  RUN    data_read_write_chain                              FAIL (exit 1)
+  RUN    data_read                                          OK
+  RUN    data_stat                                          OK
+  RUN    data_write_collection                              FAIL (exit 1)
+  RUN    data_write                                         FAIL (exit 1)
+  RUN    gdal_add_overviews                                 OK
+  RUN    gdal_aspect                                        OK
+  RUN    gdal_build_vrt                                     OK
+  RUN    gdal_calc                                          OK
+  RUN    gdal_clip_raster_by_extent                         OK
+  RUN    gdal_clip_raster_by_vector                         OK
+  RUN    gdal_color_relief                                  OK
+  RUN    gdal_compare                                       OK
+  RUN    gdal_contour                                       OK
+  RUN    gdal_dem_contour_reproject                         FAIL (exit 1)
+  RUN    gdal_fill_nodata                                   OK
+  RUN    gdal_grid                                          OK
+  RUN    gdal_hillshade                                     OK
+  RUN    gdal_info                                          OK
+  RUN    gdal_location_info                                 OK
+  RUN    gdal_map_translate_reduce_vrt                      FAIL (exit 1)
+  RUN    gdal_map_warp_reduce_mosaic                        FAIL (exit 1)
+  RUN    gdal_merge                                         OK
+  RUN    gdal_nearblack                                     OK
+  RUN    gdal_polygonize                                    OK
+  RUN    gdal_proximity                                     OK
+  RUN    gdal_raster_chain                                  OK
+  RUN    gdal_rasterize                                     OK
+  RUN    gdal_retile                                        OK
+  RUN    gdal_roughness                                     OK
+  RUN    gdal_sieve                                         OK
+  RUN    gdal_slope                                         OK
+  RUN    gdal_srs_info                                      OK
+  RUN    gdal_terrain_parallel                              OK
+  RUN    gdal_tile_index                                    OK
+  RUN    gdal_tile                                          FAIL (exit 1)
+  RUN    gdal_tpi                                           OK
+  RUN    gdal_transform_points                              OK
+  RUN    gdal_translate                                     OK
+  RUN    gdal_tri                                           OK
+  RUN    gdal_vector_chain                                  FAIL (exit 1)
+  RUN    gdal_vector_clip                                   OK
+  RUN    gdal_vector_difference                             OK
+  RUN    gdal_vector_erase                                  OK
+  RUN    gdal_vector_identity                               OK
+  RUN    gdal_vector_info                                   OK
+  RUN    gdal_vector_intersection                           OK
+  RUN    gdal_vector_merge                                  OK
+  RUN    gdal_vector_sym_difference                         OK
+  RUN    gdal_vector_tile_index                             OK
+  RUN    gdal_vector_translate                              OK
+  RUN    gdal_vector_union                                  OK
+  RUN    gdal_vector_update                                 OK
+  RUN    gdal_viewshed                                      OK
+  RUN    gdal_warp                                          OK
+
+=========================================
+  RESULTS
+=========================================
+  Passed:  60
+  Failed:  9
+  Total:   69
+=========================================
+
+  Failed pipelines:
+    - base_map_files_reduce_join  (see logs/base_map_files_reduce_join.log)
+    - data_read_write_chain  (see logs/data_read_write_chain.log)
+    - data_write_collection  (see logs/data_write_collection.log)
+    - data_write  (see logs/data_write.log)
+    - gdal_dem_contour_reproject  (see logs/gdal_dem_contour_reproject.log)
+    - gdal_map_translate_reduce_vrt  (see logs/gdal_map_translate_reduce_vrt.log)
+    - gdal_map_warp_reduce_mosaic  (see logs/gdal_map_warp_reduce_mosaic.log)
+    - gdal_tile  (see logs/gdal_tile.log)
+    - gdal_vector_chain  (see logs/gdal_vector_chain.log)
+
+Errors: 9

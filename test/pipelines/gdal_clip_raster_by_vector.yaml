@@ -1,0 +1,29 @@
+id: 019dac92-4814-76dd-806e-d62f96055d2f
+name: gdal_clip_raster_by_vector
+version: "1.0"
+description: Clip raster to vector boundary
+blocks:
+- id: 019dac92-4814-7457-806b-1abf0b989de8
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
+    format: GeoTIFF
+- id: 019dac92-4814-7d31-806c-02ced95e7717
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
+    format: GeoJSON
+- id: 019dac92-4814-7cef-806d-657713ab6d5a
+  name: gdal.clip_raster_by_vector
+  inputs:
+  - block: 019dac92-4814-7457-806b-1abf0b989de8
+    output: file
+    as: source
+  - block: 019dac92-4814-7d31-806c-02ced95e7717
+    output: file
+    as: boundary
+  args:
+    crop_to_cutline: true
+    all_touched: false

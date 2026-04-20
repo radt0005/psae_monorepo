@@ -13,7 +13,7 @@ func TestCreateBlockDirectory(t *testing.T) {
 	dir := t.TempDir()
 	id := uuid.New()
 
-	if err := CreateBlockDirectory(id, dir); err != nil {
+	if err := CreateBlockDirectory(id.String(), dir); err != nil {
 		t.Fatalf("CreateBlockDirectory failed: %v", err)
 	}
 
@@ -86,12 +86,16 @@ func TestSetupInputSymlinks(t *testing.T) {
 		},
 	}
 
-	if err := SetupInputSymlinks(workDir, resolved, pipelineDir); err != nil {
+	if err := SetupInputSymlinks(
+		workDir, resolved, pipelineDir,
+		BlockInvocation{}, BlockManifest{}, map[uuid.UUID]BlockManifest{},
+	); err != nil {
 		t.Fatalf("SetupInputSymlinks failed: %v", err)
 	}
 
-	// Verify symlink exists
-	linkPath := filepath.Join(workDir, "inputs", "source", "raster")
+	// Verify a symlink exists for each file that lived in the source
+	// output directory.
+	linkPath := filepath.Join(workDir, "inputs", "source", "data.tif")
 	info, err := os.Lstat(linkPath)
 	if err != nil {
 		t.Fatalf("expected symlink at %s: %v", linkPath, err)

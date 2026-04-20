@@ -1,0 +1,21 @@
+id: 019dac92-4813-7d90-806a-e1c82b0c5a41
+name: gdal_viewshed
+version: "1.0"
+description: Compute viewshed from observer point
+blocks:
+- id: 019dac92-4813-7f07-8068-5108c1a1c5e5
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
+    format: GeoTIFF
+- id: 019dac92-4813-7f77-8069-7d41bf19b484
+  name: gdal.viewshed
+  inputs:
+  - 019dac92-4813-7f07-8068-5108c1a1c5e5
+  args:
+    observer_x: -122.25
+    observer_y: 37.75
+    observer_height: 1.6
+    target_height: 0
+    max_distance: 0

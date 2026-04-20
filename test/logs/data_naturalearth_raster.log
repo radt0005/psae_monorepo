@@ -1,0 +1,6 @@
+Loaded pipeline: data_naturalearth_raster (019dac92-4827-7169-80f9-d87bfd2baf49)
+Executing pipeline with 1 block(s)...
+  [1/1] data.naturalearth_raster running...
+Block data.naturalearth_raster failed: block exited with code 1: spade: unauthorized: https://naciscdn.org/naturalearth/50m/raster/HYP_HR_SR_OB_DR.zip
+Exited with error status 1
+

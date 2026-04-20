@@ -1,0 +1,27 @@
+id: 019dac92-481e-7afc-80b7-e1ec336217d4
+name: gdal_vector_clip
+version: "1.0"
+description: Clip vector A by footprint of B
+blocks:
+- id: 019dac92-481e-7abf-80b4-e9143fb2fe30
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
+    format: GeoJSON
+- id: 019dac92-481e-72eb-80b5-b57062800785
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
+    format: GeoJSON
+- id: 019dac92-481e-7c2c-80b6-40f1e9eaa589
+  name: gdal.vector_clip
+  inputs:
+  - block: 019dac92-481e-7abf-80b4-e9143fb2fe30
+    output: file
+    as: a
+  - block: 019dac92-481e-72eb-80b5-b57062800785
+    output: file
+    as: b
+  args: {}

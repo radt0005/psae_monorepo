@@ -1,0 +1,10 @@
+id: 019dac92-4825-734a-80ec-b6a45e5cfed1
+name: data_stat
+version: "1.0"
+description: Stat a local file
+blocks:
+- id: 019dac92-4825-7e3c-80eb-9b8f9df103c5
+  name: data.stat
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data.csv

@@ -1,0 +1,8 @@
+Loaded pipeline: gdal_vector_union (019dac92-481b-7c6d-80a3-f32d478585b8)
+Executing pipeline with 3 block(s)...
+  [1/3] data.read (cached)
+  [2/3] data.read (cached)
+  [3/3] gdal.vector_union running...
+  [3/3] gdal.vector_union complete
+
+Pipeline complete: 3 block(s) executed (2 cached) in 955ms

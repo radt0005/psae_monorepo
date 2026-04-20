@@ -1,0 +1,15 @@
+id: 019dac92-480c-7299-802f-96ae36f4b6be
+name: base_map_list
+version: "1.0"
+description: Fan out over literal list of state codes and reduce
+blocks:
+- id: 019dac92-480c-7207-802d-a1d3ebb346ee
+  name: base.map_list
+  inputs: []
+  args:
+    values: '["NY","CA","MI"]'
+- id: 019dac92-480c-7479-802e-440e13d31576
+  name: base.reduce_collection
+  inputs:
+  - 019dac92-480c-7207-802d-a1d3ebb346ee
+  args: {}

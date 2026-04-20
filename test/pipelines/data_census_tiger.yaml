@@ -1,0 +1,12 @@
+id: 019dac92-4826-762f-80f3-31b28b7fc17a
+name: data_census_tiger
+version: "1.0"
+description: '[NETWORK] Download TIGER/Line state boundaries'
+blocks:
+- id: 019dac92-4826-76f3-80f2-cabcbaffeb76
+  name: data.census_tiger
+  inputs: []
+  args:
+    year: 2022
+    layer: states
+    state: ''

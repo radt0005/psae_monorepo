@@ -1,0 +1,6 @@
+Loaded pipeline: data_prism (019dac92-4828-778c-8101-65899e9b6cde)
+Executing pipeline with 1 block(s)...
+  [1/1] data.prism running...
+Block data.prism failed: block exited with code 1: spade: not found: https://services.nacse.org/prism/data/public/tmean/monthly/202301
+Exited with error status 1
+

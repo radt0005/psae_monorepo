@@ -1,0 +1,12 @@
+id: 019dac92-4826-70d0-80f7-196706a516fd
+name: data_naturalearth_vector
+version: "1.0"
+description: '[NETWORK] Download Natural Earth country boundaries'
+blocks:
+- id: 019dac92-4826-7538-80f6-830b1e754b4f
+  name: data.naturalearth_vector
+  inputs: []
+  args:
+    scale: 110m
+    category: cultural
+    theme: admin_0_countries

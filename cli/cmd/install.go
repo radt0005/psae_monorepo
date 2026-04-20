@@ -218,10 +218,14 @@ func installFromSource(srcDir string, cleanupSrc bool) error {
 	}
 
 	for _, manifest := range manifests {
+		shortName := manifest.ID
+		if i := strings.LastIndex(shortName, "."); i >= 0 {
+			shortName = shortName[i+1:]
+		}
 		entry := core.BlockRegistryEntry{
 			CollectionName:    collectionName,
 			CollectionVersion: collectionVersion,
-			BlockName:         manifest.ID,
+			BlockName:         shortName,
 			BlockID:           manifest.ID,
 			Language:          string(lang),
 			Entrypoint:        manifest.Entrypoint,

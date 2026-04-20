@@ -1,0 +1,7 @@
+Loaded pipeline: gdal_grid (019dac92-4813-7afa-8067-a44725432a9a)
+Executing pipeline with 2 block(s)...
+  [1/2] data.read (cached)
+  [2/2] gdal.grid running...
+  [2/2] gdal.grid complete
+
+Pipeline complete: 2 block(s) executed (1 cached) in 973ms

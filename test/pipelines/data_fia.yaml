@@ -1,0 +1,11 @@
+id: 019dac92-4826-7881-80f5-fa79df0bfce0
+name: data_fia
+version: "1.0"
+description: '[NETWORK] Download FIA PLOT table for Rhode Island'
+blocks:
+- id: 019dac92-4826-74d0-80f4-c41f65dac72f
+  name: data.fia
+  inputs: []
+  args:
+    state: RI
+    tables: PLOT

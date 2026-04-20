@@ -1,0 +1,7 @@
+Loaded pipeline: gdal_info (019dac92-4818-79ad-808f-77a96ccbdf3e)
+Executing pipeline with 2 block(s)...
+  [1/2] data.read (cached)
+  [2/2] gdal.info running...
+  [2/2] gdal.info complete
+
+Pipeline complete: 2 block(s) executed (1 cached) in 945ms

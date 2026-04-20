@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -121,6 +122,30 @@ type ResolvedInput struct {
 	SourceOutputDecl OutputDeclaration
 }
 
+// typesCompatible checks whether a dependency output type can satisfy a block
+// input type.  In addition to exact matches it handles two map/reduce cases:
+//   - An "expansion" output (from a map block) satisfies a "file" or
+//     "directory" input because the scheduler delivers individual items.
+//   - A "file" output satisfies a "collection" input on a reduce block
+//     because the scheduler gathers N mapped outputs into a collection.
+func typesCompatible(inputType, outputType string) bool {
+	if inputType == outputType {
+		return true
+	}
+	// Map expansion items resolve to files (or directories) at runtime.
+	// When a reduce block directly follows a map block the scheduler
+	// gathers expansion items into a collection.
+	if outputType == "expansion" && (inputType == "file" || inputType == "directory" || inputType == "collection") {
+		return true
+	}
+	// In a map→reduce chain the last mapped block outputs single files
+	// that the scheduler collects into a collection for the reduce block.
+	if outputType == "file" && inputType == "collection" {
+		return true
+	}
+	return false
+}
+
 // ResolveInputs implements the 4-step resolution algorithm from pipeline.md section 5.4.
 func ResolveInputs(block PipelineBlock, dependencies map[uuid.UUID]BlockManifest, currentManifest BlockManifest) (map[string]ResolvedInput, error) {
 	resolved := make(map[string]ResolvedInput)
@@ -141,15 +166,35 @@ func ResolveInputs(block PipelineBlock, dependencies map[uuid.UUID]BlockManifest
 			return nil, fmt.Errorf("block %s has no output named %q", ref.Block, ref.Output)
 		}
 
-		// Find matching input by type
+		// Find matching input.  If the reference names a downstream input
+		// via `as`, use it directly (after type-checking).  Otherwise
+		// fall back to the first unmatched type-compatible input, scanned
+		// in a deterministic order.
 		var matchedInput string
-		for inputName, inputDecl := range currentManifest.Inputs {
-			if matchedInputs[inputName] {
-				continue
+		if ref.As != "" {
+			inputDecl, exists := currentManifest.Inputs[ref.As]
+			if !exists {
+				return nil, fmt.Errorf("explicit reference targets unknown input %q", ref.As)
 			}
-			if inputDecl.Type == outputDecl.Type {
-				matchedInput = inputName
-				break
+			if !typesCompatible(inputDecl.Type, outputDecl.Type) {
+				return nil, fmt.Errorf("explicit reference to %q: type %q not compatible with output type %q",
+					ref.As, inputDecl.Type, outputDecl.Type)
+			}
+			matchedInput = ref.As
+		} else {
+			names := make([]string, 0, len(currentManifest.Inputs))
+			for n := range currentManifest.Inputs {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+			for _, inputName := range names {
+				if matchedInputs[inputName] {
+					continue
+				}
+				if typesCompatible(currentManifest.Inputs[inputName].Type, outputDecl.Type) {
+					matchedInput = inputName
+					break
+				}
 			}
 		}
 		if matchedInput == "" {
@@ -190,7 +235,7 @@ func ResolveInputs(block PipelineBlock, dependencies map[uuid.UUID]BlockManifest
 				if matchedInputs[inputName] {
 					continue
 				}
-				if inputDecl.Type == outputDecl.Type {
+				if typesCompatible(inputDecl.Type, outputDecl.Type) {
 					candidates = append(candidates, inputName)
 				}
 			}

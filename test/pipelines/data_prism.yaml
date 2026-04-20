@@ -1,0 +1,14 @@
+id: 019dac92-4828-778c-8101-65899e9b6cde
+name: data_prism
+version: "1.0"
+description: '[NETWORK] Download PRISM monthly temperature'
+blocks:
+- id: 019dac92-4828-7135-8100-9b311919c73f
+  name: data.prism
+  inputs: []
+  args:
+    variable: tmean
+    start: '2023-01-01'
+    end: '2023-01-31'
+    resolution: 4km
+    cadence: monthly

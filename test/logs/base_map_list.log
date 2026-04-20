@@ -1,0 +1,6 @@
+Loaded pipeline: base_map_list (019dac92-480c-7299-802f-96ae36f4b6be)
+Executing pipeline with 2 block(s)...
+  [1/2] base.map_list running...
+  [1/2] base.map_list complete
+
+Pipeline complete: 1 block(s) executed in 50ms

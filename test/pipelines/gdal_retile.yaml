@@ -1,0 +1,18 @@
+id: 019dac92-4810-708a-804e-bbab441d64ff
+name: gdal_retile
+version: "1.0"
+description: Split raster into 32x32 tiles
+blocks:
+- id: 019dac92-4810-7384-804c-728c4130f995
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
+    format: GeoTIFF
+- id: 019dac92-4810-7add-804d-605c14ebd812
+  name: gdal.retile
+  inputs:
+  - 019dac92-4810-7384-804c-728c4130f995
+  args:
+    tile_width: 32
+    tile_height: 32

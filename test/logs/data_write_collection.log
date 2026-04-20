@@ -1,0 +1,7 @@
+Loaded pipeline: data_write_collection (019dac92-4824-7804-80e8-1c14afb95e3a)
+Executing pipeline with 2 block(s)...
+  [1/2] data.read_collection (cached)
+  [2/2] data.write_collection running...
+  [2/2] data.write_collection complete
+
+Pipeline complete: 2 block(s) executed (1 cached) in 80ms

@@ -1,0 +1,12 @@
+id: 019dac92-4827-76ef-80ff-5f91df6cd230
+name: data_nlcd
+version: "1.0"
+description: '[NETWORK] Download NLCD land cover for Hawaii'
+blocks:
+- id: 019dac92-4827-7c0f-80fe-e7b924c84de3
+  name: data.nlcd
+  inputs: []
+  args:
+    year: 2021
+    product: land_cover
+    region: HI

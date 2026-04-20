@@ -1,0 +1,27 @@
+id: 019dac92-4816-743f-807e-da133b3e9d82
+name: gdal_color_relief
+version: "1.0"
+description: Apply color ramp to DEM
+blocks:
+- id: 019dac92-4816-7792-807b-65e3a1197323
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
+    format: GeoTIFF
+- id: 019dac92-4816-77fd-807c-95ec354f29d2
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/color_ramp.txt
+    format: ''
+- id: 019dac92-4816-796c-807d-16406238606b
+  name: gdal.color_relief
+  inputs:
+  - block: 019dac92-4816-7792-807b-65e3a1197323
+    output: file
+    as: source
+  - block: 019dac92-4816-77fd-807c-95ec354f29d2
+    output: file
+    as: color_ramp
+  args: {}

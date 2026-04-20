@@ -1,0 +1,38 @@
+id: 019dac92-4809-7d1f-801d-4cbcfc6893cc
+name: base_filter_select_aggregate
+version: "1.0"
+description: Filter category=A, select columns, aggregate by state
+blocks:
+- id: 019dac92-4809-7e4b-8018-fdd279628214
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data.csv
+    format: CSV
+- id: 019dac92-4809-7b1f-8019-961f0a616c2e
+  name: base.csv_to_parquet
+  inputs:
+  - 019dac92-4809-7e4b-8018-fdd279628214
+  args:
+    delimiter: ','
+    has_header: true
+- id: 019dac92-4809-71e3-801a-058a8516721b
+  name: base.filter_rows
+  inputs:
+  - 019dac92-4809-7b1f-8019-961f0a616c2e
+  args:
+    expression: category = 'A'
+- id: 019dac92-4809-7a8f-801b-88dcbd5a72be
+  name: base.select_columns
+  inputs:
+  - 019dac92-4809-71e3-801a-058a8516721b
+  args:
+    columns: id,value,state
+    mode: keep
+- id: 019dac92-4809-71c9-801c-84c74d4057dc
+  name: base.aggregate
+  inputs:
+  - 019dac92-4809-7a8f-801b-88dcbd5a72be
+  args:
+    aggregations: '[{"column": "value", "function": "mean"}]'
+    group_by: state

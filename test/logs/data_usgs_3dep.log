@@ -1,0 +1,7 @@
+Loaded pipeline: data_usgs_3dep (019dac92-4828-7d11-8106-751cae00f049)
+Executing pipeline with 2 block(s)...
+  [1/2] data.read (cached)
+  [2/2] data.usgs_3dep running...
+  [2/2] data.usgs_3dep complete
+
+Pipeline complete: 2 block(s) executed (1 cached) in 684ms

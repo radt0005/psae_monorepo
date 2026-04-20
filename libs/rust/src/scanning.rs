@@ -49,9 +49,11 @@ pub fn scan_inputs_from(base: &Path) -> Result<HashMap<String, InputEntry>> {
         return Ok(HashMap::new());
     }
 
+    // Use fs::metadata (not DirEntry::file_type) so that symlinks — used
+    // by the worker to wire up inter-block inputs — are followed.
     let mut entries: Vec<_> = fs::read_dir(&inputs_dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_ok_and(|ft| ft.is_dir()))
+        .filter(|e| fs::metadata(e.path()).is_ok_and(|m| m.is_dir()))
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
@@ -62,7 +64,7 @@ pub fn scan_inputs_from(base: &Path) -> Result<HashMap<String, InputEntry>> {
 
         let mut files: Vec<String> = fs::read_dir(&subdir)?
             .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_ok_and(|ft| ft.is_file()))
+            .filter(|e| fs::metadata(e.path()).is_ok_and(|m| m.is_file()))
             .map(|e| e.path().to_string_lossy().to_string())
             .collect();
         files.sort();

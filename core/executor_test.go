@@ -39,7 +39,7 @@ echo "processed" > outputs/result/data.txt
 
 	// Test directory structure setup (without actually running the block since
 	// isolate may not be available in test env)
-	err := CreateBlockDirectory(block.Id, dir)
+	err := CreateBlockDirectory(block.Id.String(), dir)
 	if err != nil {
 		t.Fatalf("CreateBlockDirectory failed: %v", err)
 	}

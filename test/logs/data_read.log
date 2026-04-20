@@ -1,0 +1,5 @@
+Loaded pipeline: data_read (019dac92-4823-7d0c-80e0-02c1395daa16)
+Executing pipeline with 1 block(s)...
+  [1/1] data.read (cached)
+
+Pipeline complete: 1 block(s) executed (1 cached) in 2ms

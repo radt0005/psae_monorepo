@@ -1,0 +1,7 @@
+Loaded pipeline: data_nlcd (019dac92-4827-76ef-80ff-5f91df6cd230)
+Executing pipeline with 1 block(s)...
+  [1/1] data.nlcd running...
+Block data.nlcd failed: block exited with code 1: warning: no AOI supplied; NLCD HI rasters can be > 5 GB. Consider clipping downstream with gdal.clip_raster_by_vector.
+spade: not found: https://www.mrlc.gov/downloads/sciweb1/shared/mrlc/downloads/nlcd_2021_land_cover_HI.zip
+Exited with error status 1
+

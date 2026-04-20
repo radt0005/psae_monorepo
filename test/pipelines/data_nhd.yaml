@@ -1,0 +1,11 @@
+id: 019dac92-4829-7a1a-8108-e1cbab8fe82e
+name: data_nhd
+version: "1.0"
+description: '[NETWORK] Download NHD for HUC-4 watershed'
+blocks:
+- id: 019dac92-4829-7e2c-8107-f6481ee48196
+  name: data.nhd
+  inputs: []
+  args:
+    huc: "0109"
+    resolution: medium

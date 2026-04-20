@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
@@ -12,10 +13,13 @@ import (
 // --- Phase 1.1: Input Reference Types ---
 
 // InputRef supports both forms of pipeline input references:
-// bare invocation IDs and explicit block+output pairs.
+// bare invocation IDs and explicit block+output pairs.  When a block has
+// multiple same-typed inputs the explicit form can also set "as" to name
+// the downstream input that should receive this reference.
 type InputRef struct {
 	Block  *uuid.UUID `yaml:"block,omitempty"`  // nil for bare references
 	Output string     `yaml:"output,omitempty"` // named output on the dependency
+	As     string     `yaml:"as,omitempty"`     // optional downstream input name
 	ID     uuid.UUID  `yaml:"-"`                // populated for bare references
 }
 
@@ -37,12 +41,14 @@ func (r *InputRef) UnmarshalYAML(value *yaml.Node) error {
 		var m struct {
 			Block  uuid.UUID `yaml:"block"`
 			Output string    `yaml:"output"`
+			As     string    `yaml:"as"`
 		}
 		if err := value.Decode(&m); err != nil {
 			return fmt.Errorf("invalid explicit input reference: %w", err)
 		}
 		r.Block = &m.Block
 		r.Output = m.Output
+		r.As = m.As
 		r.ID = uuid.Nil
 		return nil
 	}
@@ -56,13 +62,16 @@ func (r InputRef) MarshalYAML() (any, error) {
 		return r.ID.String(), nil
 	}
 	// Explicit reference: serialize as mapping
-	return struct {
+	m := struct {
 		Block  uuid.UUID `yaml:"block"`
 		Output string    `yaml:"output"`
+		As     string    `yaml:"as,omitempty"`
 	}{
 		Block:  *r.Block,
 		Output: r.Output,
-	}, nil
+		As:     r.As,
+	}
+	return m, nil
 }
 
 // --- Phase 1.2: Block Manifest Types ---
@@ -296,6 +305,17 @@ type BlockRegistryEntry struct {
 	Kind              string
 	Network           bool
 	ManifestJSON      string // serialized block manifest
+}
+
+// blockNameFromID returns the short block name from a fully-qualified
+// manifest ID.  Block IDs follow the convention "<collection>.<block>"
+// (e.g. "data.read"); registry entries and block-dispatcher subcommands
+// want just the trailing "<block>" segment.
+func blockNameFromID(id string) string {
+	if i := strings.LastIndex(id, "."); i >= 0 {
+		return id[i+1:]
+	}
+	return id
 }
 
 // CollectionLanguage represents the detected language of a block collection.

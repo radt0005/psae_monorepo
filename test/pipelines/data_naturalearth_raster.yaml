@@ -1,0 +1,11 @@
+id: 019dac92-4827-7169-80f9-d87bfd2baf49
+name: data_naturalearth_raster
+version: "1.0"
+description: '[NETWORK] Download Natural Earth hypsometric raster'
+blocks:
+- id: 019dac92-4827-7af3-80f8-01fe87c93101
+  name: data.naturalearth_raster
+  inputs: []
+  args:
+    scale: 50m
+    theme: HYP_HR_SR_OB_DR

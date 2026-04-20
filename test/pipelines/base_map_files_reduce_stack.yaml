@@ -1,0 +1,30 @@
+id: 019dac92-480b-7681-8027-00afb89133bb
+name: base_map_files_reduce_stack
+version: "1.0"
+description: Map over CSV collection, convert each to Parquet, stack rows
+blocks:
+- id: 019dac92-480b-7c4a-8023-2f35353f9da0
+  name: data.read_collection
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data*.csv
+    format: CSV
+    max_items: 10
+- id: 019dac92-480b-7a4d-8024-294e2ef8192e
+  name: base.map_files
+  inputs:
+  - 019dac92-480b-7c4a-8023-2f35353f9da0
+  args: {}
+- id: 019dac92-480b-74d8-8025-e92ec1d32405
+  name: base.csv_to_parquet
+  inputs:
+  - 019dac92-480b-7a4d-8024-294e2ef8192e
+  args:
+    delimiter: ','
+    has_header: true
+- id: 019dac92-480b-7274-8026-1fd060e82fb5
+  name: base.reduce_stack
+  inputs:
+  - 019dac92-480b-74d8-8025-e92ec1d32405
+  args:
+    strict: false

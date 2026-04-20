@@ -1,0 +1,11 @@
+id: 019dac92-4823-7d0c-80e0-02c1395daa16
+name: data_read
+version: "1.0"
+description: Read a single local file
+blocks:
+- id: 019dac92-4823-7caf-80df-519ec3807c33
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data.csv
+    format: CSV

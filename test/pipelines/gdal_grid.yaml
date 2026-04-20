@@ -1,0 +1,22 @@
+id: 019dac92-4813-7afa-8067-a44725432a9a
+name: gdal_grid
+version: "1.0"
+description: Interpolate scattered points onto grid
+blocks:
+- id: 019dac92-4813-7a85-8065-7513f5dfe288
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_points.csv
+    format: CSV
+- id: 019dac92-4813-7eea-8066-5c722ef9c34b
+  name: gdal.grid
+  inputs:
+  - 019dac92-4813-7a85-8065-7513f5dfe288
+  args:
+    algorithm: invdist:power=2.0
+    width: 32
+    height: 32
+    z_field: z
+    x_field: x
+    y_field: y

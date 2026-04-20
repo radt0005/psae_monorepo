@@ -1,0 +1,6 @@
+Loaded pipeline: base_map_range (019dac92-480c-78e8-8032-b51ce325bc6c)
+Executing pipeline with 2 block(s)...
+  [1/2] base.map_range running...
+  [1/2] base.map_range complete
+
+Pipeline complete: 1 block(s) executed in 50ms

@@ -11,8 +11,8 @@ func TestBuildInputHashes(t *testing.T) {
 	blockA := uuid.MustParse("019cf4bc-1111-7000-0000-000000000000")
 	blockB := uuid.MustParse("019cf4bc-2222-7000-0000-000000000000")
 
-	outputHashes := map[uuid.UUID]map[string]string{
-		blockA: {"raster": "abc123"},
+	outputHashes := map[string]map[string]string{
+		blockA.String(): {"raster": "abc123"},
 	}
 
 	blocks := map[uuid.UUID]core.PipelineBlock{
@@ -38,8 +38,8 @@ func TestBuildInputHashes_ExplicitRef(t *testing.T) {
 	blockA := uuid.MustParse("019cf4bc-1111-7000-0000-000000000000")
 	blockB := uuid.MustParse("019cf4bc-2222-7000-0000-000000000000")
 
-	outputHashes := map[uuid.UUID]map[string]string{
-		blockA: {"raster": "abc123", "metadata": "def456"},
+	outputHashes := map[string]map[string]string{
+		blockA.String(): {"raster": "abc123", "metadata": "def456"},
 	}
 
 	blocks := map[uuid.UUID]core.PipelineBlock{
@@ -75,7 +75,7 @@ func TestBuildInputHashes_ExplicitRef(t *testing.T) {
 func TestBuildInputHashes_NoDeps(t *testing.T) {
 	blockA := uuid.MustParse("019cf4bc-1111-7000-0000-000000000000")
 
-	outputHashes := map[uuid.UUID]map[string]string{}
+	outputHashes := map[string]map[string]string{}
 	blocks := map[uuid.UUID]core.PipelineBlock{
 		blockA: {Id: blockA, Name: "data.source"},
 	}

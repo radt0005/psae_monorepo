@@ -1,0 +1,6 @@
+Loaded pipeline: data_ssurgo (019dac92-4828-7d68-8103-e87d13fe238f)
+Executing pipeline with 1 block(s)...
+  [1/1] data.ssurgo running...
+Block data.ssurgo failed: block exited with code 1: spade: network error fetching 'https://websoilsurvey.nrcs.usda.gov/DSD/Download/Cache/SSA/wss_SSA_RI600_soildb_US_2003.zip': HTTP 400 Bad Request
+Exited with error status 1
+
