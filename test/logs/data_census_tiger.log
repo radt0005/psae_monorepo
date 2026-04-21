@@ -1,6 +1,5 @@
-Loaded pipeline: data_census_tiger (019dac92-4826-762f-80f3-31b28b7fc17a)
+Loaded pipeline: data_census_tiger (019db076-2466-7721-80f3-ca495e940e18)
 Executing pipeline with 1 block(s)...
-  [1/1] data.census_tiger running...
-  [1/1] data.census_tiger complete
+  [1/1] data.census_tiger (cached)
 
-Pipeline complete: 1 block(s) executed in 6.212s
+Pipeline complete: 1 block(s) executed (1 cached) in 13ms

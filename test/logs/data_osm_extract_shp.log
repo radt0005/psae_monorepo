@@ -1,5 +1,5 @@
-Loaded pipeline: data_osm_extract_shp (019dac92-4827-7eb8-80fd-3c4c579157ee)
+Loaded pipeline: data_osm_extract_shp (019db076-2467-7671-80fd-9346a0857f47)
 Executing pipeline with 1 block(s)...
   [1/1] data.osm_extract_shp (cached)
 
-Pipeline complete: 1 block(s) executed (1 cached) in 184ms
+Pipeline complete: 1 block(s) executed (1 cached) in 180ms

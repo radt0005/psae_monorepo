@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_hillshade (019dac92-4815-7957-8074-66fa4f2e3d08)
+Loaded pipeline: gdal_hillshade (019db070-daae-71e9-8074-6bab1fddaed2)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.hillshade running...
   [2/2] gdal.hillshade complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 972ms
+Pipeline complete: 2 block(s) executed (1 cached) in 1.052s

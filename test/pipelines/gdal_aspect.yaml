@@ -1,18 +1,18 @@
-id: 019dac92-4816-7d81-807a-19f1c2ab9873
+id: 019db076-2455-7ff7-807a-1d292773d40b
 name: gdal_aspect
 version: "1.0"
 description: Compute aspect from DEM
 blocks:
-- id: 019dac92-4816-7c9d-8078-fc9a0827d0a7
+- id: 019db076-2455-7a96-8078-ac8f1773b35e
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019dac92-4816-797b-8079-e7e308b9ad0d
+- id: 019db076-2455-7e3d-8079-d2987b57917a
   name: gdal.aspect
   inputs:
-  - 019dac92-4816-7c9d-8078-fc9a0827d0a7
+  - 019db076-2455-7a96-8078-ac8f1773b35e
   args:
     zero_for_flat: false
     trigonometric: false

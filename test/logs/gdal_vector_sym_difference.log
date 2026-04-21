@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_vector_sym_difference (019dac92-481c-7e01-80af-893dcdc4bcbb)
+Loaded pipeline: gdal_vector_sym_difference (019db070-dab6-7970-80af-fac09b6ee251)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.vector_sym_difference running...
   [3/3] gdal.vector_sym_difference complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 963ms
+Pipeline complete: 3 block(s) executed (2 cached) in 944ms

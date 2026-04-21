@@ -1,5 +1,5 @@
-Loaded pipeline: data_osm_extract_pbf (019dac92-4827-76a3-80fb-dc3dd16af5b4)
+Loaded pipeline: data_osm_extract_pbf (019db076-2467-76ca-80fb-2d8a3baa4364)
 Executing pipeline with 1 block(s)...
   [1/1] data.osm_extract_pbf (cached)
 
-Pipeline complete: 1 block(s) executed (1 cached) in 42ms
+Pipeline complete: 1 block(s) executed (1 cached) in 41ms

@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_add_overviews (019dac92-480e-7996-8041-7321e191086d)
+Loaded pipeline: gdal_add_overviews (019db070-daa7-7395-8041-6fde057b65e2)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.add_overviews running...
   [2/2] gdal.add_overviews complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 941ms
+Pipeline complete: 2 block(s) executed (1 cached) in 1.145s

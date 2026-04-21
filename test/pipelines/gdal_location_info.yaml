@@ -1,18 +1,18 @@
-id: 019dac92-4819-79e0-8092-5f6f3ad88510
+id: 019db076-2458-7886-8092-2cfb709d1363
 name: gdal_location_info
 version: "1.0"
 description: Read raster values at a point
 blocks:
-- id: 019dac92-4819-729f-8090-339d3dde6945
+- id: 019db076-2458-7af1-8090-3fe8fbef76e8
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dac92-4819-719d-8091-072f7b63b188
+- id: 019db076-2458-75d1-8091-45a7987cc84f
   name: gdal.location_info
   inputs:
-  - 019dac92-4819-729f-8090-339d3dde6945
+  - 019db076-2458-7af1-8090-3fe8fbef76e8
   args:
     x: -122.25
     y: 37.75

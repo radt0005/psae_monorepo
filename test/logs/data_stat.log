@@ -1,5 +1,6 @@
-Loaded pipeline: data_stat (019dac92-4825-734a-80ec-b6a45e5cfed1)
+Loaded pipeline: data_stat (019db070-dabf-719c-80ec-bb9a12efb33d)
 Executing pipeline with 1 block(s)...
-  [1/1] data.stat (cached)
+  [1/1] data.stat running...
+  [1/1] data.stat complete
 
-Pipeline complete: 1 block(s) executed (1 cached) in 3ms
+Pipeline complete: 1 block(s) executed in 15ms

@@ -13,9 +13,19 @@ use sha2::{Digest, Sha256};
 
 use crate::common::error::{DataError, Result};
 
+/// Default User-Agent used for catalog downloads.
+///
+/// Some hosts (Census, Cloudflare-fronted CDNs, etc.) return HTML bot
+/// challenges or 403s for the default `reqwest/<ver>` UA, so we identify
+/// ourselves as a spade-data fetcher with a browser-like fallback. Using
+/// a self-identifying UA is also polite to operators who inspect logs.
+const DEFAULT_USER_AGENT: &str =
+    "spade-data/0.1 (+https://github.com/psae/spade) Mozilla/5.0 (compatible; SpadeData)";
+
 /// Fetch `uri` into `dest`, streaming the body to disk.
 pub fn fetch_to(dest: &Path, uri: &str) -> Result<()> {
     let client = reqwest::blocking::Client::builder()
+        .user_agent(DEFAULT_USER_AGENT)
         .redirect(reqwest::redirect::Policy::limited(10))
         .build()?;
     let mut resp = client.get(uri).send()?;

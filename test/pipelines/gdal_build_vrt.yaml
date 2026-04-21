@@ -1,19 +1,19 @@
-id: 019dac92-480e-7099-803e-f81cda081864
+id: 019db076-244c-7433-803e-af942f23d1c4
 name: gdal_build_vrt
 version: "1.0"
 description: Build VRT from raster collection
 blocks:
-- id: 019dac92-480e-7a66-803c-1a21baafc6a5
+- id: 019db076-244c-7b6c-803c-b301a676ed3f
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster*.tif
     format: GeoTIFF
     max_items: 10
-- id: 019dac92-480e-7f8a-803d-eabeafeddb5f
+- id: 019db076-244c-7085-803d-46fd921eaa01
   name: gdal.build_vrt
   inputs:
-  - 019dac92-480e-7a66-803c-1a21baafc6a5
+  - 019db076-244c-7b6c-803c-b301a676ed3f
   args:
     resolution: highest
     separate: false

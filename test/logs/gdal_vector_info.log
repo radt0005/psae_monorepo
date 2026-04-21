@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_vector_info (019dac92-481f-7067-80c2-94d3809dbb88)
+Loaded pipeline: gdal_vector_info (019db070-dab9-78f1-80c2-c4e9fcfb227d)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.vector_info running...
   [2/2] gdal.vector_info complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 971ms
+Pipeline complete: 2 block(s) executed (1 cached) in 912ms

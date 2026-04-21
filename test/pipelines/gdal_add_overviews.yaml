@@ -1,18 +1,18 @@
-id: 019dac92-480e-7996-8041-7321e191086d
+id: 019db076-244d-72f3-8041-647a9b73428a
 name: gdal_add_overviews
 version: "1.0"
 description: Add pyramid overviews to raster
 blocks:
-- id: 019dac92-480e-789e-803f-11b9cc34fc2e
+- id: 019db076-244d-7c2e-803f-b121bd8cb17a
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dac92-480e-7a99-8040-26431d1124cc
+- id: 019db076-244d-75cf-8040-c7cbcc2e6448
   name: gdal.add_overviews
   inputs:
-  - 019dac92-480e-789e-803f-11b9cc34fc2e
+  - 019db076-244d-7c2e-803f-b121bd8cb17a
   args:
     levels: 2 4
     resampling: average
