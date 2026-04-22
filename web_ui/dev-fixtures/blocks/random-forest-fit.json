@@ -1,0 +1,29 @@
+{
+    "name": "handler",
+    "description": "Fits a Random Forest model",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "data_path": {
+          "type": "string",
+          "description": "path to the data on disk"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "A dictionary of values for the random forest model parameters"
+        },
+        "target": {
+          "type": "string",
+          "description": "The name of the variable (Y) that is being predicted"
+        },
+        "save_path": {
+          "type": "string",
+          "description": "_The location to save the model on disk. Defaults to \"./rf_model.pkl\".",
+          "default": "./rf_model.pkl"
+        }
+      },
+      "required": ["data_path", "params", "target"]
+    }
+  }
+  
