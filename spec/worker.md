@@ -165,11 +165,17 @@ The worker captures `stdout` and `stderr` from the block subprocess and writes t
 
 ## Error Handling
 
-If a block exits with a non-zero exit code, the worker reports the failure to the scheduler.  The scheduler then **halts the pipeline** -- no further blocks in that pipeline are executed.  The logs from the failed block are preserved for debugging.
+There are two distinct failure modes the worker treats differently:
+
+1. **Block failure** — the block subprocess exits with a non-zero code.  The block itself ran to completion; the failure is the user's pipeline content.  The worker publishes a `Result` message with `status: "failed"` (including the block's logs and exit code) and **acks the job message**.  The scheduler then halts the affected pipeline -- no further blocks in that pipeline are scheduled.
+
+2. **Worker failure** — the worker process itself crashes, the host loses power, the network drops, or any other condition that prevents the worker from completing the job and publishing a result.  The worker **never acks the job message**.  The broker's consumer timeout elapses and the message is redelivered to another worker, which runs the block fresh.  The scheduler is unaware of the failed attempt.
+
+This split keeps user-pipeline failures (which should halt the pipeline) cleanly separated from infrastructure failures (which should be retried transparently).  Logs from any failed block are preserved on the shared filesystem for debugging regardless of which failure mode occurred.
 
 ## Map Block Handling
 
-When the worker executes a `kind: map` block, it performs an additional step after the block completes: it reads the expansion manifest (`outputs/manifest/expansion.yaml`) written by the map block.  The worker then reports the item list back to the scheduler as part of the completion response.
+When the worker executes a `kind: map` block, it performs an additional step after the block completes: it reads the expansion manifest (`outputs/manifest/expansion.yaml`) written by the map block.  The worker then includes the item list in the `Result` message it publishes to `spade.results` (see Communication above).
 
 The scheduler uses this item list to create N invocations of the downstream block(s).  The worker is responsible for setting up each mapped invocation's `inputs/` directory with the correct item from the expansion (symlinked from the map block's working directory).
 
@@ -179,4 +185,31 @@ See `scheduler.md` for the full map/reduce specification.
 
 ## Communication
 
-The worker communicates with the scheduler via JSON over HTTP.  The worker polls the scheduler for work, receives block execution assignments, and reports results (success or failure) back to the scheduler upon completion.  For map blocks, the completion response includes the expansion manifest so the scheduler can create the mapped invocations.
+The worker communicates with the scheduler over **RabbitMQ**, using two durable queues:
+
+- `spade.jobs` — **scheduler → worker.** The scheduler publishes one message per block invocation; workers consume as competing consumers.
+- `spade.results` — **worker → scheduler.** The worker publishes one message per completed invocation (success *or* failure); the scheduler consumes.
+
+Message bodies are JSON.  Queues are declared `durable: true`, messages are published `persistent: true`, and the broker is configured for at-least-once delivery.
+
+### Job dispatch (`spade.jobs`)
+
+The scheduler publishes a `Job` message for each invocation it wants run.  Workers consume with `prefetch_count = 1` so each worker holds one job at a time; competing-consumers semantics give fair fan-out across N workers with no additional scheduler logic.
+
+A worker **does not ack the job message until the invocation is complete** (successfully or unsuccessfully -- see Error Handling below for the distinction).  This is the core of the failure story: if a worker dies mid-execution, the unacked message is redelivered to another worker once the broker's consumer timeout elapses.  No leases, heartbeats, or dispatch bookkeeping are required on the scheduler side.
+
+### Result reporting (`spade.results`)
+
+Once an invocation finishes, the worker publishes a `Result` message to `spade.results` and only *then* acks the original job message.  The result message carries the invocation ID, final status, and any payload the scheduler needs (log references, output hashes, and -- for map blocks -- the expansion manifest; see Map Block Handling below).
+
+The scheduler must be **idempotent** when consuming results, keyed by invocation ID: in rare cases the worker can publish a result, then crash before acking the job message, causing redelivery and a second attempt whose result the scheduler has already processed.  The simplest scheduler-side treatment is "first result wins, ignore subsequent results for the same invocation."
+
+### Why not HTTP polling
+
+An earlier draft of this spec used HTTP polling for job dispatch.  We switched to RabbitMQ because:
+
+1. **Worker crash recovery is free.**  Ack-on-completion with broker redelivery removes the need for leases, heartbeats, or stuck-job reaping on the scheduler.
+2. **Fair dispatch is free.**  Competing consumers with `prefetch_count = 1` removes the need for the scheduler to pick a worker or track worker state.
+3. **Backpressure is free.**  Workers that are slow simply hold more unacked messages, and `prefetch_count` caps the in-flight work per worker.
+
+The operational cost of running RabbitMQ is already paid -- the web UI ↔ scheduler path uses a Postgres outbox, but the broker is deployed in the same topology for this worker-side leg -- so the marginal infrastructure cost is zero.

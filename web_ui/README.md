@@ -2,6 +2,21 @@
 
 Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
+## Configuration
+
+Copy `.env.example` to `.env` and fill in the values:
+
+```bash
+cp .env.example .env
+```
+
+Required:
+
+- `NUXT_PUBLIC_POCKETBASE_URL` — public PocketBase URL the browser hits
+- `POCKETBASE_URL` / `POCKETBASE_USER` / `POCKETBASE_PASSWORD` — server-side admin auth
+- `RABBITMQ_URL`, `RABBITMQ_QUEUE` — work queue the scheduler reads
+- `RUNS_DIR` — local fallback directory for pipeline run artifacts
+
 ## Setup
 
 Make sure to install the dependencies:
@@ -73,3 +88,14 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Tests
+
+Vitest powers the unit tests under `tests/`.
+
+```bash
+bun run test           # one shot
+bun run test:watch     # interactive
+bun run typecheck      # nuxt prepare + tsc --noEmit
+```
+

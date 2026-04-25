@@ -1,4 +1,6 @@
 github.com/labstack/echo/v5 v5.0.4 h1:ll3I/O8BifjMztj9dD1vx/peZQv8cR2CTUdQK6QxGGc=
 github.com/labstack/echo/v5 v5.0.4/go.mod h1:SyvlSdObGjRXeQfCCXW/sybkZdOOQZBmpKF0bvALaeo=
+github.com/rabbitmq/rabbitmq-amqp-go-client v1.0.0 h1:VvrVB+Fz7g0hg0ZcxDXf+WHShQsfQ1iI5FbT5ZnJ3lY=
+github.com/rabbitmq/rabbitmq-amqp-go-client v1.0.0/go.mod h1:u2HAJ0fUFyayNcIvTGCTlpmdPKHrKO9Xl81FbiEzYO4=
 golang.org/x/time v0.14.0 h1:MRx4UaLrDotUKUdCIqzPC48t1Y9hANFKIRpNx+Te8PI=
 golang.org/x/time v0.14.0/go.mod h1:eL/Oa2bBBK0TkX57Fyni+NgnyQQN4LitPmob2Hjnqw4=

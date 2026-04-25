@@ -1,0 +1,14 @@
+id: hello.map-files
+version: 1.0.0
+kind: map
+network: false
+description: Enumerates inputs/source/* and writes a deterministic expansion manifest.
+
+inputs:
+  source:
+    type: collection
+    item_type: file
+
+outputs:
+  manifest:
+    type: expansion

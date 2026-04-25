@@ -4,37 +4,29 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { existsSync, mkdirSync } from "node:fs";
 
+export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig();
+  const runsDir = config.runsDir as string;
+  if (!runsDir) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "RUNS_DIR is not configured",
+    });
+  }
 
-export default defineEventHandler(
-    async (event) => {
-        const body = await readBody(event);
-        const pipeline_yaml = body.pipeline;
-        const pipeline = YAML.parse(pipeline_yaml);
+  const body = await readBody(event);
+  const pipeline_yaml = body.pipeline as string;
+  const pipeline = YAML.parse(pipeline_yaml);
 
-        // extract the pipeline ID
-        const id = pipeline.id || v7();
+  const id = pipeline.id || v7();
+  const savePath = path.join(runsDir, id);
 
-        // create the folder to hold the runs
+  if (!existsSync(savePath)) {
+    mkdirSync(savePath, { recursive: true });
+  }
 
-        // save the pipeline in the folder
+  const pipelinePath = path.join(savePath, "pipeline.yaml");
+  await fs.writeFile(pipelinePath, pipeline_yaml);
 
-        const savePath = `/home/krbundy/.psae/runs/${id}`;
- 
-        // create directory if it does not exist
-        if(!existsSync(savePath)){
-            mkdirSync(savePath);
-        }
-
-        // save pipeline.yaml to the file
-
-        const pipelinePath = path.join(savePath, "pipeline.yaml");
-        const saveResult = await fs.writeFile(pipelinePath, pipeline_yaml)
-        console.log(saveResult);
-        
-
-
-        return {
-            id: id,    
-        }
-    }
-)
+  return { id };
+});

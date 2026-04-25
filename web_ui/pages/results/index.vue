@@ -1,105 +1,32 @@
 <script setup lang="ts">
-
-
-type RunHistoryItem = {
-    id: string,
-    created: string, 
-    status: string,
-    updated: string
-    url: string
-}
-
-const columns = [
-    {
-        header: "ID",
-        accessorKey: "id",
-        key: "id"
-    },
-    {
-        header: "Created",
-        accessorKey: "created",
-        key: "created"
-    },
-    {
-        header: "Last Updated",
-        accessorKey: "updated",
-        key: "updated"
-    },
-    {
-        header: "Status",
-        accessorKey: "status",
-        key: "status"
-    },
-    {
-        header: "Edit",
-        key: "url"
-    }
-]
-
-const history = ref<RunHistoryItem[]>([]);
-// get the route params
-const temp = ref<any>("")
-
-const pb = usePB();
-
-const getUserRuns = async () => {
-    const authData = await pb.value.collection('users').authRefresh();
-    const userId = authData.record.id;
-    const response = await pb.value.collection("runs").getList(
-        1,50,
-        {
-            filter: `userId="${userId}"`,
-            sort: "-created"
-        }
-    );
-    return response
-}
-
-onMounted(
-    async () => {
-        const response = await getUserRuns();
-        console.log(response);
-        temp.value = response.items
-        if(response.items){
-
-            history.value = response.items.map(
-                (item) => {
-                    return {
-                        id: item.runId,
-                        created: item.created.toString(),
-                        updated: item.updated,
-                        status: item.status,
-                        url: `results/${item.runId}`
-                    } as RunHistoryItem
-                }
-            )
-        }
-    }
-)
-
-function onSelect(row: any, e?: Event) {
-  /* If you decide to also select the column you can do this  */
-  //row.toggleSelected(!row.getIsSelected())
-
-  console.log(e)
-
-  navigateTo(row.url)
-}
-
-
+/**
+ * Results browsing depends on the cloud scheduler (B.5) which is being
+ * rebuilt. Once that lands, this page lists the user's runs from the new
+ * /api/runs endpoint backed by Postgres.
+ */
 </script>
 
 <template>
-    <UContainer>
-        <p>My Runs</p>
-        <div v-if="history.length > 0">
-            <UTable :rows="history" :columns="columns" @select="onSelect">
-                <template #edit-cell="{ row }">
-                    <UButton :to="row.url">View</UButton>
-                </template>
-
-            </UTable>
-        </div>
-
-    </UContainer>
+  <div class="max-w-3xl mx-auto px-spade-lg py-spade-xxl">
+    <h1 class="font-heading text-3xl font-bold mb-spade-md">My Runs</h1>
+    <UCard
+      class="border-l-4 border-l-spade-yellow"
+    >
+      <template #header>
+        <p class="font-semibold">Results browsing is offline</p>
+      </template>
+      <p class="text-spade-gray-dark">
+        The cloud scheduler is being rebuilt. Pipelines you save to your
+        library will be runnable as soon as it ships. In the meantime, the
+        editor, the pipeline library, and the block browser are fully
+        functional.
+      </p>
+      <template #footer>
+        <UButtonGroup>
+          <UButton color="primary" to="/editor">Open editor</UButton>
+          <UButton variant="outline" to="/pipelines">Pipeline library</UButton>
+        </UButtonGroup>
+      </template>
+    </UCard>
+  </div>
 </template>

@@ -1,0 +1,27 @@
+# Secrets — never bake into the image
+.env*
+
+# Build artifacts (regenerated in the build stage)
+.nuxt
+.output
+node_modules
+
+# VCS + tooling
+.git
+.gitignore
+.github
+.claude
+
+# Tests + dev fixtures
+tests
+dev-fixtures
+vitest.config.ts
+
+# Docs / planning
+*.md
+!README.md
+
+# Local-only
+docker-compose.yml
+.vscode
+.idea

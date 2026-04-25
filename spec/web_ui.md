@@ -45,3 +45,24 @@ When a user connects two blocks in the flowchart editor, the UI must resolve whi
 
 This ensures that all pipelines produced by the UI are valid and unambiguous without requiring users to understand the underlying resolution algorithm.
 
+## Pipelines
+
+There should be a way to store and share pipelines for future use.  This means that they will need to be stored and have access control for them.  This should store the pipeline YAML files, and the pipelines should be loaded into the editor.
+
+It should be possible to browse past pipelines and re-load one in the editor for re-running or editing.  
+
+## Browsing Results
+
+There should be a way to browse results, view results that are small enough, and download results through the UI. This should include large files as well. 
+
+## User Interface for Pipeline Generation
+
+Some notable ommissions from the interface.  There should be a way to upload (potentially large) files and use the custom data in pipelines.  There should also be a way to share this data as well without re-uploading the data (especially since geospatial files can be large). 
+
+
+## Look and Feel
+
+The user interface should have the same look and feel as the website and documentation website. This should include the same color palette, icons, and overall feel.  
+
+There should 
+

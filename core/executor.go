@@ -6,7 +6,43 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
+
+// isolate ships with a fixed number of pre-created box slots (0 through
+// the configured maximum — 999 by default on Ubuntu).  To run block
+// subprocesses concurrently we allocate a unique box ID per invocation
+// and release it when the subprocess finishes.
+var (
+	isolateBoxMu   sync.Mutex
+	isolateBoxUsed = map[int]bool{}
+	isolateBoxNext = 0
+)
+
+const isolateBoxMax = 999
+
+func allocateIsolateBoxID() int {
+	isolateBoxMu.Lock()
+	defer isolateBoxMu.Unlock()
+	for i := 0; i < isolateBoxMax; i++ {
+		id := (isolateBoxNext + i) % isolateBoxMax
+		if !isolateBoxUsed[id] {
+			isolateBoxUsed[id] = true
+			isolateBoxNext = (id + 1) % isolateBoxMax
+			return id
+		}
+	}
+	// Pool exhausted — fall back to 0 and let isolate surface the
+	// error at --init time.  In practice, 1000 concurrent sandboxes
+	// would saturate every reasonable host long before this limit.
+	return 0
+}
+
+func releaseIsolateBoxID(id int) {
+	isolateBoxMu.Lock()
+	defer isolateBoxMu.Unlock()
+	delete(isolateBoxUsed, id)
+}
 
 // Execute runs a block invocation through the full lifecycle:
 // verify, set up directory, write params, set up inputs, run subprocess, collect outputs.
@@ -14,6 +50,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 	result := BlockInvocationResult{
 		Id:         block.Id,
 		PipelineId: block.PipelineId,
+		ExitCode:   -1,
 	}
 
 	// Verify block integrity
@@ -36,6 +73,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 	}
 
 	workDir := filepath.Join(pipelineDir, invID)
+	result.LogsPath = filepath.Join(workDir, "logs")
 
 	// Write params.yaml
 	if err := WriteParamsYAML(block.Arguments, workDir); err != nil {
@@ -80,6 +118,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 		result.Error = fmt.Sprintf("subprocess execution failed: %v", err)
 		return result, err
 	}
+	result.ExitCode = exitCode
 
 	if exitCode != 0 {
 		// Read stderr for error info
@@ -135,8 +174,29 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 //
 // Network access is disabled by default (isolate's new-netns); --share-net
 // re-enables it for blocks that declared network: true.
+//
+// isolate requires `--init` to create the sandbox directory before `--run`
+// and `--cleanup` to remove it after; this function handles that lifecycle
+// around each invocation using a process-unique box ID to avoid
+// collisions across concurrent calls.
 func RunBlockSubprocess(execPath string, args []string, workDir string, manifest BlockManifest, entry BlockRegistryEntry, extraBinds []string) (int, error) {
+	boxID := allocateIsolateBoxID()
+	defer releaseIsolateBoxID(boxID)
+
+	boxArg := fmt.Sprintf("--box-id=%d", boxID)
+
+	// Create the sandbox.  If init fails, there is nothing to clean up.
+	initCmd := exec.Command("isolate", boxArg, "--init")
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		return -1, fmt.Errorf("isolate --init failed: %v: %s", err, out)
+	}
+	// Always clean up, even on error paths.
+	defer func() {
+		_ = exec.Command("isolate", boxArg, "--cleanup").Run()
+	}()
+
 	isolateArgs := []string{
+		boxArg,
 		"--processes=128",       // allow multithreaded runtimes (tokio, uv, GDAL)
 		"--dir=" + workDir + ":rw",
 		"--chdir=" + workDir,

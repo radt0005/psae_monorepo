@@ -220,6 +220,11 @@ type BlockInvocationResult struct {
 	Outputs    []string           `yaml:"outputs"`
 	Expansion  *ExpansionManifest `yaml:"expansion,omitempty"`
 	Error      string             `yaml:"error,omitempty"`
+	// ExitCode is the subprocess exit code. Zero on success, non-zero
+	// when the block process itself returned a failure.  Set to -1 when
+	// the block never ran (setup error, hash mismatch, etc.).
+	ExitCode int    `yaml:"exit_code"`
+	LogsPath string `yaml:"logs_path,omitempty"`
 }
 
 // Worker represents a worker node.
@@ -349,4 +354,11 @@ type WorkerResult struct {
 	Error        string             `json:"error,omitempty"`
 	Expansion    *ExpansionManifest `json:"expansion,omitempty"`
 	OutputHashes map[string]string  `json:"output_hashes,omitempty"`
+	// ExitCode is the subprocess exit code.  Zero on success, non-zero on
+	// block failure.  -1 when the block never ran.
+	ExitCode int `json:"exit_code"`
+	// LogsPath is the absolute path to the invocation's logs directory
+	// on the shared worker filesystem, so the scheduler / UI can fetch
+	// stdout.log and stderr.log for debugging.
+	LogsPath string `json:"logs_path,omitempty"`
 }

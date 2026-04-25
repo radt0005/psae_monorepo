@@ -1,199 +1,146 @@
 <script setup lang="ts">
 import { v7 } from "uuid";
+import type { BlockListItem } from "~/utils/types";
 
-    const props = defineProps<{targetId: string | null, data: boolean}>();
-    const flow = useFlow();
-    const emit = defineEmits(["close"]);
-    const A = useBlockArgs();
-    let isUpdate = false;
-    
-    const id = props.targetId === null ? v7() : props.targetId;
-    const formData = ref<any>({})
-    const blocks = ref<BlockListItem[]>([]);
+const props = defineProps<{ targetId: string | null }>();
+const emit = defineEmits(["close"]);
+const flow = useFlow();
 
-    const pb = usePB();
+const isUpdate = computed(() => props.targetId !== null);
+const id = computed(() => props.targetId ?? v7());
 
-    const getBlockData = async () => {
-        const pbDataALL = await pb.value.collection("blocks").getFullList()
+const formData = ref<Record<string, any>>({});
+const blocks = ref<BlockListItem[]>([]);
+const selectedBlock = ref<BlockListItem | undefined>();
+const schema = ref<any>(null);
 
+const loadBlockList = async (): Promise<BlockListItem[]> => {
+  const res = await $fetch<{ blocks: BlockListItem[] }>("/api/blocks");
+  return res.blocks;
+};
 
-        const pbData = pbDataALL.filter(
-            (item) => {
-                if( props.data ) {
-                    return item.is_data                   
-                } else {
-                   return  !item.is_data
-                }
-            }
-        )
+/**
+ * Pull the args form-schema. With the new manifest, scalar inputs become
+ * the form fields. We synthesise a JSON-Schema from the inputs so the
+ * existing SchemaForm continues to work.
+ */
+const loadBlockSchema = async (name: string) => {
+  const manifest = await $fetch<any>(
+    `/api/blocks/${encodeURIComponent(name)}`,
+  );
+  return manifestToFormSchema(manifest);
+};
 
-        //const defaultPath = "./block-index.json" //path.join(__dirname, "block-index.json");
-        //const content = await fs.readFile(defaultPath);
-        const data: BlockList = {
-            blocks: pbData.map(
-                (item) => {
-                    return {
-                        name: item.name,
-                        label: item.label,
-                        type: "block"
-                    }
-                }
-            )
-        } 
-        //JSON.parse(content.toString())
-
-        return data
+function manifestToFormSchema(manifest: any) {
+  const properties: Record<string, any> = {};
+  const required: string[] = [];
+  for (const [name, decl] of Object.entries(manifest.inputs ?? {}) as Array<
+    [string, any]
+  >) {
+    if (
+      decl.type === "string" ||
+      decl.type === "number" ||
+      decl.type === "boolean"
+    ) {
+      properties[name] = {
+        type: decl.type,
+        description: decl.description,
+      };
+      required.push(name);
     }
+  }
+  return { type: "object", properties, required };
+}
 
-    
+const { data, status } = await useAsyncData("blocks", loadBlockList);
 
-    const getBlockSchema = async (name: string) => {
+watch(status, () => {
+  if (status.value === "success" && data.value) {
+    blocks.value = data.value;
+    if (!selectedBlock.value) selectedBlock.value = blocks.value[0];
+  }
+});
 
-        const pbData = await pb.value.collection("blocks").getFirstListItem(`name="${name}"`);
+watch(selectedBlock, async () => {
+  if (selectedBlock.value?.name) {
+    schema.value = await loadBlockSchema(selectedBlock.value.name);
+  }
+});
 
-        //const filepath = `/home/krbundy/GitHub/psaec/blocks/${name}.json`;
-        //const data = await fs.readFile(filepath);
+onMounted(async () => {
+  if (data.value) blocks.value = data.value;
 
-        const parsed_data: any = pbData.schema; //JSON.parse(data.toString());
-
-        return parsed_data
-
+  if (props.targetId !== null) {
+    const args = flow.getArgsById(props.targetId);
+    const selectedName = flow.getNameById(props.targetId);
+    if (selectedName) {
+      const found = blocks.value.find((b) => b.name === selectedName);
+      if (found) selectedBlock.value = found;
     }
+    if (args) formData.value = args;
+  }
 
-    
-    const { data, status, error, refresh, clear } = await useAsyncData( props.data ? 'blocks' : 'data', getBlockData );
+  if (selectedBlock.value && !schema.value) {
+    schema.value = await loadBlockSchema(selectedBlock.value.name);
+  }
+});
 
+const handleUpdate = (data: any) => {
+  formData.value = data;
+};
 
-    const schema = ref<any>(null);
-
-    
-    if(status.value === "success"){
-    }
-    const selectedBlock = ref<BlockListItem>();
-    
-    // wait for the data to load
-    watch(status, () => {
-        if(status.value === "success"){
-            selectedBlock.value = data.value?.blocks[0]
-            blocks.value = data.value?.blocks || []
-        }
+const handleSubmit = () => {
+  if (isUpdate.value) {
+    flow.updateNode(
+      id.value,
+      selectedBlock.value?.label ?? "",
+      selectedBlock.value?.name ?? "",
+      formData.value,
+    );
+  } else {
+    flow.addNode({
+      id: id.value,
+      label: selectedBlock.value?.label ?? "",
+      name: selectedBlock.value?.name ?? "",
+      args: formData.value,
     });
+  }
+  emit("close");
+};
 
-    watch(selectedBlock, 
-        async () => {
-            if(selectedBlock.value?.name){
-                const response = await getBlockSchema(selectedBlock.value?.name);//$fetch(`/api/schema/${selectedBlock.value?.name}`)
-                schema.value = response;
-            }
-        }
-    )
-
-    onMounted(
-        async () => {
-                console.log(data.value)
-            if(data.value?.blocks){
-                blocks.value = data.value?.blocks
-            }
-
-            if(selectedBlock.value){
-                schema.value = await $fetch(`/api/schema/${selectedBlock.value?.name}`)
-                
-            }
-            if(props.targetId !== null) {
-                isUpdate = true;
-                // load the data from the store
-                const args = flow.getArgsById(props.targetId);
-                const selectedName = flow.getNameById(props.targetId);
-                console.log(`Selected Block Name: ${selectedName}`)
-                if(selectedName !== null) {
-
-                    const selectedIndex = blocks.value.findIndex(
-                        (value) => value.name == selectedName
-                    )
-
-                    if(selectedIndex > -1){
-                        selectedBlock.value = blocks.value[selectedIndex]
-                    }
-                }
-                formData.value = args;
-                console.log(`Loaded args: ${JSON.stringify(args)}`)
-
-
-            } else {
-                // handle NULL case
-                // currently don't need to do anything, actually
-                
-            }
-        }
-    )
-
-    const handleUpdate = (data: any) => {
-        formData.value = data;
-    }
-
-
-    const handleSubmit = () => {
-
-        // 
-
-        A.value.updateArgs(props.targetId!, formData.value)
-        console.log(`Form submitted, saving args: ${JSON.stringify(formData.value)}`)
-        console.log(A.value.getArgsById(props.targetId!))
-        if( isUpdate ) {
-            // save data in the store 
-            flow.updateNode(
-                id, 
-                selectedBlock.value?.label || "",
-                selectedBlock.value?.name || "",
-                formData.value
-                
-            )
-
-
-        } else {
-        const block = {
-            id: id,
-            output: "",
-            input: [],
-            name: selectedBlock.value?.name || "",
-            args: formData.value,
-            type: "block"
-        } as Block;
-
-
-            flow.addNodeFromBlock(
-                block, 
-                Math.random() * 500,
-                100 + Math.random() * 400,
-                selectedBlock.value?.label || ""
-
-            );
-            // update
-        }
-
-        emit("close");
-    };
-
-    const handleCancel = () => {
-        emit("close")
-    }
+const handleCancel = () => emit("close");
 </script>
 
-
-
 <template>
-    <UCard>
-        <template #header>
-            <p v-if="props.data">Data Editor</p>
-            <p v-else >Block Editor</p>
-        </template>
-        <USelectMenu v-model="selectedBlock" :options="blocks" class="text-black"/>
-        <div v-if="schema">
-            <SchemaForm :schema="schema.parameters ? schema.parameters : schema" :targetId="props.targetId" @update:modelValue="handleUpdate"> </SchemaForm>
-        </div>
-        <template #footer>
-                <UButton class="m-4" :onclick="handleSubmit">Submit</UButton>
-                <UButton class="m-4" :onclick="handleCancel">Cancel</UButton>
-        </template>
-    </UCard>
+  <UCard>
+    <template #header>
+      <p>Block Editor</p>
+    </template>
+    <USelectMenu
+      v-model="selectedBlock"
+      :options="blocks"
+      class="text-black"
+    />
+    <p
+      v-if="selectedBlock?.network"
+      class="text-amber-700 text-sm mt-2"
+      title="This block requires network access at runtime."
+    >
+      ⚠ Requires network access
+    </p>
+    <p v-if="selectedBlock?.description" class="text-sm text-gray-600 mt-2">
+      {{ selectedBlock.description }}
+    </p>
+    <div v-if="schema">
+      <SchemaForm
+        :schema="schema.parameters ? schema.parameters : schema"
+        :targetId="props.targetId"
+        @update:modelValue="handleUpdate"
+      />
+    </div>
+    <template #footer>
+      <UButton class="m-4" :onclick="handleSubmit">Submit</UButton>
+      <UButton class="m-4" :onclick="handleCancel">Cancel</UButton>
+    </template>
+  </UCard>
 </template>

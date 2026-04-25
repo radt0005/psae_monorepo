@@ -1,1 +1,0 @@
-mistral:7b-instruct    f974a74358d6    6.3 GB    100% GPU CPU

@@ -2,11 +2,17 @@
     const emit = defineEmits(["close"])
     const data = ref("");
 
-    const { yaml_to_nodes  } = useFlow();
-    
+    const flow = useFlow();
+    const errorMessage = ref<string | null>(null);
+
     const handleConvert = () => {
-        yaml_to_nodes(data.value);
-        emit("close")
+        errorMessage.value = null;
+        try {
+            flow.yamlToNodes(data.value);
+            emit("close")
+        } catch (e: any) {
+            errorMessage.value = e?.message ?? "Failed to parse pipeline YAML";
+        }
     }
     const handleClose = () => emit("close")
 </script>
@@ -18,6 +24,7 @@
         </template>
         
         <UTextarea :rows="30" v-model="data" placeholder="Paste it here...."></UTextarea>
+        <p v-if="errorMessage" class="text-red-600 mt-2">{{ errorMessage }}</p>
 
         <template #footer>
             <UButtonGroup> 

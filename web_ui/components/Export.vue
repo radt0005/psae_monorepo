@@ -1,130 +1,100 @@
 <script setup lang="ts">
-import { PipelineBuilder } from '~/utils/pipeline';
 import YAML from "yaml";
-import { v7 } from "uuid"
-    const {nodes, edges } = useFlow();
-    const pipelineText = ref<string[]>([]);
-    const emit = defineEmits(["close"]);
-    const pb = usePB();
-    
+import { PipelineBuilder } from "~/utils/pipeline";
+import { hasUnresolvedEdges } from "~/utils/wiring";
+import { validatePipeline } from "~/utils/validate";
 
-    
-    const export_pipeline = () => {
-        pipelineText.value = [];
-        const pipeline_parser = new PipelineBuilder();
-        for(let node of nodes) {
-            pipeline_parser.add_block_from_node(node);
-        }
+const flow = useFlow();
+const pipelineText = ref<string[]>([]);
+const validationErrors = ref<string[]>([]);
+const emit = defineEmits(["close"]);
 
-        for(let edge of edges) {
-            pipeline_parser.parse_edge(edge);
-        }
+const exportPipeline = () => {
+  pipelineText.value = [];
+  validationErrors.value = [];
 
+  const builder = new PipelineBuilder({
+    name: flow.pipelineMeta.name,
+    version: flow.pipelineMeta.version,
+    description: flow.pipelineMeta.description,
+  });
+  for (const node of flow.nodes) builder.addBlockFromNode(node);
+  for (const edge of flow.edges) builder.parseEdge(edge);
 
-        const pipeline = pipeline_parser.export_pipeline();
-        const base_text = YAML.stringify(pipeline);
-        base_text.split("\n").forEach(
-            (piece) => pipelineText.value.push(piece)
-        )
-        console.log(pipeline);
-    }
+  const pipeline = builder.exportPipeline();
+  const result = validatePipeline(pipeline);
+  if (!result.ok) {
+    validationErrors.value = result.errors;
+    return;
+  }
 
-    const runPipeline = async () => {
-        const yamlContent = pipelineText.value.join("\n"); // Reconstruct YAML
-        const authData = await pb.value.collection('users').authRefresh();
-        const userId = authData.record.id
-        //const userId = pb.value.authStore.record?.id;
-
-        // write to pocketbase (which initializes the run)
-        pb.value.collection("runs").create<Run>(
-            {
-                userId: userId,
-                runId: v7(),
-                content: yamlContent,
-                status: "pending"
-            }
-        )
-        .then((response) => {
-            // navigate only when the submission is complete
-            console.log(response);
-            navigateTo(`/results/${response.runId || "test"}`);
-        })
-
-
-            /*
-        const response = await $fetch("/api/pipeline/save", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: {
-                pipeline: yamlContent
-            },
-        });
-
-        if(response) {
-            setTimeout(
-                () => {
-                },
-                1000
-            )
-        }
-            */
-
-    }
-
-
-
-    const downloadYAML = () => {
-    const yamlContent = pipelineText.value.join("\n"); // Reconstruct YAML
-    const blob = new Blob([yamlContent], { type: "text/yaml" });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pipeline.yaml";
-    document.body.appendChild(link);
-    link.click();
-    
-    // Cleanup
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const baseText = YAML.stringify(pipeline);
+  pipelineText.value = baseText.split("\n");
 };
 
+// Submission is disabled until the cloud scheduler (B.5) is online.
+// Users can still save pipelines via the Pipelines library and download YAML.
+const submissionDisabled = true;
+const submissionReason =
+  "Pipeline submission is offline while the cloud scheduler is being rebuilt. Save the pipeline to your library, or download the YAML.";
 
-    const handleClose = () => emit("close")
+const downloadYAML = () => {
+  const yamlContent = pipelineText.value.join("\n");
+  const blob = new Blob([yamlContent], { type: "text/yaml" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "pipeline.yaml";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const handleClose = () => emit("close");
 </script>
 
-
 <template>
-    <UCard class="overflow-y-auto">
-        <template #header>
-            <p>Export as YAML</p>
-        </template>
-        <div >
+  <UCard class="overflow-y-auto">
+    <template #header>
+      <p>Export as YAML</p>
+    </template>
+    <div v-if="validationErrors.length > 0" class="mb-4">
+      <p class="font-semibold text-spade-red">Pipeline is not valid:</p>
+      <ul class="list-disc pl-5 text-spade-red">
+        <li v-for="err in validationErrors" :key="err">{{ err }}</li>
+      </ul>
+    </div>
+    <div v-for="text in pipelineText" :key="text">
+      <pre>{{ text }}</pre>
+    </div>
+    <p
+      v-if="submissionDisabled && pipelineText.length > 0"
+      class="mt-spade-md p-spade-md border-l-4 border-spade-yellow bg-spade-yellow-light text-sm"
+    >
+      {{ submissionReason }}
+    </p>
 
-            <div v-for="text in pipelineText" >
-                
-                <pre>{{ text }}</pre>
-            </div>
-        </div>
-
-        <template #footer>
-            <UButtonGroup>
-                <UButton class="p-3" @click="export_pipeline">Export as YAML</UButton>
-                <UButton class="p-3" @click="handleClose">Close</UButton>
-                <UButton class="p-3" @click="downloadYAML" v-if="pipelineText.length > 0">Download</UButton>
-                <UButton class="p-3" @click="runPipeline" v-if="pipelineText.length > 0">Run it!</UButton>
-            </UButtonGroup>
-
-        </template>
-
-    </UCard>
-
+    <template #footer>
+      <UButtonGroup>
+        <UButton class="p-3" @click="exportPipeline">Export as YAML</UButton>
+        <UButton class="p-3" @click="handleClose">Close</UButton>
+        <UButton
+          class="p-3"
+          @click="downloadYAML"
+          :disabled="
+            pipelineText.length === 0 ||
+            validationErrors.length > 0 ||
+            hasUnresolvedEdges(flow.edges)
+          "
+        >Download</UButton>
+      </UButtonGroup>
+    </template>
+  </UCard>
 </template>
 <style scoped>
 pre {
-    white-space: pre-wrap; /* Ensures text wraps within the pre block */
-    word-break: break-word; /* Breaks long words to prevent overflow */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

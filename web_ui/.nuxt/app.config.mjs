@@ -1,5 +1,5 @@
 
-import { updateAppConfig } from '#app/config'
+import { _replaceAppConfig } from '#app/config'
 import { defuFn } from 'defu'
 
 const inlineConfig = {
@@ -196,7 +196,7 @@ const inlineConfig = {
       "zmdi",
       "zondicons"
     ],
-    "fetchTimeout": 500
+    "fetchTimeout": 1500
   },
   "ui": {
     "primary": "green",
@@ -219,6 +219,7 @@ const inlineConfig = {
       "fuchsia",
       "pink",
       "rose",
+      "spade",
       "primary"
     ],
     "strategy": "merge"
@@ -228,10 +229,10 @@ const inlineConfig = {
 // Vite - webpack is handled directly in #app/config
 if (import.meta.hot) {
   import.meta.hot.accept((newModule) => {
-    updateAppConfig(newModule.default)
+    _replaceAppConfig(newModule.default)
   })
 }
 
+import cfg0 from "/home/krbundy/GitHub/psae_monorepo/web_ui/app.config.ts"
 
-
-export default /*@__PURE__*/ defuFn(inlineConfig)
+export default /*@__PURE__*/ defuFn(cfg0, inlineConfig)

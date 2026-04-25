@@ -1,21 +1,32 @@
 <script setup lang="ts">
-
-  const pb = usePB();
-
-
-
+const { isAuthenticated, loading } = useAuth();
+const route = useRoute();
+const isAuthRoute = computed(() =>
+  ["/login", "/signup", "/forgot-password", "/confirm"].includes(route.path),
+);
 </script>
 
 <template>
-    <div>
+  <div class="min-h-screen flex flex-col font-body text-spade-black bg-spade-white">
+    <template v-if="loading && !isAuthRoute">
+      <main class="flex-1 flex items-center justify-center">
+        <p class="text-spade-gray">Loading…</p>
+      </main>
+    </template>
+    <template v-else-if="isAuthenticated">
       <AppHeader />
-      <div v-if="pb.authStore.isValid">
-        <Nav></Nav>
+      <main class="flex-1">
         <slot />
-      </div>
-      <div v-if="!pb.authStore.isValid">
-        <Login></Login>
-      </div>
+      </main>
       <AppFooter />
-    </div>
-  </template>
+    </template>
+    <template v-else-if="isAuthRoute">
+      <main class="flex-1">
+        <slot />
+      </main>
+    </template>
+    <template v-else>
+      <Login />
+    </template>
+  </div>
+</template>
