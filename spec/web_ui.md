@@ -16,6 +16,25 @@ The system should have user authentication and limit access to authorized users.
 
 This should be clean and intuitive for users, whether they aim to create custom workflows or use pre-populated ones.
 
+## Backend Services
+
+The web UI is backed by two services:
+
+- **PostgreSQL** holds application data: user accounts (via Better Auth), pipelines, results, and a metadata mirror of the Plugin Registry.  This replaces the earlier PocketBase-based server layer.
+- **Better Auth** is the identity provider for both the web UI and the CLI.  Web users sign in through Better Auth's web flow; CLI users sign in via `spade login`, which performs an OAuth-style flow against the same provider.  See `cli.md` and `registry.md` for the CLI side.
+
+### Block Browse and Plugin Registry Mirror
+
+The "Browse blocks" view does not query the Plugin Registry (`registry.md`) on every request.  Instead, the registry pushes metadata updates to PostgreSQL on every state transition, and the UI reads from the database.  Mirrored fields include:
+
+- Collection name, version, language, lifecycle state (`available`, `deprecated`, `yanked`, `recalled`)
+- Block names, kinds, descriptions, input/output declarations
+- Publish timestamps, screening status, signing status
+
+The registry remains the source of truth for artifacts and current state; the database is a low-latency read replica for browse, search, and pipeline-editor lookups.  If the database falls out of sync, it can be rebuilt from the registry's audit log or by re-fetching collection metadata.
+
+The UI should hide `deprecated` collections from default browse views (but allow them via a "show deprecated" toggle), exclude `yanked` and `recalled` versions from the version selector when adding a block to a pipeline, and surface a clear warning if a pipeline references a yanked or recalled version.
+
 ## Input/Output Wiring
 
 When a user connects two blocks in the flowchart editor, the UI must resolve which outputs from the upstream block feed into which inputs on the downstream block.

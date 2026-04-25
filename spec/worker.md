@@ -43,13 +43,13 @@ The worker resolves inputs to create the symlinks in the block's `inputs/` direc
 
 If type matching is ambiguous (multiple outputs of the same type could satisfy multiple inputs of the same type), the worker rejects the invocation.  This should never happen in practice because `spade check` and the web UI enforce unambiguous mappings at authoring time -- ambiguous cases require explicit references in the pipeline (see `pipeline.md` section 5.4).
 
-## Block Registry
+## Block Index
 
-The worker and CLI maintain a SQLite database as a **rebuildable index** of installed block collections.  This database is a performance optimization for fast block lookup -- it is not a source of truth.  The source of truth is always the filesystem at `~/.spade/blocks/`.
+The worker and CLI maintain a SQLite database as a **rebuildable index** of installed block collections.  This database is a performance optimization for fast block lookup -- it is not a source of truth.  The source of truth on a worker is the filesystem at `~/.spade/blocks/`; the source of truth for what *should* be available in production is the cloud **Plugin Registry** (see `registry.md`), which is a separate component from this local index.
 
-### What the registry stores
+### What the block index stores
 
-For each installed block, the registry caches:
+For each installed block, the index caches:
 
 - Collection name and version
 - Block name and ID
@@ -57,36 +57,79 @@ For each installed block, the registry caches:
 - Path to the installed collection
 - Content hash of the block's binary or entry point script (computed at install time)
 - Block manifest metadata (kind, network, input/output declarations)
+- Source of the install: registry-fetched (with the artifact's signature recorded) or locally built (developer path)
+- Last-verified registry state (`available`, `deprecated`, `yanked`, `recalled`) and the timestamp of the last check
 
 ### Security model
 
-The registry is an **index, not a security boundary**.  The real security boundaries are:
+The block index is an **index, not a security boundary**.  The real security boundaries are:
 
-- **Sandbox at runtime**: Blocks are sandboxed and cannot access the registry or the filesystem outside their working directory.  A running block cannot modify the registry.
-- **Security screening at upload time**: Collections uploaded to the cloud go through security screening before they are available for installation on production workers.
-- **Install-time trust**: The `spade install` command clones a git repository and runs build commands (`cargo build`, `uv sync`, etc.) **unsandboxed** as the current user.  This is the same trust model as `cargo install` or `pip install` -- you are trusting the package author at install time.  For the cloud path, the upload security screening mitigates this.
+- **Sandbox at runtime**: Blocks are sandboxed and cannot access the index or the filesystem outside their working directory.  A running block cannot modify the index.
+- **Screening before build at the registry**: For artifacts fetched from the registry, the source is screened before the build runs, and the registry signs the resulting artifact.  See `registry.md` for the full trust chain.
+- **Signature verification at install time**: For registry-fetched collections, the worker verifies an ed25519 signature against a list of trusted public keys before unpacking.  Forging an artifact requires the registry's private key, not just access to a worker.
+- **Install-time trust for local builds**: The CLI's build-from-source mode (`spade install <git_url>` or `spade install <local_path>`) clones a repository and runs build commands (`cargo build`, `uv sync`, etc.) **unsandboxed** as the current user.  This is the same trust model as `cargo install` or `pip install` -- you are trusting the package author at install time.  Locally-built collections are not signed and the index records them as such; production workers do not use this path.
 
-**Integrity verification**: Before executing a block, the worker computes a hash of the binary or script and compares it against the hash stored in the registry at install time.  If the hashes do not match, the worker refuses to execute the block.  This detects post-install tampering, whether malicious (a compromised process replacing a binary on the shared filesystem) or accidental (partial updates, file corruption).
+**Integrity verification**: Before executing a block, the worker computes a hash of the binary or script and compares it against the hash stored in the index at install time.  If the hashes do not match, the worker refuses to execute the block.  This detects post-install tampering, whether malicious (a compromised process replacing a binary on the shared filesystem) or accidental (partial updates, file corruption).
 
 ### Implementation details
 
 - **File permissions**: The database file should be `0600` (readable and writable only by the owner)
 - **Concurrent access**: The database should use WAL mode to support concurrent reads from multiple workers and writes from the CLI
-- **Rebuilding**: The registry can be rebuilt from the filesystem at any time (e.g. `spade setup --rebuild-index`).  This scans `~/.spade/blocks/`, re-reads all `blocks/*.yaml` manifests, recomputes content hashes, and repopulates the database.
-- **Location**: In multi-worker deployments, the registry should live on each worker node (not on the shared filesystem), populated at install time.  This prevents a compromised worker from modifying another worker's registry.
+- **Rebuilding**: The index can be rebuilt from the filesystem at any time (e.g. `spade setup --rebuild-index`).  This scans `~/.spade/blocks/`, re-reads all `blocks/*.yaml` manifests, recomputes content hashes, and repopulates the database.
+- **Location**: In multi-worker deployments, the index should live on each worker node (not on the shared filesystem), populated at install time.  This prevents a compromised worker from modifying another worker's index.
 
 ### No encryption needed
 
-The registry contains only block metadata (names, paths, versions, entrypoints, hashes) -- the same information available in the `blocks/*.yaml` files on disk.  It does not store secrets or credentials, so encryption is not required.
+The block index contains only block metadata (names, paths, versions, entrypoints, hashes) -- the same information available in the `blocks/*.yaml` files on disk.  It does not store secrets or credentials, so encryption is not required.  The worker's registry service token is stored separately and is not part of the index.
+
+## Worker Installer
+
+The worker has its own installation path, separate from the developer-facing `spade install`.  The worker installer is a **fetch-and-unpack** path that requires no language toolchains -- only the runtime libraries and the worker binary.
+
+When the worker is asked to execute a block from a collection it does not have installed (or whose version it does not have installed), it:
+
+1. Queries the Plugin Registry for `<collection>/<version>/<platform>/<arch>`
+2. Downloads the artifact tarball and the signature file
+3. Verifies the signature against the trusted public keys (fetched from the registry's `/pubkeys` endpoint and refreshed on a schedule)
+4. Verifies the artifact's content hash matches the value recorded in the registry metadata
+5. Unpacks the tarball into `~/.spade/blocks/<collection>/<version>/`
+6. Inserts an entry into the block index, recording the install source (`registry`), the signature, and the registry state at fetch time
+
+If signature or hash verification fails, the worker rejects the artifact, logs the failure, reports it to the scheduler, and does not retry against the same registry endpoint until an operator investigates.
+
+The worker base image contains:
+
+- The worker binary
+- Language runtimes: `python3`, `R`, the GDAL system library
+- The `isolate` sandbox tool
+
+It does **not** contain build toolchains (`cargo`, `go`, `bun`, `gcc`, `clang`, R/Python development headers).  Those live in the bundler image used by the registry's build step (see `registry.md`).
 
 ## Block Lookup
 
-The worker locates blocks using the registry.  Given a block name like `gdal.rasterize`, the worker:
+The worker locates blocks using the block index.  Given a block name like `gdal.rasterize`, the worker:
 
-1. Queries the registry for the collection (`gdal`) and the requested version
-2. Retrieves the block manifest metadata and installed path
-3. Verifies the content hash of the binary or script against the registry
-4. Determines the entrypoint (from the manifest's `entrypoint` field, or defaults to the block name)
+1. Queries the index for the collection (`gdal`) and the requested version
+2. If absent, runs the worker installer to fetch and unpack the artifact (see above)
+3. Retrieves the block manifest metadata and installed path
+4. Verifies the content hash of the binary or script against the index
+5. For registry-installed collections, optionally re-checks the registry state if the index entry is stale (see "Recall Handling" below)
+6. Determines the entrypoint (from the manifest's `entrypoint` field, or defaults to the block name)
+
+## Recall Handling
+
+The Plugin Registry can mark a collection version as `recalled` (see `registry.md`).  Recalled versions must not execute, even if a worker has the artifact unpacked locally.
+
+When the worker dispatches a block, it consults the local block index.  If the index entry's last-verified registry state is older than a configurable freshness window, the worker re-checks the registry for the current state of that collection version.
+
+If the state is `recalled`, the worker:
+
+1. Refuses to execute the invocation
+2. Reports the failure to the scheduler with a "recalled" reason
+3. Invalidates the local block index entry for that version
+4. Removes the local install from `~/.spade/blocks/<collection>/<version>/`
+
+The scheduler treats this like any other block failure (see "Error Handling") and halts the affected pipeline.  Operationally, security recalls are paired with a worker fleet flush so that no in-flight invocation continues running recalled code; the queue redelivery semantics that make this safe are the responsibility of the scheduler/queue layer, not the worker.
 
 ## Execution
 
@@ -102,7 +145,7 @@ For compiled languages and Bun, the collection is a single binary with subcomman
 
 ## Security
 
-The worker uses the Ubuntu `isolate` package to sandbox block subprocesses.  `isolate` restricts filesystem access, memory, and CPU time for the child process without affecting the worker's main process.  This is critical because the worker must remain unsandboxed to communicate with the scheduler, manage symlinks, read the block registry, and set up invocation directories.
+The worker uses the Ubuntu `isolate` package to sandbox block subprocesses.  `isolate` restricts filesystem access, memory, and CPU time for the child process without affecting the worker's main process.  This is critical because the worker must remain unsandboxed to communicate with the scheduler, manage symlinks, read the block index, and set up invocation directories.
 
 An alternative approach using `go-landlock` was considered but rejected: `go-landlock` applies Landlock restrictions to **all threads** in the process, which means the worker itself would be sandboxed alongside the block.  Since the worker needs full filesystem and network access to perform its orchestration duties, a per-subprocess sandbox like `isolate` is the correct choice.
 

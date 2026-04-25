@@ -11,11 +11,12 @@ Usage: `spade [OPTIONS] COMMAND [ARGS]`
 Commands
 - `run`  Runs the specified pipeline
 - `check` Validates the specified pipeline file and all block manifests in a collection
-- `install` Installs a block collection from a git repository
-- `upload` Uploads a block collection for security screening and use on the cloud
+- `install` Installs a block collection from a git repository, a local directory, or the cloud registry
+- `publish` Submits a block collection to the cloud registry for screening, build, and distribution
 - `init` Creates the boilerplate for a new block collection in the current directory
 - `add`  Adds a new block to the current collection
 - `setup` Set up the Spade system on the local machine
+- `login` Authenticate to the cloud registry
 
 
 ## `spade init`
@@ -59,12 +60,29 @@ Validates a pipeline file or block collection:
 
 ## `spade install <source>`
 
-Installs a block collection from a git repository or a local directory.  `<source>` may be:
+Installs a block collection from a git repository, a local directory, or the cloud registry.  `<source>` may be:
 
-- A git URL (`http://`, `https://`, `git://`, `ssh://`, `file://`, or `git@host:path`) — the repository is shallow-cloned into a temp directory.
-- A local path (including `.`, `./sub`, and absolute paths) — the directory is used in place. It does not need to be a git repository.
+- A **registry reference** (e.g. `gdal@1.0.0` or `gdal@latest`) — fetches a prebuilt, signed artifact from the cloud registry.  No local build is performed; this path requires no language toolchains beyond the runtime.  See `registry.md`.
+- A **git URL** (`http://`, `https://`, `git://`, `ssh://`, `file://`, or `git@host:path`) — the repository is shallow-cloned into a temp directory and built locally.
+- A **local path** (including `.`, `./sub`, and absolute paths) — the directory is used in place and built locally. It does not need to be a git repository.
 
-The process:
+### Registry-fetch mode
+
+For a registry reference, the process is:
+
+1. Resolve the reference to a concrete version using the registry.
+2. Determine the platform/architecture for the local machine.
+3. Download the artifact tarball and signature for `<collection>/<version>/<platform>/<arch>`.
+4. Verify the signature against the registry's trusted public keys.
+5. Verify the artifact's content hash matches the registry metadata.
+6. Unpack into `~/.spade/blocks/<collection>/<version>/`.
+7. Update the local block index.
+
+The CLI uses the developer's `spade login` session if available, otherwise the registry's public read endpoints.  Workers use a service token instead of a developer session (see `registry.md`).
+
+### Build-from-source mode
+
+For a git URL or local path, the process is:
 
 1. Acquire the source: clone the repository (git URL) or use the local directory as-is.
 2. Detect the language from the source root (`Cargo.toml`, `pyproject.toml`, `go.mod`, `package.json`, or R).
@@ -75,9 +93,11 @@ The process:
    - **Python**: `uv sync` and `uv tool install .`
    - **TypeScript**: `bun build` (bundles into a single executable)
    - **R**: `Rscript setup.R` if present, otherwise install `renv` dependencies
-5. Install to `~/.spade/blocks/<collection>/<version>/`
+5. Install to `~/.spade/blocks/<collection>/<version>/`.
 
 The version is read from the language's own manifest (e.g. `Cargo.toml`, `pyproject.toml`).  Multiple versions of the same collection can be installed side by side.  Local-path installs build in place, so native toolchains reuse their incremental caches.
+
+Locally-built collections are **not** signed.  The local block index records them as locally built, distinct from registry-fetched artifacts.  This is the developer-facing path; production workers always use registry-fetch.
 
 
 ## `spade run <pipeline.yaml>`
@@ -85,9 +105,30 @@ The version is read from the language's own manifest (e.g. `Cargo.toml`, `pyproj
 Runs the specified pipeline locally using the single-instance scheduler.  The CLI connects to the Go core package for scheduling and uses the local machine as the sole worker.
 
 
-## `spade upload`
+## `spade publish`
 
-Validates and packages the current collection for upload to the cloud system.  This runs `spade check` first, then packages the collection for security screening and deployment.
+Submits the current block collection to the cloud registry for screening, build, and distribution.  Replaces the earlier `spade upload` command.
+
+`spade publish` does **not** upload an artifact.  It submits a `(repo_url, commit_sha, collection_name, version)` reference to the registry, which then clones the repository at the specified SHA, screens the source, builds the artifact in the bundler image, signs it, and stores it.  The build-after-screen ordering is the foundation of the registry's trust chain (see `registry.md`).
+
+The process:
+
+1. Run `spade check` against the working tree.
+2. Verify the working tree is clean (no uncommitted changes) and that the current `HEAD` is reachable on the configured remote (no unpushed commits).
+3. Resolve the collection name and version from the language's own manifest.
+4. Submit `(repo_url, commit_sha, collection_name, version)` to the registry using the developer's `spade login` session.
+5. Print the registry URL where the developer can track screening, build, and signing progress.
+
+Because the registry only sees what is reachable on the remote, `spade publish` will refuse to submit if the working tree is dirty or the current commit has not been pushed.  This avoids the "screened source A, deployed source B" trust gap.
+
+
+## `spade login`
+
+Authenticates the CLI to the cloud registry.  The CLI initiates an OAuth-style flow against the system's identity provider (Better Auth -- see `web_ui.md` and `registry.md`) and stores the resulting session credentials locally for use by `spade publish` and other authenticated commands.
+
+The session is per-user, stored under `~/.spade/auth/`.  `spade logout` clears the stored credentials.
+
+Workers do not use `spade login`; they authenticate to the registry with a rotated service token provisioned at worker setup.
 
 
 ## `spade setup`
