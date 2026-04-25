@@ -1,34 +1,19 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import type { BlockList } from "../../../utils/types";
-import { fileURLToPath } from 'url';
-//import { useServerPocketbase } from "~/server/utils/useServerPocketbase";
+import { useDb } from "~/server/db";
+import { makeBlockRepo } from "~/server/db/repositories/blocks";
+import type { BlockList, BlockListItem } from "~/utils/types";
 
+export default defineEventHandler(async (_event) => {
+  const repo = makeBlockRepo(useDb());
+  const rows = await repo.listAll();
 
-//const __dirname = "~/GitHub/psaec" //path.dirname(fileURLToPath(import.meta.url));
-const pb = useServerPocketbase();
+  const items: BlockListItem[] = rows.map((row) => ({
+    id: row.manifest.id,
+    name: row.name,
+    label: row.label,
+    kind: row.manifest.kind,
+    network: row.manifest.network,
+    description: row.manifest.description,
+  }));
 
-export default defineEventHandler(
-    async (_event) => {
-
-
-        const pbData = await pb.collection("blocks").getFullList()
-
-        //const defaultPath = "./block-index.json" //path.join(__dirname, "block-index.json");
-        //const content = await fs.readFile(defaultPath);
-        const data: BlockList ={
-            blocks: pbData.map(
-                (item) => {
-                    return {
-                        name: item.name,
-                        label: item.label,
-                        type: "block"
-                    }
-                }
-            )
-        } 
-        //JSON.parse(content.toString())
-
-        return data
-    }
-)
+  return { blocks: items } satisfies BlockList;
+});

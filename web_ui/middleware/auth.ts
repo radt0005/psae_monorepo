@@ -1,13 +1,22 @@
-// middleware/auth.ts
-import usePB from "@/composables/usePB";
+/**
+ * Route guard. Redirects unauthenticated users to /login (except for
+ * the auth-route allowlist).
+ */
+const PUBLIC_ROUTES = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/confirm",
+]);
 
-export default defineNuxtRouteMiddleware((to) => {
-  const config = useRuntimeConfig()
-  const pb = usePB()
-  const cookie = useCookie('pb_auth')
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (PUBLIC_ROUTES.has(to.path)) return;
 
-  pb.value.authStore.loadFromCookie(cookie.value || '')
-
-  if (!pb.value.authStore.isValid && to.path !== '/login')
-    return navigateTo('/login', { redirectCode: 401 })
-})
+  const { isAuthenticated, loading, refresh } = useAuth();
+  if (loading.value && !isAuthenticated.value) {
+    await refresh();
+  }
+  if (!isAuthenticated.value) {
+    return navigateTo("/login", { redirectCode: 401 });
+  }
+});

@@ -1,0 +1,8 @@
+id: hello.broken
+version: 1.0.0
+kind: standard
+network: false
+description: Always exits non-zero for failure-path testing.
+
+inputs: {}
+outputs: {}

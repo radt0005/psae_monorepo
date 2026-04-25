@@ -113,6 +113,16 @@
               "default": null,
               "type": "any"
             },
+            "customCollections": {
+              "title": "Custom Icon Collections",
+              "tags": [
+                "@studioIcon material-symbols:format-list-bulleted"
+              ],
+              "tsType": "string[] | null",
+              "id": "#appConfig/icon/customCollections",
+              "default": null,
+              "type": "any"
+            },
             "provider": {
               "title": "Icon Provider",
               "description": "Provider to use for fetching icons\n\n- `server` - Fetch icons with a server handler\n- `iconify` - Fetch icons with Iconify API, purely client-side\n\n`server` by default; `iconify` when `ssr: false`",
@@ -169,7 +179,7 @@
                 "@studioIcon material-symbols:timer"
               ],
               "id": "#appConfig/icon/fetchTimeout",
-              "default": 500,
+              "default": 1500,
               "type": "number"
             },
             "customize": {
@@ -195,10 +205,11 @@
             "cssLayer": {},
             "cssWherePseudo": true,
             "collections": null,
+            "customCollections": null,
             "iconifyApiEndpoint": "https://api.iconify.design",
             "fallbackToApi": true,
             "localApiEndpoint": "/api/_nuxt_icon",
-            "fetchTimeout": 500
+            "fetchTimeout": 1500
           }
         }
       },
@@ -216,10 +227,11 @@
           "cssLayer": {},
           "cssWherePseudo": true,
           "collections": null,
+          "customCollections": null,
           "iconifyApiEndpoint": "https://api.iconify.design",
           "fallbackToApi": true,
           "localApiEndpoint": "/api/_nuxt_icon",
-          "fetchTimeout": 500
+          "fetchTimeout": 1500
         }
       }
     }
@@ -239,10 +251,11 @@
         "cssLayer": {},
         "cssWherePseudo": true,
         "collections": null,
+        "customCollections": null,
         "iconifyApiEndpoint": "https://api.iconify.design",
         "fallbackToApi": true,
         "localApiEndpoint": "/api/_nuxt_icon",
-        "fetchTimeout": 500
+        "fetchTimeout": 1500
       }
     }
   }

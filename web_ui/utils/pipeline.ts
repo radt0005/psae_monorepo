@@ -1,81 +1,109 @@
 import type { Node, Edge } from "@vue-flow/core";
-import { v7 } from 'uuid';
-import YAML from "yaml";
-import type { Pipeline, Block, BlockBuilder, PipelineMetadata, ArgKeyValueStore } from "./types"
+import { v7 } from "uuid";
+import type {
+  Pipeline,
+  Block,
+  PipelineMetadata,
+  InputRef,
+  EdgeData,
+} from "./types";
 
-
-const { addNode, connect} = useFlow();
-
+/**
+ * Build a spec/pipeline.md compliant Pipeline from the editor's node + edge state.
+ *
+ * Reference resolution rules (mirrors pipeline.md §5):
+ *   - Edges that carry resolved bindings on `edge.data` produce explicit
+ *     {block, output} references — one per binding.
+ *   - Edges without bindings produce a bare invocation id (type matching
+ *     happens at the worker / `spade check`).
+ */
 export class PipelineBuilder {
-    block_count: number = 0;
-    blocks: BlockBuilder[] = []
-    data: BlockBuilder[] = []
-    metadata: PipelineMetadata = {
-        id: v7(),
-        version: "0.0.1",
-        name: undefined,
-        description: undefined
+  blocks: Block[] = [];
+  metadata: PipelineMetadata;
+
+  constructor(metadata?: Partial<PipelineMetadata>) {
+    this.metadata = {
+      id: metadata?.id ?? v7(),
+      name: metadata?.name ?? "untitled-pipeline",
+      version: metadata?.version ?? "0.1.0",
+      description: metadata?.description,
+    };
+  }
+
+  addBlockFromNode(node: Node) {
+    this.blocks.push({
+      id: node.id,
+      name: node.data?.name ?? node.data?.label ?? "",
+      inputs: [],
+      args: node.data?.args ?? {},
+    });
+  }
+
+  parseEdge(edge: Edge) {
+    const upstream = edge.source;
+    const downstream = edge.target;
+    const target = this.blocks.find((b) => b.id === downstream);
+    if (!target) return;
+
+    const data = edge.data as EdgeData | undefined;
+    if (data?.bindings && data.bindings.length > 0) {
+      for (const binding of data.bindings) {
+        target.inputs.push({ block: upstream, output: binding.output });
+      }
+    } else {
+      target.inputs.push(upstream);
     }
+  }
 
+  setName(name: string) {
+    this.metadata.name = name;
+  }
 
+  setDescription(desc: string) {
+    this.metadata.description = desc;
+  }
 
-    constructor() {}
+  setVersion(version: string) {
+    this.metadata.version = version;
+  }
 
-    add_block_from_node(node: Node){
-        const node_parsed = {
-            id: node.id,
-            input: [],
-            output: [],
-            name: node.data.name,
-            args: node.data.args || {}
-        } as BlockBuilder;
+  /** Generate a fresh pipeline id (use at submission time per pipeline.md §10). */
+  freshSubmissionId() {
+    this.metadata.id = v7();
+  }
 
-        if( node.data.is_data) {
-            this.data.push(node_parsed);
-        } else {
-            this.blocks.push(node_parsed);
-
-        }
-
-    }
-
-    parse_edge(edge: Edge) {
-        const input_id = edge.source;
-        const output_id = edge.target;
-
-        for(let block of this.blocks) {
-            if(block.id === output_id) {
-                block.input.push(input_id)
-            }
-        }
-    }
-
-    set_name(name: string) {
-        this.metadata.name = name;
-    }
-
-    set_description(desc: string) {
-        this.metadata.description = desc;
-    }
-
-    export_pipeline() {
-        const blocks = this.blocks.map((b) => block_builder_to_block(b));
-        const data = this.data.map((d) => block_builder_to_block(d));
-
-        return {
-            ...this.metadata,
-            blocks: blocks,
-            data: data, 
-        }
-    }
+  exportPipeline(): Pipeline {
+    return {
+      id: this.metadata.id,
+      name: this.metadata.name,
+      version: this.metadata.version,
+      description: this.metadata.description,
+      blocks: this.blocks.map((b) => ({
+        id: b.id,
+        name: b.name,
+        inputs: dedupeInputs(b.inputs),
+        args: b.args ?? {},
+      })),
+    };
+  }
 }
 
-
-function block_builder_to_block(b: BlockBuilder) {
-    return {
-        id: b.id, 
-        name: b.name,
-        input: b.input || [],
-        args: b.args
+/** Drop duplicate bare references (a block referenced twice as a bare id). */
+function dedupeInputs(inputs: InputRef[]): InputRef[] {
+  const seenBare = new Set<string>();
+  const seenExplicit = new Set<string>();
+  const out: InputRef[] = [];
+  for (const ref of inputs) {
+    if (typeof ref === "string") {
+      if (seenBare.has(ref)) continue;
+      seenBare.add(ref);
+      out.push(ref);
+    } else {
+      const key = `${ref.block}::${ref.output}`;
+      if (seenExplicit.has(key)) continue;
+      seenExplicit.add(key);
+      out.push(ref);
     }
+  }
+  return out;
 }

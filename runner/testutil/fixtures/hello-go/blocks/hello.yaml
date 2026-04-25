@@ -1,0 +1,13 @@
+id: hello.hello
+version: 1.0.0
+kind: standard
+network: false
+description: Writes a fixed greeting to outputs/message/message.txt.
+
+inputs: {}
+
+outputs:
+  message:
+    type: file
+    format: text
+    description: The greeting message

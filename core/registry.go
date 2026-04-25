@@ -3,11 +3,57 @@ package core
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+// DefaultSpadeHome returns the default Spade home directory (~/.spade).
+// Honors the SPADE_HOME environment variable if set.
+func DefaultSpadeHome() string {
+	if p := os.Getenv("SPADE_HOME"); p != "" {
+		return p
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ".spade"
+	}
+	return filepath.Join(home, ".spade")
+}
+
+// DefaultRegistryPath returns the default SQLite registry path
+// ($SPADE_HOME/registry.db, defaulting to ~/.spade/registry.db).
+func DefaultRegistryPath() string {
+	return filepath.Join(DefaultSpadeHome(), "registry.db")
+}
+
+// DefaultBlocksDir returns the default installed-block collections directory
+// ($SPADE_HOME/blocks, defaulting to ~/.spade/blocks).
+func DefaultBlocksDir() string {
+	return filepath.Join(DefaultSpadeHome(), "blocks")
+}
+
+// DefaultWorkRoot returns the default invocation work root
+// ($SPADE_HOME/work, defaulting to ~/.spade/work).
+func DefaultWorkRoot() string {
+	return filepath.Join(DefaultSpadeHome(), "work")
+}
+
+// DefaultCacheDir returns the default block output cache directory
+// ($SPADE_HOME/cache, defaulting to ~/.spade/cache).
+func DefaultCacheDir() string {
+	return filepath.Join(DefaultSpadeHome(), "cache")
+}
+
+// LoadManifestForEntry reads the block manifest YAML file from the installed
+// collection at <entry.InstalledPath>/blocks/<entry.BlockName>.yaml.
+// Returns a parsed BlockManifest or an error.
+func LoadManifestForEntry(entry BlockRegistryEntry) (BlockManifest, error) {
+	path := filepath.Join(entry.InstalledPath, "blocks", entry.BlockName+".yaml")
+	return LoadBlockManifest(path)
+}
 
 // BlockRegistry manages the SQLite block registry database.
 type BlockRegistry struct {

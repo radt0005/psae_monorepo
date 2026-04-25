@@ -167,6 +167,34 @@ declare module 'nuxt/schema' {
       cdnURL: string,
    },
 
+   databaseUrl: string,
+
+   betterAuthSecret: string,
+
+   betterAuthUrl: string,
+
+   s3Endpoint: string,
+
+   s3Region: string,
+
+   s3AccessKeyId: string,
+
+   s3SecretAccessKey: string,
+
+   s3Bucket: string,
+
+   rabbitmqUrl: string,
+
+   rabbitmqQueue: string,
+
+   pocketbaseUrl: string,
+
+   pocketbaseAdminUser: string,
+
+   pocketbaseAdminPassword: string,
+
+   runsDir: string,
+
    nitro: {
       envPrefix: string,
    },
@@ -176,7 +204,9 @@ declare module 'nuxt/schema' {
    },
   }
   interface PublicRuntimeConfig {
+   pocketbaseUrl: string,
 
+   betterAuthUrl: string,
   }
 }
 declare module 'vue' {

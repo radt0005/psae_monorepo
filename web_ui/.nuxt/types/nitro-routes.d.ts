@@ -3,17 +3,27 @@ import type { Serialize, Simplify } from "nitropack/types";
 declare module "nitropack/types" {
   type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
   interface InternalApi {
-    '/api/blocks/args': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/blocks/args').default>>>>
+    '/api/auth/**:all': {
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/[...all]').default>>>>
+    }
+    '/api/blocks/:id': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/blocks/[id].get').default>>>>
+    }
+    '/api/blocks': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/blocks/index.post').default>>>>
     }
     '/api/blocks/list': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/blocks/list').default>>>>
     }
-    '/api/data/list': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/list').default>>>>
+    '/api/data/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/[id].get').default>>>>
     }
-    '/api/pipeline/load': {
-      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipeline/load.get').default>>>>
+    '/api/data/:id/share': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/[id]/share.post').default>>>>
+    }
+    '/api/data': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/index.get').default>>>>
     }
     '/api/pipeline/run': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipeline/run.post').default>>>>
@@ -21,20 +31,36 @@ declare module "nitropack/types" {
     '/api/pipeline/save': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipeline/save.post').default>>>>
     }
+    '/api/pipelines/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/[id].put').default>>>>
+    }
+    '/api/pipelines/:id/share': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/[id]/share.delete').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/[id]/share.post').default>>>>
+    }
+    '/api/pipelines': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/index.post').default>>>>
+    }
     '/api/results/:id/:name': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/results/[id]/[name].get').default>>>>
     }
     '/api/results/:id': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/results/[id]/index.get').default>>>>
     }
-    '/api/results/list': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/results/list').default>>>>
-    }
     '/api/schema/:id': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/schema/[id].get').default>>>>
     }
+    '/api/uploads/data/complete': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/uploads/data/complete.post').default>>>>
+    }
+    '/api/uploads/data/init': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/uploads/data/init.post').default>>>>
+    }
     '/__nuxt_error': {
-      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/renderer').default>>>>
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>
     }
     '/api/_nuxt_icon/:collection': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/@nuxt/icon/dist/runtime/server/api').default>>>>

@@ -1,46 +1,40 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import parse from "csv-simple-parser";
-import type { Options } from "csv-simple-parser";
 
+export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig();
+  const basePath = config.runsDir as string;
+  if (!basePath) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "RUNS_DIR is not configured",
+    });
+  }
 
+  const id = getRouterParam(event, "id");
+  const name = getRouterParam(event, "name");
+  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+    throw createError({ statusCode: 400, statusMessage: "Invalid run id" });
+  }
+  if (!name || name.includes("/") || name.includes("..")) {
+    throw createError({ statusCode: 400, statusMessage: "Invalid file name" });
+  }
 
-export default defineEventHandler(
+  const filePath = path.join(basePath, id, name);
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(path.resolve(basePath) + path.sep)) {
+    throw createError({ statusCode: 400, statusMessage: "Invalid path" });
+  }
 
-    async (event) => {
-
-        // this needs to be updated to prevent path traversal attacks
-        const name = getRouterParam(event, "name") || "test";
-        const id = getRouterParam(event, "id") || "example.csv";
-
-        const basePath = "/home/krbundy/.psae/runs";
-
-        const filePath = path.join(basePath, id, name );
-
-        const data = await fs.readFile(filePath);
-        let response_data: any;
-
-        // this limits the data to CSV and JSON/GeoJSON files
-        try {
-
-            // based on the file type, read the correct way.
-            if(filePath.includes(".csv")){
-                // load CSV file into an object
-                //const options: Options = {}
-                response_data = parse(data.toString(), {
-                    header: true
-                });
-            } else {
-                // otherwise assume it's a CSV or 
-                response_data = JSON.parse(data.toString())
-            }
-            return response_data
-        } catch(e){
-            console.error(e);
-            return {
-                error: "File not a valid type"
-            }
-        }
-
+  try {
+    const data = await fs.readFile(resolved);
+    if (resolved.endsWith(".csv")) {
+      return parse(data.toString(), { header: true });
     }
-)
+    return JSON.parse(data.toString());
+  } catch (e) {
+    console.error(e);
+    throw createError({ statusCode: 415, statusMessage: "Unsupported file" });
+  }
+});
