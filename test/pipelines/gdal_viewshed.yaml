@@ -1,18 +1,18 @@
-id: 019db076-2453-7dce-806a-6ef177256da2
+id: 019dd04d-07bb-7366-806a-4efc258b0082
 name: gdal_viewshed
 version: "1.0"
 description: Compute viewshed from observer point
 blocks:
-- id: 019db076-2453-7d78-8068-b4c1b2dd1bc5
+- id: 019dd04d-07bb-73c6-8068-613074f5fdae
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
+    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019db076-2453-7d1d-8069-f24af941e5ee
+- id: 019dd04d-07bb-71b2-8069-0ae7ba6143bd
   name: gdal.viewshed
   inputs:
-  - 019db076-2453-7d78-8068-b4c1b2dd1bc5
+  - 019dd04d-07bb-73c6-8068-613074f5fdae
   args:
     observer_x: -122.25
     observer_y: 37.75

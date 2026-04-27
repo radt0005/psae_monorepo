@@ -1,27 +1,27 @@
-id: 019db076-245e-7703-80bb-3baea15fdf62
+id: 019dd04d-07db-7524-80bb-af83f72d58c4
 name: gdal_vector_erase
 version: "1.0"
 description: Erase features of A by B
 blocks:
-- id: 019db076-245e-7a5d-80b8-933812debf32
+- id: 019dd04d-07db-76d0-80b8-e637f98d47c7
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
+    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019db076-245e-7dd4-80b9-fb9ed08f8ceb
+- id: 019dd04d-07db-7e6b-80b9-0cd72fa92a46
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
+    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019db076-245e-7b2a-80ba-e0a5c5b198f2
+- id: 019dd04d-07db-7e8a-80ba-ebd4a6e38cac
   name: gdal.vector_erase
   inputs:
-  - block: 019db076-245e-7a5d-80b8-933812debf32
+  - block: 019dd04d-07db-76d0-80b8-e637f98d47c7
     output: file
     as: a
-  - block: 019db076-245e-7dd4-80b9-fb9ed08f8ceb
+  - block: 019dd04d-07db-7e6b-80b9-0cd72fa92a46
     output: file
     as: b
   args: {}

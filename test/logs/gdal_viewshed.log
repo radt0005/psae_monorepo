@@ -1,7 +1,5 @@
-Loaded pipeline: gdal_viewshed (019db070-daac-7f10-806a-dd8e1447b1a9)
+Loaded pipeline: gdal_viewshed (019dd04d-07bb-7366-806a-4efc258b0082)
 Executing pipeline with 2 block(s)...
-  [1/2] data.read (cached)
-  [2/2] gdal.viewshed running...
-  [2/2] gdal.viewshed complete
+  [1/2] data.read running...
+Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
 
-Pipeline complete: 2 block(s) executed (1 cached) in 960ms

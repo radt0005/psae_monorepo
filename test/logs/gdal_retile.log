@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_retile (019db070-daa9-789d-804e-d86a958dcc76)
+Loaded pipeline: gdal_retile (019dd04d-07b2-7cda-804e-f546e4a72584)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.retile running...
   [2/2] gdal.retile complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 748ms
+Pipeline complete: 2 block(s) executed (1 cached) in 2.296s

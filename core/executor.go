@@ -186,6 +186,7 @@ func RunBlockSubprocess(execPath string, args []string, workDir string, manifest
 	boxArg := fmt.Sprintf("--box-id=%d", boxID)
 
 	// Create the sandbox.  If init fails, there is nothing to clean up.
+
 	initCmd := exec.Command("isolate", boxArg, "--init")
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		return -1, fmt.Errorf("isolate --init failed: %v: %s", err, out)
@@ -197,15 +198,15 @@ func RunBlockSubprocess(execPath string, args []string, workDir string, manifest
 
 	isolateArgs := []string{
 		boxArg,
-		"--processes=128",       // allow multithreaded runtimes (tokio, uv, GDAL)
+		"--processes=128", // allow multithreaded runtimes (tokio, uv, GDAL)
 		"--dir=" + workDir + ":rw",
 		"--chdir=" + workDir,
 		"--dir=" + entry.InstalledPath,
-		"--mem=2048000",         // 2GB address-space (per-process rlimit)
-		"--time=3600",           // 1 hour CPU
-		"--wall-time=3600",      // 1 hour wall
-		"--fsize=2097152",       // 2GB max file size
-		"--open-files=4096",     // GDAL/Python open a lot of files
+		"--mem=2048000",     // 2GB address-space (per-process rlimit)
+		"--time=3600",       // 1 hour CPU
+		"--wall-time=3600",  // 1 hour wall
+		"--fsize=2097152",   // 2GB max file size
+		"--open-files=4096", // GDAL/Python open a lot of files
 	}
 
 	isolateArgs = append(isolateArgs, languageSandboxBinds(entry)...)

@@ -1,8 +1,8 @@
-Loaded pipeline: data_read_write_chain (019db070-dabf-7c2a-80ef-59bc25655e19)
+Loaded pipeline: data_read_write_chain (019dd04d-07ed-78b3-80ef-4e3f1cff36a1)
 Executing pipeline with 2 block(s)...
   [1/2] data.read running...
   [1/2] data.read complete
   [2/2] data.write running...
-  [2/2] data.write complete
+Block data.write failed: block exited with code 1: spade: unauthorized: PermissionDenied (permanent) at write, context: { service: fs, path: home/krbundy/UMaine/psae_monorepo/test/output/data_chain_test.tif } => permission denied, source: Permission denied (os error 13)
+Exited with error status 1
 
-Pipeline complete: 2 block(s) executed in 36ms

@@ -1,8 +1,5 @@
-Loaded pipeline: gdal_vector_erase (019db070-dab8-7887-80bb-6ac0b269c2d0)
+Loaded pipeline: gdal_vector_erase (019dd04d-07db-7524-80bb-af83f72d58c4)
 Executing pipeline with 3 block(s)...
-  [1/3] data.read (cached)
-  [2/3] data.read (cached)
-  [3/3] gdal.vector_erase running...
-  [3/3] gdal.vector_erase complete
+  [1/3] data.read running...
+Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
 
-Pipeline complete: 3 block(s) executed (2 cached) in 930ms

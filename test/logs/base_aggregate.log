@@ -1,10 +1,9 @@
-Loaded pipeline: base_aggregate (019db070-daa1-7c54-8013-68467bd258f8)
+Loaded pipeline: base_aggregate (019dd04d-079a-7a23-8013-f77a0b72dc7f)
 Executing pipeline with 3 block(s)...
-  [1/3] data.read running...
-  [1/3] data.read complete
+  [1/3] data.read (cached)
   [2/3] base.csv_to_parquet running...
   [2/3] base.csv_to_parquet complete
   [3/3] base.aggregate running...
   [3/3] base.aggregate complete
 
-Pipeline complete: 3 block(s) executed in 115ms
+Pipeline complete: 3 block(s) executed (1 cached) in 474ms

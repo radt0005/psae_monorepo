@@ -1,8 +1,5 @@
-Loaded pipeline: gdal_vector_update (019db070-dab8-72a3-80bf-4e50a5fd0579)
+Loaded pipeline: gdal_vector_update (019dd04d-07dd-7e85-80bf-d3ee8f00b427)
 Executing pipeline with 3 block(s)...
-  [1/3] data.read (cached)
-  [2/3] data.read (cached)
-  [3/3] gdal.vector_update running...
-  [3/3] gdal.vector_update complete
+  [1/3] data.read running...
+Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
 
-Pipeline complete: 3 block(s) executed (2 cached) in 934ms

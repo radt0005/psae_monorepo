@@ -1,6 +1,6 @@
-Loaded pipeline: base_map_list (019db070-daa5-7503-802f-1570ba531720)
+Loaded pipeline: base_map_list (019dd04d-07a4-7b31-802f-399e1924fd08)
 Executing pipeline with 2 block(s)...
   [1/2] base.map_list running...
   [1/2] base.map_list complete
 
-Pipeline complete: 1 block(s) executed in 50ms
+Pipeline complete: 1 block(s) executed in 251ms

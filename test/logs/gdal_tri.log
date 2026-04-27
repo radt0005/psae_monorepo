@@ -1,7 +1,4 @@
-Loaded pipeline: gdal_tri (019db070-dab0-7365-8081-8ca1ea9be4b9)
+Loaded pipeline: gdal_tri (019dd04d-07c4-7ef1-8081-8570a504f0e9)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.tri running...
-  [2/2] gdal.tri complete
-
-Pipeline complete: 2 block(s) executed (1 cached) in 936ms

@@ -1,8 +1,5 @@
-Loaded pipeline: gdal_vector_merge (019db070-dab3-7a6f-809c-98754219d70b)
+Loaded pipeline: gdal_vector_merge (019dd04d-07cf-7bc7-809c-e7742bfd6a17)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection running...
-  [1/2] data.read_collection complete
-  [2/2] gdal.vector_merge running...
-  [2/2] gdal.vector_merge complete
+Block data.read_collection failed: block exited with code 2: Box not found, did you run `isolate --init'?
 
-Pipeline complete: 2 block(s) executed in 940ms

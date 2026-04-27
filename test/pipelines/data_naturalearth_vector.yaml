@@ -1,9 +1,9 @@
-id: 019db076-2467-7b9e-80f7-024b2f7bf5d5
+id: 019dd04d-07f0-7ae8-80f7-02447381fdb6
 name: data_naturalearth_vector
 version: "1.0"
 description: '[NETWORK] Download Natural Earth country boundaries'
 blocks:
-- id: 019db076-2467-7cbf-80f6-a82748ad8403
+- id: 019dd04d-07f0-7109-80f6-63e9ea3cd747
   name: data.naturalearth_vector
   inputs: []
   args:

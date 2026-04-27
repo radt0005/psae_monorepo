@@ -1,8 +1,5 @@
-Loaded pipeline: gdal_vector_union (019db070-dab4-7ca4-80a3-ab6b3784ff6b)
+Loaded pipeline: gdal_vector_union (019dd04d-07d1-7a79-80a3-cc7132d066c9)
 Executing pipeline with 3 block(s)...
-  [1/3] data.read (cached)
-  [2/3] data.read (cached)
-  [3/3] gdal.vector_union running...
-  [3/3] gdal.vector_union complete
+  [1/3] data.read running...
+Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
 
-Pipeline complete: 3 block(s) executed (2 cached) in 929ms

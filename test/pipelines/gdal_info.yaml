@@ -1,17 +1,17 @@
-id: 019db076-2458-735d-808f-d3c1f0239a2e
+id: 019dd04d-07c9-736b-808f-4ef1adb8ff2c
 name: gdal_info
 version: "1.0"
 description: Report raster metadata as JSON
 blocks:
-- id: 019db076-2458-7c69-808d-c2604e362046
+- id: 019dd04d-07c9-73d5-808d-e79b04113677
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
+    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019db076-2458-7b41-808e-656ea9ba5603
+- id: 019dd04d-07c9-7278-808e-2502dc8be142
   name: gdal.info
   inputs:
-  - 019db076-2458-7c69-808d-c2604e362046
+  - 019dd04d-07c9-73d5-808d-e79b04113677
   args:
     compute_stats: true

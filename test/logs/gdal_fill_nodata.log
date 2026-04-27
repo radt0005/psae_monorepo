@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_fill_nodata (019db070-daab-7c47-8061-809b488f07e3)
+Loaded pipeline: gdal_fill_nodata (019dd04d-07b7-7330-8061-34613994eadf)
 Executing pipeline with 2 block(s)...
   [1/2] data.read running...
   [1/2] data.read complete
   [2/2] gdal.fill_nodata running...
   [2/2] gdal.fill_nodata complete
 
-Pipeline complete: 2 block(s) executed in 928ms
+Pipeline complete: 2 block(s) executed in 2.764s

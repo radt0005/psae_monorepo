@@ -35,6 +35,8 @@ because `spade install` builds each collection with its own native tools.
   
 - Install the Bun run-time (for front-end system): [Installation Instructions](https://bun.sh)
 
+- Isolate [https://github.com/ioi/isolate](https://github.com/ioi/isolate) on Linux systems.  See the installation instructions in the repository
+
 ### 1.7 System libraries (geospatial)
 
 The `blocks/gdal` collection wraps GDAL and needs the system library

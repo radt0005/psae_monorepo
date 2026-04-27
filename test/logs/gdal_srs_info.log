@@ -1,6 +1,6 @@
-Loaded pipeline: gdal_srs_info (019db070-dab9-7b5b-80c4-c7a8f3d2278b)
+Loaded pipeline: gdal_srs_info (019dd04d-07df-7955-80c4-2c2c5ccf181b)
 Executing pipeline with 1 block(s)...
   [1/1] gdal.srs_info running...
   [1/1] gdal.srs_info complete
 
-Pipeline complete: 1 block(s) executed in 956ms
+Pipeline complete: 1 block(s) executed in 2.869s

@@ -1,12 +1,12 @@
-id: 019db076-2464-7277-80e5-e22512d20c4d
+id: 019dd04d-07ea-7bb5-80e5-62b1d9e8ddc0
 name: data_read_collection
 version: "1.0"
 description: Read collection of local CSV files
 blocks:
-- id: 019db076-2464-7e9f-80e4-b1279ed90673
+- id: 019dd04d-07ea-775c-80e4-ccf32bd2fa69
   name: data.read_collection
   inputs: []
   args:
-    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data*.csv
+    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data*.csv
     format: CSV
     max_items: 10

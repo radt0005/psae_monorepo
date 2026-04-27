@@ -58,9 +58,8 @@ done
 # Step 1: Generate fixtures and pipelines
 # ---------------------------------------------------------------------------
 echo "=== Step 1: Generating fixtures and pipelines ==="
-(cd "$SCRIPT_DIR" && uv run python generate.py)
-
 if [[ "$MODE" == "generate" ]]; then
+    (cd "$SCRIPT_DIR" && uv run python generate.py)
     echo "Done (generate only)."
     exit 0
 fi

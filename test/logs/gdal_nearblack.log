@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_nearblack (019db070-daa8-72ff-8047-d7e52e122d28)
+Loaded pipeline: gdal_nearblack (019dd04d-07ae-7dd6-8047-54ef68a4e9e4)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.nearblack running...
   [2/2] gdal.nearblack complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 982ms
+Pipeline complete: 2 block(s) executed (1 cached) in 3.068s

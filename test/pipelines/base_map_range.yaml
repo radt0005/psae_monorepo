@@ -1,17 +1,17 @@
-id: 019db076-244b-7680-8032-09d03b6ef448
+id: 019dd04d-07a6-78b2-8032-5b041e2ba29e
 name: base_map_range
 version: "1.0"
 description: Fan out over numeric range 1..5 and reduce
 blocks:
-- id: 019db076-244a-75d3-8030-cd7a9fd8ce08
+- id: 019dd04d-07a5-72c2-8030-ce591fb10132
   name: base.map_range
   inputs: []
   args:
     start: 1
     end: 5
     step: 1
-- id: 019db076-244b-7eb3-8031-ff91705a95a0
+- id: 019dd04d-07a6-7973-8031-db9e6d172f23
   name: base.reduce_collection
   inputs:
-  - 019db076-244a-75d3-8030-cd7a9fd8ce08
+  - 019dd04d-07a5-72c2-8030-ce591fb10132
   args: {}
