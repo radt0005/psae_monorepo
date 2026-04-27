@@ -11,6 +11,7 @@ echo "Building"
 cd isolate
 make isolate
 sudo make install
+sudo chmod u+s /usr/local/bin/isolate
 cd ..
 
 echo "Setting up subuid/subgid"

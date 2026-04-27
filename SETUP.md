@@ -35,7 +35,7 @@ because `spade install` builds each collection with its own native tools.
   
 - Install the Bun run-time (for front-end system): [Installation Instructions](https://bun.sh)
 
-- Isolate [https://github.com/ioi/isolate](https://github.com/ioi/isolate) on Linux systems.  See the installation instructions in the repository
+- Isolate [https://github.com/ioi/isolate](https://github.com/ioi/isolate) on Linux systems.  For convenience, there is an installation and setup script in this repository at `./install_isolate.sh`.  This is not included in the main setup.sh script since it should only be run on linux systems.  See the installation instructions in the isolate repository if you have any questions.
 
 ### 1.7 System libraries (geospatial)
 
