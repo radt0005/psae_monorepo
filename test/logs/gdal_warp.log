@@ -1,5 +1,7 @@
 Loaded pipeline: gdal_warp (019dd04d-07a9-7fe0-8038-b491735efff7)
 Executing pipeline with 2 block(s)...
-  [1/2] data.read running...
-Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
+  [1/2] data.read (cached)
+  [2/2] gdal.warp running...
+  [2/2] gdal.warp complete
 
+Pipeline complete: 2 block(s) executed (1 cached) in 2.743s

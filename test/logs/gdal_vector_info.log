@@ -1,5 +1,7 @@
 Loaded pipeline: gdal_vector_info (019dd04d-07de-7ebd-80c2-8d6cbf30747a)
 Executing pipeline with 2 block(s)...
-  [1/2] data.read running...
-Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
+  [1/2] data.read (cached)
+  [2/2] gdal.vector_info running...
+  [2/2] gdal.vector_info complete
 
+Pipeline complete: 2 block(s) executed (1 cached) in 2.819s

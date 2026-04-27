@@ -1,5 +1,8 @@
 Loaded pipeline: gdal_vector_difference (019dd04d-07d6-7730-80ab-781a1b44badd)
 Executing pipeline with 3 block(s)...
-  [1/3] data.read running...
-Block data.read failed: block exited with code 2: Box not found, did you run `isolate --init'?
+  [1/3] data.read (cached)
+  [2/3] data.read (cached)
+  [3/3] gdal.vector_difference running...
+  [3/3] gdal.vector_difference complete
 
+Pipeline complete: 3 block(s) executed (2 cached) in 2.459s

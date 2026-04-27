@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #
 # run_tests.sh — Run spade integration test pipelines
 #
@@ -58,8 +58,9 @@ done
 # Step 1: Generate fixtures and pipelines
 # ---------------------------------------------------------------------------
 echo "=== Step 1: Generating fixtures and pipelines ==="
+(cd "$SCRIPT_DIR" && uv run python generate.py)
+
 if [[ "$MODE" == "generate" ]]; then
-    (cd "$SCRIPT_DIR" && uv run python generate.py)
     echo "Done (generate only)."
     exit 0
 fi

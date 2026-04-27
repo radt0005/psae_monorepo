@@ -21,6 +21,9 @@ echo "Creating isolate system user if not present"
 id isolate &>/dev/null || sudo useradd --system --no-create-home isolate
 
 echo "Initializing isolate for user: $USER"
-sudo -u "$USER" isolate --init
+sudo isolate --as-uid=$(id -u $USER) --as-gid=$(id -g $USER) --init
 
-rm -rf ./isolate
+
+if [-e ./isolate ]; then 
+    rm -rf ./isolate
+fi
