@@ -1,0 +1,32 @@
+# Hand-authored short-code pipeline: mixed UUID + short-code blocks.
+# The first block carries an explicit UUIDv7 (perhaps copied from an
+# existing UUID-only pipeline); downstream blocks reference it by
+# that UUID while the rest use short codes.  Mirrors the migration
+# pattern documented in pipelines/short-codes.md.
+name: sc_mixed_format
+version: "1.0"
+description: Mixed UUID and short-code blocks in a single pipeline
+
+blocks:
+  - id: 019dd100-0001-7000-8000-000000000001
+    name: data.read
+    inputs: []
+    args:
+      uri: __FIXTURES_DIR__/test_data.csv
+      format: CSV
+
+  - id: "@to_parquet"
+    name: base.csv_to_parquet
+    inputs:
+      - 019dd100-0001-7000-8000-000000000001
+    args:
+      delimiter: ","
+      has_header: true
+
+  - id: "@select"
+    name: base.select_columns
+    inputs:
+      - "@to_parquet"
+    args:
+      columns: id,name,value
+      mode: keep

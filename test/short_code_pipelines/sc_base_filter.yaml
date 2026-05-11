@@ -1,0 +1,33 @@
+# Hand-authored short-code pipeline: linear chain.
+# Exercises the simplest case -- every block id and input reference
+# uses an `@<identifier>` short code.  The pipeline-level `id` is
+# omitted, so `spade run` mints a fresh UUIDv7 each invocation while
+# block invocation IDs stay stable across reruns via the lockfile.
+#
+# __FIXTURES_DIR__ is substituted by test_short_codes.sh before running.
+name: sc_base_filter
+version: "1.0"
+description: Linear short-code chain - read CSV, convert to Parquet, filter rows
+
+blocks:
+  - id: "@read"
+    name: data.read
+    inputs: []
+    args:
+      uri: __FIXTURES_DIR__/test_data.csv
+      format: CSV
+
+  - id: "@to_parquet"
+    name: base.csv_to_parquet
+    inputs:
+      - "@read"
+    args:
+      delimiter: ","
+      has_header: true
+
+  - id: "@filter"
+    name: base.filter_rows
+    inputs:
+      - "@to_parquet"
+    args:
+      expression: "value > 15"

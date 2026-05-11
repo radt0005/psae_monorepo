@@ -1,0 +1,35 @@
+# Hand-authored short-code pipeline: explicit input references.
+# `gdal.color_relief` takes two file inputs that the type-based
+# resolver cannot disambiguate on its own.  We use explicit
+# `block`/`output`/`as` references with short codes on the `block`
+# field, confirming the walker substitutes inside both bare scalars
+# and mapping nodes.
+name: sc_gdal_color_relief
+version: "1.0"
+description: Short-code color relief with explicit input references
+
+blocks:
+  - id: "@dem"
+    name: data.read
+    inputs: []
+    args:
+      uri: __FIXTURES_DIR__/test_dem.tif
+      format: GeoTIFF
+
+  - id: "@ramp"
+    name: data.read
+    inputs: []
+    args:
+      uri: __FIXTURES_DIR__/color_ramp.txt
+      format: ""
+
+  - id: "@color_relief"
+    name: gdal.color_relief
+    inputs:
+      - block: "@dem"
+        output: file
+        as: source
+      - block: "@ramp"
+        output: file
+        as: color_ramp
+    args: {}

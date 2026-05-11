@@ -1,0 +1,43 @@
+# Hand-authored short-code pipeline: parallel (diamond) DAG.
+# A single DEM fans out to three independent terrain analyses that
+# the scheduler runs concurrently.  Validates that the structure-
+# aware short-code walker correctly handles a block whose id is
+# referenced by multiple downstream inputs.
+name: sc_gdal_terrain
+version: "1.0"
+description: Parallel short-code DAG - DEM fans out to hillshade, slope, aspect
+
+blocks:
+  - id: "@dem"
+    name: data.read
+    inputs: []
+    args:
+      uri: __FIXTURES_DIR__/test_dem.tif
+      format: GeoTIFF
+
+  - id: "@hillshade"
+    name: gdal.hillshade
+    inputs:
+      - "@dem"
+    args:
+      azimuth: 315
+      altitude: 45
+      z_factor: 1
+      scale: 1
+      multidirectional: false
+
+  - id: "@slope"
+    name: gdal.slope
+    inputs:
+      - "@dem"
+    args:
+      scale: 1
+      slope_format: degree
+
+  - id: "@aspect"
+    name: gdal.aspect
+    inputs:
+      - "@dem"
+    args:
+      zero_for_flat: false
+      trigonometric: false
