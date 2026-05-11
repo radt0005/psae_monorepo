@@ -233,6 +233,6 @@ if (import.meta.hot) {
   })
 }
 
-import cfg0 from "/home/krbundy/GitHub/psae_monorepo/web_ui/app.config.ts"
+import cfg0 from "/home/krbundy/UMaine/psae_monorepo/web_ui/app.config.ts"
 
 export default /*@__PURE__*/ defuFn(cfg0, inlineConfig)

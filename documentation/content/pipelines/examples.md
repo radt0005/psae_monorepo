@@ -1,7 +1,7 @@
 +++
 title = "Pipeline Examples"
 description = "Complete, copy-pasteable pipeline YAML examples for common patterns."
-weight = 5
+weight = 6
 +++
 
 This page contains complete, ready-to-use pipeline examples demonstrating common patterns. Each example includes a description of the processing workflow, the full YAML pipeline file, and an explanation of the data flow.

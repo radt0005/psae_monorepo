@@ -1,7 +1,7 @@
 +++
 title = "Map/Reduce Pipelines"
 description = "Writing pipelines that use parallel fan-out and collection patterns."
-weight = 4
+weight = 5
 +++
 
 Some processing tasks involve applying the same operation to many items independently -- for example, processing each tile of a large satellite image, analyzing each file in a dataset, or running a model on each sample. Spade supports this pattern through **map/reduce pipelines**, where a map block fans out work to parallel invocations and a reduce block collects the results.

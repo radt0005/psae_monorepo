@@ -73,6 +73,10 @@ blocks:
 
 The `id` is a UUIDv7 that uniquely identifies this pipeline. The `name` is a human-readable label that appears in CLI output and logs. The `version` is a string (note the quotes around `"1.0"` -- YAML would otherwise interpret it as a number).
 
+{% tip() %}
+For a hand-authored pipeline you can omit the top-level `id` entirely -- the CLI generates one at run time -- and use **short codes** like `"@source"`, `"@lst"`, `"@ndvi"` in place of UUIDv7s for block invocation IDs. This tutorial uses UUIDs for clarity, but the same pipeline expressed with short codes is much friendlier to write and review. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) once you're comfortable with the basics.
+{% end %}
+
 ## Step 3: Add the source block
 
 The first block downloads the satellite imagery. It has no upstream dependencies, so its `inputs` list is empty:

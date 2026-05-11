@@ -1,7 +1,7 @@
 +++
 title = "Pipeline Validation"
 description = "What spade check validates and common errors."
-weight = 3
+weight = 4
 +++
 
 Running `spade check <pipeline.yaml>` validates your pipeline file against a set of rules before execution. This catches structural errors, missing blocks, broken references, and type mismatches early -- before any blocks actually run.
@@ -306,10 +306,11 @@ Error: Block 'raster.reproject' (019cf4bc-2222-7000-0000-000000000000)
 
 ## Tips for fixing validation errors
 
-- **Duplicate IDs**: Generate a new UUIDv7 for one of the conflicting blocks.
-- **Broken references**: Check for typos in the invocation ID. Copy-paste the ID directly from the target block.
+- **Duplicate IDs**: Generate a new UUIDv7 for one of the conflicting blocks. If you used the same short code (e.g. `"@foo"`) on two blocks, rename one -- short codes resolve to the same UUID, so duplicates trigger this rule.
+- **Broken references**: Check for typos in the invocation ID or short code. Copy-paste the ID or short code directly from the target block.
 - **Missing blocks**: Run `spade install <repository>` to install the required collection.
 - **Cycles**: Restructure your pipeline so data flows in one direction. If you have a feedback loop in your algorithm, consider implementing it inside a single block rather than across multiple blocks.
 - **Type mismatches**: Check the block manifests (`spade check` with no arguments in a collection directory) to confirm the input and output types. You may need a different block or an intermediate conversion step.
 - **Bad output names**: Run `spade check` in the upstream block's collection to see its declared outputs, or inspect its `blocks/<name>.yaml` manifest directly.
 - **Missing args**: Check the block manifest for required parameters and add them to your `args` map.
+- **Corrupt lockfile**: If `spade check` reports `invalid lockfile: ...`, delete the sibling `<pipeline-stem>.lock.yaml` to regenerate bindings from scratch. See [Short Codes and Hand-Authoring](/pipelines/short-codes/#lockfile-rules) for the full set of lockfile rules.

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"core"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -29,9 +30,18 @@ func init() {
 }
 
 func runCheckPipeline(pipelinePath string) error {
-	pipeline, err := core.LoadPipeline(pipelinePath)
+	pipeline, _, wroteLockfile, err := core.LoadAndResolvePipeline(pipelinePath)
 	if err != nil {
+		if errors.Is(err, core.ErrInvalidLockfile) {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			fmt.Fprintf(os.Stderr, "To regenerate the lockfile from scratch, delete %s.\n",
+				core.LockfilePathFor(pipelinePath))
+			os.Exit(1)
+		}
 		return fmt.Errorf("loading pipeline: %w", err)
+	}
+	if wroteLockfile {
+		fmt.Printf("Wrote %s\n", core.LockfilePathFor(pipelinePath))
 	}
 
 	registry, err := core.OpenRegistry(RegistryPath())

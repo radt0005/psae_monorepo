@@ -1,6 +1,8 @@
 package core
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -320,12 +322,12 @@ func TestValidatePipelineDuplicateIDs(t *testing.T) {
 
 	found := false
 	for _, e := range errs {
-		if e.Error() == "duplicate block id: "+id.String() {
+		if e.Error() == "duplicate block invocation id: "+id.String() {
 			found = true
 		}
 	}
 	if !found {
-		t.Error("expected duplicate block id error")
+		t.Error("expected duplicate block invocation id error")
 	}
 }
 
@@ -502,5 +504,123 @@ func TestValidateMapBlockMustOutputExpansion(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected validation error for map block without expansion output")
+	}
+}
+
+func TestValidate_DuplicateShortCodes(t *testing.T) {
+	// Spec §6.6: duplicate short codes in source must surface as a
+	// duplicate-id validation error after resolution.
+	dir := t.TempDir()
+	pPath := dir + "/pipeline.yaml"
+	src := `name: dup
+version: "1.0"
+blocks:
+  - id: "@foo"
+    name: block.a
+    inputs: []
+    args: {}
+  - id: "@foo"
+    name: block.b
+    inputs: []
+    args: {}
+`
+	if err := os.WriteFile(pPath, []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+	manifests := map[string]BlockManifest{
+		"block.a": {ID: "block.a", Inputs: map[string]InputDeclaration{}, Outputs: map[string]OutputDeclaration{}},
+		"block.b": {ID: "block.b", Inputs: map[string]InputDeclaration{}, Outputs: map[string]OutputDeclaration{}},
+	}
+	_, _, _, errs, err := ValidatePipelineWithLockfile(pPath, manifests)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, e := range errs {
+		if strings.Contains(e.Error(), "duplicate block invocation id") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected duplicate-id error, got: %v", errs)
+	}
+}
+
+func TestValidate_UnresolvedShortCodeReference(t *testing.T) {
+	// A short code used in `inputs` but not defined on any block:
+	// the walker mints a binding for it, then ValidatePipeline catches
+	// the dangling reference via "unknown invocation id."
+	dir := t.TempDir()
+	pPath := dir + "/pipeline.yaml"
+	src := `name: bad
+version: "1.0"
+blocks:
+  - id: "@a"
+    name: block.a
+    inputs:
+      - "@missing"
+    args: {}
+`
+	if err := os.WriteFile(pPath, []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+	manifests := map[string]BlockManifest{
+		"block.a": {ID: "block.a", Inputs: map[string]InputDeclaration{}, Outputs: map[string]OutputDeclaration{}},
+	}
+	_, _, _, errs, err := ValidatePipelineWithLockfile(pPath, manifests)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, e := range errs {
+		if strings.Contains(e.Error(), "unknown invocation id") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected unknown-invocation-id error, got: %v", errs)
+	}
+}
+
+func TestValidate_OrphanedBindingTolerated(t *testing.T) {
+	// Spec §6.4: orphan bindings (in the lockfile but absent from the
+	// source) are harmless.  Validation should not fail because of one.
+	dir := t.TempDir()
+	pPath := dir + "/pipeline.yaml"
+	src := `name: ok
+version: "1.0"
+blocks:
+  - id: "@a"
+    name: block.a
+    inputs: []
+    args: {}
+`
+	if err := os.WriteFile(pPath, []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// First run: creates the lockfile with binding for @a.
+	manifests := map[string]BlockManifest{
+		"block.a": {ID: "block.a", Inputs: map[string]InputDeclaration{}, Outputs: map[string]OutputDeclaration{}},
+	}
+	if _, _, _, errs, err := ValidatePipelineWithLockfile(pPath, manifests); err != nil || len(errs) > 0 {
+		t.Fatalf("first run errs: %v, err: %v", errs, err)
+	}
+	// Inject an orphan binding directly into the lockfile.
+	lockPath := LockfilePathFor(pPath)
+	lock, _ := LoadLockfile(lockPath)
+	lock.Bindings["@orphan"] = uuid.MustParse("019cf4bc-9999-7000-0000-000000000000")
+	if err := SaveLockfile(lock, lockPath); err != nil {
+		t.Fatal(err)
+	}
+	// Second run: should not error on the orphan binding.
+	_, lock2, _, errs, err := ValidatePipelineWithLockfile(pPath, manifests)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(errs) > 0 {
+		t.Fatalf("orphan binding triggered validation errors: %v", errs)
+	}
+	if _, ok := lock2.Bindings["@orphan"]; !ok {
+		t.Fatal("orphan binding was pruned; it should be preserved per §6.4")
 	}
 }

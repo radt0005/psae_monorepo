@@ -277,20 +277,23 @@ func ResolveInputs(block PipelineBlock, dependencies map[uuid.UUID]BlockManifest
 
 // --- Phase 2.3: Pipeline Validation ---
 
-// ValidatePipeline performs all validation checks from pipeline.md section 7.
+// ValidatePipeline performs all validation checks from pipeline.md section 8.
+// Operates on the resolved (UUID-form) Pipeline; callers using the
+// short-code authoring form should invoke ValidatePipelineWithLockfile,
+// which handles resolution and lockfile persistence before validation.
 func ValidatePipeline(pipeline Pipeline, manifests map[string]BlockManifest) []error {
 	var errs []error
 
-	// 1. All block id values are unique
+	// 1. All block invocation IDs are unique within the pipeline.
 	idSet := make(map[uuid.UUID]bool)
 	for _, block := range pipeline.Blocks {
 		if idSet[block.Id] {
-			errs = append(errs, fmt.Errorf("duplicate block id: %s", block.Id))
+			errs = append(errs, fmt.Errorf("duplicate block invocation id: %s", block.Id))
 		}
 		idSet[block.Id] = true
 	}
 
-	// 2. All invocation IDs referenced in inputs exist in the pipeline's block list
+	// 2. All invocation IDs referenced in inputs resolve to a block in the pipeline.
 	for _, block := range pipeline.Blocks {
 		for _, input := range block.Inputs {
 			var refID uuid.UUID
@@ -300,7 +303,7 @@ func ValidatePipeline(pipeline Pipeline, manifests map[string]BlockManifest) []e
 				refID = input.ID
 			}
 			if refID != uuid.Nil && !idSet[refID] {
-				errs = append(errs, fmt.Errorf("block %s references non-existent block %s", block.Id, refID))
+				errs = append(errs, fmt.Errorf("block %s references unknown invocation id %s", block.Id, refID))
 			}
 		}
 	}
@@ -496,4 +499,18 @@ func checkNestedMap(startID, currentID uuid.UUID, graph DependencyGraph, blocks 
 		}
 	}
 	return false
+}
+
+// ValidatePipelineWithLockfile combines short-code resolution (via
+// LoadAndResolvePipeline) with the standard ValidatePipeline checks.
+// It returns the resolved pipeline, the lockfile (possibly updated on
+// disk), whether the lockfile was written, and the slice of validation
+// errors.  A non-nil top-level error indicates a load/resolution failure;
+// validation errors are returned via the slice as usual.
+func ValidatePipelineWithLockfile(pipelinePath string, manifests map[string]BlockManifest) (Pipeline, Lockfile, bool, []error, error) {
+	pipeline, lock, wrote, err := LoadAndResolvePipeline(pipelinePath)
+	if err != nil {
+		return Pipeline{}, Lockfile{}, false, nil, err
+	}
+	return pipeline, lock, wrote, ValidatePipeline(pipeline, manifests), nil
 }

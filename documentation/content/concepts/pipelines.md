@@ -62,7 +62,7 @@ blocks:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | Yes | A unique invocation ID (UUIDv7 format). Must be unique within the pipeline. |
+| `id` | Yes | A unique invocation ID (UUIDv7 format, or a `@<identifier>` short code for hand-authored pipelines -- see [Short Codes](/pipelines/short-codes/)). Must be unique within the pipeline. |
 | `name` | Yes | The block to run, in `<collection>.<block>` format. |
 | `inputs` | Yes | List of upstream invocation IDs or explicit references. See [Input Resolution](/concepts/input-resolution/). |
 | `args` | No | Key-value parameters passed to the block via `params.yaml`. |

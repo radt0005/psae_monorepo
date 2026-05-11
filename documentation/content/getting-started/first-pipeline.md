@@ -69,6 +69,35 @@ For each block:
 
 Notice that the second block lists the first block's ID in its `inputs`. This tells Spade that the second block depends on the first block's output. Spade automatically matches the output type of `data.sentinel2` (a raster file) to the input type expected by `raster.reproject`.
 
+### Easier authoring with short codes
+
+Typing UUIDv7 strings is tedious. For hand-authored pipelines, Spade accepts `@`-prefixed **short codes** as a friendlier alternative. The same pipeline using short codes looks like this:
+
+```yaml
+name: reproject-example
+version: "1.0"
+description: Download satellite imagery and reproject it
+
+blocks:
+  - id: "@source"
+    name: data.sentinel2
+    inputs: []
+    args:
+      region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
+      date_range: "2025-01-01/2025-06-01"
+
+  - id: "@reproject"
+    name: raster.reproject
+    inputs:
+      - "@source"
+    args:
+      target_crs: "EPSG:4326"
+```
+
+Notice that the pipeline-level `id` is omitted -- the CLI generates one at run time. The CLI resolves the short codes (`@source`, `@reproject`) into UUIDv7s on the first `spade check` or `spade run`, writing the bindings to a sibling `pipeline.lock.yaml` so the same labels resolve to the same UUIDs on subsequent runs.
+
+The rest of this tutorial uses the UUID form for clarity, but everything works identically with short codes. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+
 ## Validate the pipeline
 
 Before running, check that the pipeline is valid:

@@ -34,6 +34,7 @@ export { useBlockCatalogue } from '../composables/useBlockCatalogue';
 export { useFlow } from '../composables/useFlow';
 export { default as usePB } from '../composables/usePB';
 export { PipelineBuilder, PipelineBuilder } from '../utils/pipeline';
+export { isShortCode, resolveShortCodes } from '../utils/short_codes';
 export { ArgKeyValueStore, InputRef, Block, Pipeline, PipelineMetadata, PortType, PortDecl, BlockKind, BlockManifest, BlockListItem, BlockList, NodesAndEdges, Run, EdgeBindings, EdgeData } from '../utils/types';
 export { validatePipeline, ValidationResult, ValidateOptions } from '../utils/validate';
 export { portsCompatible, resolveConnection, resolveAndApply, hasUnresolvedEdges, listEdgeBindings, ResolvedBinding, ResolveOutcome } from '../utils/wiring';

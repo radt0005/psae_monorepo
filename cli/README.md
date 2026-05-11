@@ -91,6 +91,8 @@ Pipeline validation checks: unique block IDs, valid references, acyclic dependen
 
 Collection validation checks: required manifest fields, valid input/output types, block ID conventions, entrypoint resolution, and map/reduce constraints.
 
+If the pipeline uses short codes (`@<identifier>`) instead of UUIDs for block invocation IDs, `spade check` also creates or updates the sibling lockfile `<pipeline-stem>.lock.yaml`, minting fresh UUIDv7s for any short codes not yet bound. Delete the lockfile to regenerate all bindings from scratch. See `spec/pipeline.md` §6 for the short-code system.
+
 ### `spade install <git-url | path>`
 
 Installs a block collection from a git repository or a local directory.
@@ -115,6 +117,8 @@ spade run pipeline.yaml --keep-work-dir  # preserve working directory
 ```
 
 Loads the pipeline, validates it, resolves block manifests from the registry, and executes blocks in dependency order. Supports caching -- repeated runs skip blocks whose inputs haven't changed.
+
+Short-code pipelines are resolved against the sibling `<pipeline-stem>.lock.yaml` lockfile before scheduling, with bindings minted on first run and reused on subsequent runs (preserving cache hits). See `spec/pipeline.md` §6.
 
 ### `spade upload`
 

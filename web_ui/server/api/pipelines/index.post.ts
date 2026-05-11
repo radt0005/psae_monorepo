@@ -4,6 +4,8 @@ import { useDb } from "~/server/db";
 import { makePipelineRepo } from "~/server/db/repositories/pipelines";
 import { requireUser } from "~/server/utils/requireUser";
 import { validatePipeline } from "~/utils/validate";
+import { resolveShortCodes } from "~/utils/short_codes";
+import type { Pipeline } from "~/utils/types";
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event);
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Sanity-check the YAML before persisting.
+  // Parse the uploaded YAML.
   let parsed: any;
   try {
     parsed = YAML.parse(body.yaml);
@@ -32,7 +34,21 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Invalid YAML: ${e?.message}`,
     });
   }
-  const result = validatePipeline(parsed);
+
+  // Resolve any short codes against fresh UUIDv7s (spec/pipeline.md §6.7).
+  // No lockfile is persisted on the server -- each upload mints fresh
+  // UUIDs.  Local and cloud caches are intentionally independent.
+  let resolved: Pipeline;
+  try {
+    resolved = resolveShortCodes(parsed as Pipeline);
+  } catch (e: any) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Pipeline invalid: ${e?.message}`,
+    });
+  }
+
+  const result = validatePipeline(resolved);
   if (!result.ok) {
     throw createError({
       statusCode: 400,
@@ -40,14 +56,19 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Persist the resolved (UUID-only) YAML so that subsequent loads
+  // produce stable invocation ids -- the cloud cache property mirrors
+  // the lockfile property the CLI provides locally.
+  const resolvedYaml = YAML.stringify(resolved);
+
   const repo = makePipelineRepo(useDb());
   const created = await repo.create({
-    id: parsed.id ?? v7(),
+    id: resolved.id ?? v7(),
     ownerId: user.id,
     name: body.name,
-    description: body.description ?? parsed.description,
-    version: body.version ?? parsed.version ?? "0.1.0",
-    yaml: body.yaml,
+    description: body.description ?? resolved.description,
+    version: body.version ?? resolved.version ?? "0.1.0",
+    yaml: resolvedYaml,
     visibility: body.visibility ?? "private",
   });
   return created;

@@ -25,7 +25,11 @@ spade run --keep-work-dir <pipeline.yaml>
 
 ### 1. Load and validate
 
-The pipeline YAML file is parsed and each block's `name` is looked up in the local registry (`~/.spade/registry.db`). The full set of pipeline validation checks (the same ones used by [`spade check`](/cli/check/)) is run before any block executes. If validation fails, the command prints the errors and exits with status 1.
+The pipeline YAML file is parsed and each block's `name` is looked up in the local registry (`~/.spade/registry.db`). If the pipeline contains short codes (`@<identifier>`), they are resolved against the sibling `<pipeline-stem>.lock.yaml` lockfile -- which is created on first run and reused on subsequent runs. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+
+The full set of pipeline validation checks (the same ones used by [`spade check`](/cli/check/)) is run before any block executes. If validation fails, the command prints the errors and exits with status 1.
+
+If the pipeline file omits the top-level `id`, `spade run` mints a fresh UUIDv7 for the run. This is the recommended pattern for hand-authored pipelines -- each run is independently trackable while block invocation IDs (from the lockfile) stay stable for caching.
 
 ### 2. Set up the working directory
 

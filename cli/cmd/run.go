@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"core"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,10 +38,30 @@ func init() {
 func runPipeline(pipelinePath string) error {
 	startTime := time.Now()
 
-	// Phase 7.1: Load and validate pipeline
-	pipeline, err := core.LoadPipeline(pipelinePath)
+	// Phase 7.1: Load (resolving any short codes via the sibling
+	// lockfile) and validate the pipeline.  See spec/pipeline.md §6.
+	pipeline, _, wroteLockfile, err := core.LoadAndResolvePipeline(pipelinePath)
 	if err != nil {
+		if errors.Is(err, core.ErrInvalidLockfile) {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			fmt.Fprintf(os.Stderr, "To regenerate the lockfile from scratch, delete %s.\n",
+				core.LockfilePathFor(pipelinePath))
+			os.Exit(1)
+		}
 		return fmt.Errorf("loading pipeline: %w", err)
+	}
+	if wroteLockfile {
+		fmt.Printf("Wrote %s\n", core.LockfilePathFor(pipelinePath))
+	}
+
+	// Pipeline ID is generated at run time when omitted from source
+	// (spec/pipeline.md §10).  This is per-run state, never persisted.
+	if pipeline.Id == uuid.Nil {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return fmt.Errorf("generating pipeline id: %w", err)
+		}
+		pipeline.Id = id
 	}
 	fmt.Printf("Loaded pipeline: %s (%s)\n", pipeline.Name, pipeline.Id)
 

@@ -85,6 +85,24 @@ When given a pipeline YAML file as an argument, `spade check` loads the file, lo
 
 7. **Map/reduce constraints.** Map blocks must have an expansion output, must eventually be followed by a reduce block downstream, and must not have a nested map block before the corresponding reduce. Reduce blocks must accept a collection input.
 
+### Lockfile side effect
+
+If the pipeline contains short codes (`@<identifier>`) instead of UUIDs, `spade check` resolves them against a sibling lockfile named `<pipeline-stem>.lock.yaml` (for `pipeline.yaml`, the lockfile is `pipeline.lock.yaml`). The first run creates the lockfile and assigns a fresh UUIDv7 to each short code. Subsequent runs reuse those bindings, so caching continues to work across reruns.
+
+```
+Wrote /path/to/pipeline.lock.yaml
+Pipeline 'satellite-reproject' is valid.
+```
+
+If the lockfile is corrupt or holds an invalid UUID, the command exits with status 1 and prints:
+
+```
+invalid lockfile: binding "@reproject" in pipeline.lock.yaml is not a valid UUID: ...
+To regenerate the lockfile from scratch, delete /path/to/pipeline.lock.yaml.
+```
+
+See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+
 ### Example: pipeline validation
 
 ```bash

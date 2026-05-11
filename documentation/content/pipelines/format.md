@@ -27,6 +27,8 @@ Pipeline IDs use [UUIDv7](https://www.ietf.org/rfc/rfc9562.html) format. UUIDv7 
 
 You can generate a UUIDv7 using the Spade CLI or any UUIDv7 library. The important thing is that the ID is globally unique across all pipelines.
 
+When you are hand-authoring a pipeline, you can omit the pipeline-level `id` entirely. The CLI generates a fresh UUIDv7 at run time. This is the recommended pattern for files written by hand or by an LLM. See [Short Codes and Hand-Authoring](/pipelines/short-codes/).
+
 ### The `name` field
 
 The name is for human identification. It appears in CLI output, logs, and working directory paths. Use lowercase letters, numbers, and hyphens. For example: `satellite-reproject`, `ndvi-analysis`, or `tile-classification`.
@@ -63,6 +65,8 @@ Each block invocation has the following fields:
 ### The block `id`
 
 Each block invocation gets its own UUIDv7 identifier, separate from the pipeline ID. This ID must be unique within the pipeline. It is used by other blocks to reference this invocation in their `inputs` lists.
+
+For hand-authored or LLM-generated pipelines, you can use a **short code** like `"@reproject"` in place of a UUID. The CLI resolves short codes to UUIDv7s via a sibling lockfile so the cache continues to work across reruns. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
 
 ### The block `name`
 
@@ -228,7 +232,7 @@ Spade executes `data.sentinel2` first (no dependencies), then `raster.reproject`
 
 ## Summary of rules
 
-- The pipeline `id` and every block `id` must be valid UUIDv7 strings.
+- The pipeline `id` and every block `id` must be valid UUIDv7 strings (or short codes for hand-authored pipelines -- see [Short Codes](/pipelines/short-codes/)).
 - All block `id` values must be unique within the pipeline.
 - Block `name` values must refer to installed blocks using `collection.block` format.
 - `inputs` references must point to `id` values that exist in the same pipeline.
