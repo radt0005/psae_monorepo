@@ -49,7 +49,7 @@ Adds a new block to the current collection.  This creates:
 
 Validates a pipeline file or block collection:
 
-- `spade check pipeline.yaml` -- validates a pipeline file (see `pipeline.md` section 7 for validation rules)
+- `spade check pipeline.yaml` -- validates a pipeline file (see `pipeline.md` section 8 for validation rules).  If the pipeline contains short codes (see `pipeline.md` section 6), the sibling lockfile (`<pipeline-stem>.lock.yaml`) is generated or updated as a side effect: any short codes not yet bound are assigned a fresh UUIDv7.  Deleting the lockfile is the supported way to regenerate all bindings.
 - `spade check` (in a collection directory) -- validates all `blocks/*.yaml` manifests:
   1. All required fields are present
   2. Input/output types are valid
@@ -103,6 +103,8 @@ Locally-built collections are **not** signed.  The local block index records the
 ## `spade run <pipeline.yaml>`
 
 Runs the specified pipeline locally using the single-instance scheduler.  The CLI connects to the Go core package for scheduling and uses the local machine as the sole worker.
+
+Before scheduling, the CLI resolves any short codes in the pipeline against the sibling lockfile, creating or updating it as needed (see `pipeline.md` sections 6.3 and 6.4).  The scheduler and worker see only the resolved (UUID-form) pipeline.
 
 
 ## `spade publish`

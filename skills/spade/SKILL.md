@@ -50,7 +50,7 @@ These are not negotiable conventions of the Spade system; apply them without ask
 4. **Filenames determine block names.** `blocks/rasterize.yaml` defines the `rasterize` block. The default `entrypoint` is the filename stem; only set `entrypoint` explicitly if the language toolchain needs a different name (e.g. a non-default `uv` script).
 5. **Blocks must not assume filenames or directories outside their working dir.** Read inputs from `inputs/<name>/`, write outputs to `outputs/<name>/`, read scalars from `params.yaml`. The runtime libraries handle all of this if you use them.
 6. **After creating or editing manifests, suggest `spade check`.** It catches the common mistakes (missing fields, bad references, wrong map/reduce shapes, ambiguous wiring) before the user runs anything.
-7. **Pipelines use UUIDv7 for IDs.** When hand-authoring a pipeline, generate UUIDv7s rather than v4. If a UUIDv7 is unavailable, any well-formed UUID will parse, but UUIDv7 is the convention.
+7. **Pipelines use UUIDv7 for IDs, but short codes are preferred for hand-authored pipelines.** When the user is hand-authoring or asking you to generate a pipeline (including LLM-generated workflows), default to short-code form (`"@source"`, `"@reproject"`) rather than UUIDv7. The CLI resolves short codes to UUIDv7s via a sibling lockfile. Use UUIDv7 form only when editing a UUID-form pipeline that already exists (e.g. one exported from the web UI). See `references/pipelines.md` "Short codes and the lockfile".
 
 ## Workflow for the most common requests
 
@@ -64,10 +64,10 @@ These are not negotiable conventions of the Spade system; apply them without ask
 **"Write a pipeline that does X"**
 1. Read `references/pipelines.md`.
 2. Identify the blocks needed and look up their inputs/outputs (from `blocks/*.yaml` in the relevant collection, or from the user's description).
-3. Generate UUIDv7s for the pipeline and each block.
+3. Use **short codes** (`"@source"`, `"@reproject"`) for block IDs by default. Omit the pipeline-level `id`; the CLI generates it at run time. If you're editing a pipeline that already uses UUIDs, leave them in place — UUIDs and short codes can mix.
 4. Wire dependencies — prefer bare references when type matching is unambiguous, explicit `block`+`output` when not.
 5. Add `kind: map` / `kind: reduce` blocks if the pipeline fans out over a collection.
-6. Suggest `spade check pipeline.yaml`.
+6. Suggest `spade check pipeline.yaml` — this also generates the sibling lockfile (`<pipeline-stem>.lock.yaml`) for short-code pipelines.
 
 **"How do I use the CLI to do X"**
 - Read `references/cli.md` and answer from it. Do not guess flags.

@@ -4,6 +4,8 @@ A **pipeline** is a YAML file describing a directed acyclic graph (DAG) of block
 
 Pipelines are usually created in the web UI's flowchart editor, but they can also be authored by hand. The on-disk format is the same in either case.
 
+For hand-authored or LLM-generated pipelines, **short codes** (`@<identifier>`) can be used in place of UUIDv7 invocation IDs. The CLI resolves short codes to UUIDs via a sibling lockfile (`<pipeline-stem>.lock.yaml`); see "Short codes and the lockfile" below.
+
 ---
 
 ## Top-level structure
@@ -40,13 +42,13 @@ blocks:
 
 | Field         | Type        | Required | Description                                          |
 | ------------- | ----------- | -------- | ---------------------------------------------------- |
-| `id`          | UUIDv7      | yes      | Pipeline ID, generated at submission time            |
+| `id`          | UUIDv7      | no       | Pipeline ID; the CLI generates one at run/submission time if omitted. Hand-authored pipelines typically leave this out. |
 | `name`        | string      | yes      | Human-readable pipeline name                         |
 | `version`     | string      | yes      | Pipeline version (free-form, conventionally semver)  |
 | `description` | string      | no       | Optional description                                  |
 | `blocks`      | Block[]     | yes      | Ordered list of block invocations                    |
 
-Block IDs **and** the pipeline ID should be UUIDv7. The block IDs are stable across reruns of the same pipeline — that's how the cache hits.
+Block IDs should be UUIDv7 **or** short codes (`@reproject`, `@clip`); see "Short codes and the lockfile". Whichever form is used, block IDs are stable across reruns of the same pipeline — that's how the cache hits.
 
 ---
 
@@ -54,12 +56,12 @@ Block IDs **and** the pipeline ID should be UUIDv7. The block IDs are stable acr
 
 Each entry in `blocks`:
 
-| Field    | Type             | Required | Description                                          |
-| -------- | ---------------- | -------- | ---------------------------------------------------- |
-| `id`     | UUIDv7           | yes      | Stable invocation ID; reused on rerun for caching    |
-| `name`   | string           | yes      | The block type ID, e.g. `gdal.rasterize`. Must match an installed block in the registry. |
-| `inputs` | InputRef[]       | yes      | Dependencies on other blocks. Use `[]` for source blocks. |
-| `args`   | map<string, any> | yes      | Scalar parameters written to the block's `params.yaml`. Use `{}` if none. |
+| Field    | Type                 | Required | Description                                          |
+| -------- | -------------------- | -------- | ---------------------------------------------------- |
+| `id`     | UUIDv7 or short code | yes      | Stable invocation ID; reused on rerun for caching. Short codes (`"@name"`) are resolved by the CLI via the lockfile. |
+| `name`   | string               | yes      | The block type ID, e.g. `gdal.rasterize`. Must match an installed block in the registry. |
+| `inputs` | InputRef[]           | yes      | Dependencies on other blocks. Use `[]` for source blocks. |
+| `args`   | map<string, any>     | yes      | Scalar parameters written to the block's `params.yaml`. Use `{}` if none. |
 
 Pipelines that omit `inputs` or `args` are invalid — write `inputs: []` and `args: {}` for source blocks rather than leaving them out.
 
@@ -67,7 +69,7 @@ Pipelines that omit `inputs` or `args` are invalid — write `inputs: []` and `a
 
 ## Input references
 
-The `inputs` list connects this block to its dependencies. Two forms are supported and may be mixed in the same list.
+The `inputs` list connects this block to its dependencies. Two structural forms are supported and may be mixed in the same list. Each reference can use either a UUIDv7 or a short code (`@name`) interchangeably.
 
 ### Bare reference (just an invocation ID)
 
@@ -118,6 +120,80 @@ The explicit form is **recommended** even when not required, especially for pipe
 2. For each remaining bare reference, match the dependency's unmatched outputs to the current block's unmatched inputs by type.
 3. If any input is satisfied by more than one candidate, reject the pipeline as ambiguous.
 4. If any input has no candidate, reject the pipeline as incomplete.
+
+---
+
+## Short codes and the lockfile
+
+UUIDv7s are painful to author by hand and impossible for an LLM to generate consistently across a multi-block YAML file. Spade pipelines accept **short codes** as an alternative: `@<identifier>` (e.g. `@source`, `@reproject`) used anywhere a block invocation ID is expected.
+
+```yaml
+name: s2-reproject-mosaic
+version: "1.0"
+
+blocks:
+  - id: "@source"
+    name: data.sentinel2
+    inputs: []
+    args: {region: "POLYGON((...))"}
+
+  - id: "@tiles"
+    name: base.map_files
+    inputs:
+      - block: "@source"
+        output: tiles
+    args: {}
+
+  - id: "@reproject"
+    name: raster.reproject
+    inputs:
+      - "@tiles"
+    args: {target_crs: "EPSG:4326"}
+
+  - id: "@mosaic"
+    name: base.mosaic
+    inputs:
+      - "@reproject"
+    args: {}
+```
+
+Notes:
+
+- **Quote short codes.** `@` is a reserved indicator in YAML 1.2 plain scalars. Quoting (`"@source"`) avoids issues with strict parsers.
+- **Identifier grammar.** `@<identifier>` where `<identifier>` matches `[A-Za-z_][A-Za-z0-9_]*`. Numeric labels (`@1`, `@2`) work but named codes are preferred — they survive reordering and read better.
+- **Where short codes are allowed.** A block's `id` field, and `inputs` references (bare or explicit). **Not** inside `args` values — those are application data and the CLI must not substitute inside them.
+- **Mixing.** UUIDs and short codes can coexist in the same file. Each form resolves independently. There's no need to convert a UUID-form pipeline (e.g. one exported from the web UI) to short-code form before editing.
+- **Pipeline-level `id`.** Out of scope for short codes; the CLI generates it at run/submission time.
+
+### Lockfile
+
+The first time `spade check` or `spade run` processes a pipeline with short codes, the CLI mints a UUIDv7 for each unique code and writes the binding to `<pipeline-stem>.lock.yaml`:
+
+```yaml
+# pipeline.lock.yaml
+pipeline: s2-reproject-mosaic
+version: "1.0"
+bindings:
+  "@source":    019cf4bc-1111-7000-0000-000000000000
+  "@tiles":     019cf4bc-2222-7000-0000-000000000000
+  "@reproject": 019cf4bc-3333-7000-0000-000000000000
+  "@mosaic":    019cf4bc-4444-7000-0000-000000000000
+```
+
+The scheduler and worker only ever see the resolved UUID form; everything downstream of the CLI is unchanged.
+
+Lockfile rules:
+
+- **Commit it to version control** alongside the pipeline source. That's how collaborators get the same cache hits.
+- **Adding a new short code** appends a binding on the next CLI run.
+- **Renaming a short code** mints a fresh UUID — semantically a different block, so the old cache won't hit. That's intentional.
+- **Removed short codes** leave orphan bindings; harmless, may be pruned by the CLI.
+- **Deleting the lockfile** is the supported reset path. The next CLI run regenerates everything from scratch — useful if the lockfile is suspect or you want a clean rerun.
+- **Manual edits are respected** as long as bindings are valid UUIDv7s pointing to short codes that exist in the source.
+
+### Web UI uploads
+
+When a short-code-form pipeline is uploaded to the web UI, the UI resolves short codes by minting fresh UUIDv7s (the same path it uses to assign IDs to blocks added in the flowchart editor). **The local lockfile is not uploaded** — it stays on the developer's machine. Local and cloud runs maintain independent caches, since cache lives next to its compute.
 
 ---
 
@@ -190,8 +266,8 @@ Key points:
 
 `spade check` validates the pipeline against the installed blocks in the registry. It checks:
 
-1. All block `id` values are unique within the pipeline.
-2. Every invocation ID referenced in `inputs` exists in the pipeline.
+1. All block `id` values are unique within the pipeline (UUIDs or short codes).
+2. Every invocation ID referenced in `inputs` resolves to a block in the pipeline.
 3. Every `name` refers to an installed block in the registry.
 4. The dependency graph is acyclic.
 5. Input/output types are compatible between connected blocks.
@@ -200,14 +276,15 @@ Key points:
 8. Map blocks output `type: expansion`.
 9. Reduce blocks accept a `type: collection` input.
 10. No nested maps (every `kind: map` is closed by a `kind: reduce` before another map starts).
+11. Short codes match `@[A-Za-z_][A-Za-z0-9_]*`; if a lockfile exists, every binding is a valid UUIDv7 and each bound short code appears in the source.
 
-Run it before `spade run`. It will tell you exactly what's wrong, with messages directing you to use explicit references when wiring is ambiguous.
+Run it before `spade run`. It will tell you exactly what's wrong, with messages directing you to use explicit references when wiring is ambiguous. For lockfile-related errors, deleting the lockfile is the supported escape hatch — it regenerates from scratch on the next run.
 
 ---
 
 ## Caching and reruns
 
-When a pipeline is re-run, the same block invocation IDs are reused — they're authored in, not generated at submission time. The cache key for each invocation is derived from:
+When a pipeline is re-run, the same block invocation IDs are reused — they're authored in (UUID form) or pinned via the lockfile (short-code form), not generated at submission time. The cache key for each invocation is derived from:
 
 - The block's `id` and `version` (from the manifest)
 - The hashes of all input contents
@@ -215,6 +292,8 @@ When a pipeline is re-run, the same block invocation IDs are reused — they're 
 - The runtime environment hash
 
 If nothing has changed, the block is restored from the cache instead of re-executed. A new pipeline ID is generated for each submission so individual runs remain trackable, but the per-block cache hits across runs.
+
+Short-code pipelines preserve this property as long as `<pipeline-stem>.lock.yaml` is committed alongside the source. Deleting the lockfile invalidates all bindings and forces a cold run — useful when you want a clean reset.
 
 ---
 
@@ -269,8 +348,8 @@ Notes:
 When asked to write or fix a pipeline:
 
 1. **Identify the blocks** the user needs and look up their inputs/outputs (in the relevant `blocks/*.yaml` files, or from the user's description).
-2. **Generate UUIDv7s** for the pipeline and each block. Reuse existing IDs when editing.
+2. **Pick an ID style.** For hand-authored or LLM-generated pipelines, default to short codes (`"@reproject"`) — easier to write, easier to review. For pipelines edited downstream of the web UI, leave existing UUIDs alone; new blocks can still use short codes alongside them. Reuse existing IDs when editing.
 3. **Wire inputs.** Prefer bare references; switch to explicit `block`+`output` when type matching is ambiguous or when clarity is preferred.
 4. **Insert `kind: map` and `kind: reduce` blocks** as needed for fan-out/fan-in.
 5. **Set `inputs: []` and `args: {}`** for source blocks (don't omit them).
-6. **Suggest `spade check pipeline.yaml`.**
+6. **Suggest `spade check pipeline.yaml`.** For short-code pipelines, this is also where the lockfile gets generated.

@@ -107,14 +107,17 @@ Without arguments, validates every `blocks/*.yaml` in the current directory:
 
 With a pipeline file, validates that pipeline against the registry:
 
-- All block invocation IDs are unique
-- All referenced invocation IDs exist
+- All block invocation IDs are unique (UUIDs or short codes)
+- All referenced invocation IDs resolve to a block in the pipeline
 - All `name` values resolve to installed blocks in the registry
 - The dependency graph is acyclic
 - Input/output types are compatible across edges
 - Explicit `output` references match actual outputs in the dependency block's manifest
 - All required `args` are present
 - Map/reduce constraints are satisfied (no nested maps, expansion/collection shapes correct)
+- Short code grammar; lockfile validity if present
+
+If the pipeline uses short codes (e.g. `"@reproject"`), `spade check` also creates or updates the sibling lockfile `<pipeline-stem>.lock.yaml`, minting fresh UUIDv7s for any short codes not yet bound. Delete the lockfile to regenerate all bindings from scratch.
 
 Run `spade check` after editing manifests or pipelines and before `spade run`. It catches the common authoring mistakes early.
 
@@ -166,13 +169,14 @@ spade run pipeline.yaml --keep-work-dir
 Runs a pipeline locally using the single-instance scheduler. The local machine is the sole worker. The CLI:
 
 1. Loads and validates the pipeline.
-2. Looks up every referenced block in the registry and loads its manifest.
-3. Validates the pipeline against the manifests.
-4. Creates a working directory under `~/.spade/pipelines/<pipeline-id>/`.
-5. Walks the dependency graph, executing each block in turn (mapped invocations are scheduled per-item, broadcast inputs are symlinked into every mapped invocation).
-6. Restores from cache when `(block id, version, input hashes, args)` matches a previous run.
-7. Stores cache entries on successful execution.
-8. Halts the pipeline on the first non-zero exit, preserving logs.
+2. **Resolves short codes** against the sibling `<pipeline-stem>.lock.yaml`, creating or updating it as needed. The scheduler and worker only see the resolved (UUID-form) pipeline.
+3. Looks up every referenced block in the registry and loads its manifest.
+4. Validates the pipeline against the manifests.
+5. Creates a working directory under `~/.spade/pipelines/<pipeline-id>/`.
+6. Walks the dependency graph, executing each block in turn (mapped invocations are scheduled per-item, broadcast inputs are symlinked into every mapped invocation).
+7. Restores from cache when `(block id, version, input hashes, args)` matches a previous run.
+8. Stores cache entries on successful execution.
+9. Halts the pipeline on the first non-zero exit, preserving logs.
 
 Flags:
 - `--no-ui` — disable the BubbleTea TUI and print one line per block. Use this in non-interactive contexts (CI, logs).

@@ -49,7 +49,13 @@ This ensures that all pipelines produced by the UI are valid and unambiguous wit
 
 There should be a way to store and share pipelines for future use.  This means that they will need to be stored and have access control for them.  This should store the pipeline YAML files, and the pipelines should be loaded into the editor.
 
-It should be possible to browse past pipelines and re-load one in the editor for re-running or editing.  
+It should be possible to browse past pipelines and re-load one in the editor for re-running or editing.
+
+### Uploading Short-Code-Form Pipelines
+
+The CLI supports a short-code authoring form for hand-written pipelines (see `pipeline.md` section 6).  When a user uploads a pipeline that uses short codes, the web UI resolves them by minting fresh UUIDv7s -- the same path it uses to assign IDs to blocks added in the flowchart editor -- and stores the resolved pipeline in the database.
+
+The local lockfile (`<pipeline-stem>.lock.yaml`) is **not** uploaded; it remains on the developer's machine.  Local runs and cloud runs therefore maintain independent caches, since cache lookups are keyed by invocation UUID and the cloud's UUIDs are minted fresh at upload time.  This split is deliberate: the cache lives next to its compute.
 
 ## Browsing Results
 
