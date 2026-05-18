@@ -84,6 +84,34 @@ func (c *Conn) NewResultPublisher(ctx context.Context) (ResultPublisher, error) 
 	return &amqpPublisher{pub: pub}, nil
 }
 
+// NewJobPublisher returns a publisher bound to spade.jobs.  Used by the
+// scheduling server when it dispatches a ready invocation.  The same
+// underlying *amqpPublisher type is reused — the publisher does not
+// distinguish between the two queues at the wire level beyond which
+// QueueAddress the rmq.Publisher was opened against.
+func (c *Conn) NewJobPublisher(ctx context.Context) (ResultPublisher, error) {
+	pub, err := c.ac.NewPublisher(ctx, &rmq.QueueAddress{Queue: QueueJobs}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("opening job publisher: %w", err)
+	}
+	return &amqpPublisher{pub: pub}, nil
+}
+
+// NewResultConsumer returns a consumer reading from spade.results.
+// Used by the scheduling server.
+func (c *Conn) NewResultConsumer(ctx context.Context, prefetch int32) (JobConsumer, error) {
+	if prefetch <= 0 {
+		prefetch = 32
+	}
+	cons, err := c.ac.NewConsumer(ctx, QueueResults, &rmq.ConsumerOptions{
+		InitialCredits: prefetch,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("opening result consumer: %w", err)
+	}
+	return &amqpConsumer{cons: cons}, nil
+}
+
 // amqpConsumer adapts the rmq.Consumer to the JobConsumer interface.
 type amqpConsumer struct {
 	cons *rmq.Consumer

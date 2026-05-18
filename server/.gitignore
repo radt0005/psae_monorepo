@@ -1,0 +1,11 @@
+# Built binaries
+spade-scheduler
+/server
+
+# Test database artifacts
+*.db
+*.db-wal
+*.db-shm
+
+# Local temp workspace
+tmp/
