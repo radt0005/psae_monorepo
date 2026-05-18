@@ -4,8 +4,26 @@ The Block Caller or Worker process is responsible for turning the output of the 
 
 Broadly, the code here is broken into two parts.  There is the core library, and the worker binary.  These worker binaries also handle communication with the server and are responsible for the communication with the scheduling server as well.  
 
-The calling process also makes sure that file inputs are where they need to be by simlinking the block outputs in one directory to the required location in the next blocks inputs folder.  This is all done based on the block schemas and dependencies between blocks. 
+The calling process is also responsible for making each block's file inputs available locally.  It fetches inputs from object storage when needed (or reuses cached copies on the worker's local disk) and symlinks them into the block's inputs folder.  This is all done based on the block schemas and dependencies between blocks. 
 
+
+## Storage Model
+
+Workers do not share a filesystem.  Each worker has its own local disk, used for two distinct purposes:
+
+1. **Per-invocation scratch**: a working directory for each in-progress invocation (see File System below).  This is short-lived and removed after the invocation completes.
+2. **Worker-local input cache**: a content-addressed cache of files fetched from object storage, persisted across invocations.  Reused inputs -- foundational reference data, intermediate outputs of earlier blocks in the same pipeline run -- avoid re-fetch on cache hit.
+
+Data flowing between blocks moves through **object storage**, not the filesystem:
+
+- When a block completes successfully, the worker uploads each output to object storage at a deterministic key derived from the invocation ID and output name (e.g. `outputs/<invocation_id>/<output_name>/...`).
+- When the scheduler dispatches a downstream block, the job message identifies the upstream invocations whose outputs feed this block; the worker derives the object-storage keys from those invocation IDs and the input/output declarations.
+- On input resolution, the worker consults its local cache first; on cache miss, it fetches the file from object storage and stores it under a content-addressed key in the cache.
+- Cache eviction is LRU-bounded by a configured local-disk budget.
+
+This model removes the shared-filesystem dependency.  Workers are stateless beyond their local cache; a worker can be added, removed, or replaced without coordinating with peers.  The cache is purely a performance optimisation -- losing it (fresh worker, disk failure, manual clear) affects latency but not correctness.
+
+Block install paths and the block index also live on per-worker local disk (see Block Index below) but are managed separately from the input cache.
 
 ## File System
 Blocks are called with an invocation ID.  For example, if a block is called with invocation ID "019cf4bc-3695-7985-b3ad-4b3c88a4e04f", then the block would execute with a directory of the same name.  This folder would have four things in it, 
@@ -15,7 +33,9 @@ Blocks are called with an invocation ID.  For example, if a block is called with
 - `019cf4bc-3695-7985-b3ad-4b3c88a4e04f/logs/`: Holds the logs for the block
 
 
-Based on this layout, when the executor has to call a block, there are some preparations to do. First, the main folder needs to be created.  Then the `params.yaml` file should be written, and the inputs and outputs folders should be created.  The last thing is to create the symbolic links to the inputs.
+Based on this layout, when the executor has to call a block, there are some preparations to do.  First, the invocation directory is created on the worker's local scratch volume.  Then `params.yaml` is written from the job message, and the `inputs/`, `outputs/`, and `logs/` subdirectories are created empty.  For each declared input, the worker either finds the file in the worker-local cache (cache hit) or fetches it from object storage and stores it under a content-addressed key in the cache (cache miss).  The last preparation step is to create the symbolic links from `inputs/<name>/...` to the cached file.
+
+After the block completes (successfully or not), the worker uploads outputs and logs to object storage and removes the local invocation directory.  The upload is the commit point; once it has acked the job message the worker retains no per-invocation state.
 
 Now the executor gets two things to do this job: 
 1. The pipeline block specification, and
@@ -36,10 +56,12 @@ args: {}
 
 The `id` is the invocation ID, the `name` is the block type to look up, `inputs` are the dependencies, and `args` are the parameters written to `params.yaml`.
 
-The worker resolves inputs to create the symlinks in the block's `inputs/` directory.  Input references come in two forms:
+The worker resolves each input against the dependencies declared in the job message and creates symlinks in the block's `inputs/` directory.  Input references in the pipeline come in two forms:
 
-1. **Explicit references** (with `block` + `output`): The worker symlinks the named output directory from the dependency directly.  These are resolved first.
-2. **Bare references** (invocation ID only): The worker matches outputs from the dependency to remaining inputs on the current block using **type matching** against the `block.yaml` manifests.
+1. **Explicit references** (with `block` + `output`): The named output of the named dependency is mapped to a specific input.  These are resolved first.
+2. **Bare references** (invocation ID only): The dependency's available outputs are matched to remaining inputs on the current block using **type matching** against the `block.yaml` manifests.
+
+For each resolved input, the worker fetches the corresponding file via the worker-local cache (see Storage Model above) -- a cache hit reuses the file already on disk; a cache miss downloads it from object storage and stores it for future reuse -- and creates a symlink from `inputs/<name>/` to the cached file.
 
 If type matching is ambiguous (multiple outputs of the same type could satisfy multiple inputs of the same type), the worker rejects the invocation.  This should never happen in practice because `spade check` and the web UI enforce unambiguous mappings at authoring time -- ambiguous cases require explicit references in the pipeline (see `pipeline.md` section 5.4).
 
@@ -163,6 +185,23 @@ This security model maintains data security while keeping the system performant 
 
 The worker captures `stdout` and `stderr` from the block subprocess and writes them to the `logs/` directory within the block's invocation folder.  Block authors can use standard logging mechanisms (`print` in Python, `cat`/`message` in R, `console.log` in TypeScript, etc.) and the output will be captured automatically.
 
+After the block completes (successfully or with a block failure), the worker uploads the contents of `logs/` to object storage alongside the outputs.  Logs remain accessible for debugging after the local scratch directory is removed.  If the worker process itself fails before this upload step, the logs are lost; the broker will redeliver the job and a fresh execution produces a new log set.
+
+## Telemetry
+
+In addition to capturing block stdout/stderr (see Logging above), the worker emits a structured telemetry record for every invocation.  This telemetry is what makes future scheduling and caching decisions measurable: without it, choices about affinity routing, cache sizing, or worker autoscaling would have no empirical basis.
+
+Each telemetry record must include:
+
+- **Identity**: invocation ID, pipeline ID, block ID, worker ID
+- **Wall-clock breakdown**: queue-wait time, input-fetch time, block-execution time, output-upload time, and bookkeeping time (sandbox setup, symlink creation, manifest hashing)
+- **Per-input**: source (cache hit on local disk vs. fresh fetch from object storage), bytes transferred, fetch duration
+- **Per-output**: bytes written, upload duration
+- **Cache state at end of invocation**: hit/miss counts during this invocation, current cache size, evictions performed
+- **Outcome**: success, block failure (with exit code), or worker-side failure (with reason)
+
+The record must be emitted from day one, whether or not any consumer is currently reading it.  Transport (structured JSON to stdout, direct write to a telemetry sink, log shipper, etc.) is an implementation choice; the field set above is the contract.
+
 ## Error Handling
 
 There are two distinct failure modes the worker treats differently:
@@ -171,15 +210,15 @@ There are two distinct failure modes the worker treats differently:
 
 2. **Worker failure** — the worker process itself crashes, the host loses power, the network drops, or any other condition that prevents the worker from completing the job and publishing a result.  The worker **never acks the job message**.  The broker's consumer timeout elapses and the message is redelivered to another worker, which runs the block fresh.  The scheduler is unaware of the failed attempt.
 
-This split keeps user-pipeline failures (which should halt the pipeline) cleanly separated from infrastructure failures (which should be retried transparently).  Logs from any failed block are preserved on the shared filesystem for debugging regardless of which failure mode occurred.
+This split keeps user-pipeline failures (which should halt the pipeline) cleanly separated from infrastructure failures (which should be retried transparently).  Logs from a block failure (mode 1) are uploaded to object storage before the worker acks the job, so they are preserved for debugging.  Logs from a worker failure (mode 2) are lost with the worker; the redelivered job produces a fresh log set on the next attempt.
 
 ## Map Block Handling
 
 When the worker executes a `kind: map` block, it performs an additional step after the block completes: it reads the expansion manifest (`outputs/manifest/expansion.yaml`) written by the map block.  The worker then includes the item list in the `Result` message it publishes to `spade.results` (see Communication above).
 
-The scheduler uses this item list to create N invocations of the downstream block(s).  The worker is responsible for setting up each mapped invocation's `inputs/` directory with the correct item from the expansion (symlinked from the map block's working directory).
+The scheduler uses this item list to create N invocations of the downstream block(s).  Each mapped invocation is dispatched as a normal job; the worker that picks it up fetches its assigned item from object storage (via the worker-local cache) and symlinks it into the invocation's `inputs/` directory.
 
-For blocks inside a map context that have dependencies on non-mapped blocks (broadcast inputs), the worker symlinks the non-mapped block's outputs into every mapped invocation's `inputs/` directory.
+For blocks inside a map context that depend on non-mapped blocks (broadcast inputs), nothing special is needed at the worker.  A broadcast input is just another input -- fetched from object storage via the cache.  Because the cache is content-addressed, a broadcast input shared across many mapped invocations is fetched once per worker and served from cache for each invocation thereafter.
 
 See `scheduler.md` for the full map/reduce specification.
 
@@ -197,6 +236,8 @@ Message bodies are JSON.  Queues are declared `durable: true`, messages are publ
 The scheduler publishes a `Job` message for each invocation it wants run.  Workers consume with `prefetch_count = 1` so each worker holds one job at a time; competing-consumers semantics give fair fan-out across N workers with no additional scheduler logic.
 
 A worker **does not ack the job message until the invocation is complete** (successfully or unsuccessfully -- see Error Handling below for the distinction).  This is the core of the failure story: if a worker dies mid-execution, the unacked message is redelivered to another worker once the broker's consumer timeout elapses.  No leases, heartbeats, or dispatch bookkeeping are required on the scheduler side.
+
+The `Job` message schema reserves an optional `preferred_worker_id` field.  It is currently unset by the scheduler and ignored by workers.  The field exists so that locality-aware dispatch -- e.g. routing a downstream invocation to the worker that produced its upstream output -- can be added later by populating the field and introducing per-worker queues, without a message-format migration.  Implementations must accept the field whether present or absent.
 
 ### Result reporting (`spade.results`)
 

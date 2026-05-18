@@ -5,7 +5,7 @@ echo "Cloning isolate source"
 git clone https://github.com/ioi/isolate.git
 
 echo "Installing dependencies"
-sudo apt install -y pkg-config libcap-dev libseccomp-dev libsystemd-dev
+sudo apt install -y pkg-config libcap-dev libseccomp-dev libsystemd-dev gcc
 
 echo "Building"
 cd isolate
@@ -24,7 +24,7 @@ id isolate &>/dev/null || sudo useradd --system --no-create-home isolate
 echo "Initializing isolate for user: $USER"
 sudo isolate --as-uid=$(id -u $USER) --as-gid=$(id -g $USER) --init
 
-
+# remove isolate repository if it exists
 if [-e ./isolate ]; then 
     rm -rf ./isolate
 fi

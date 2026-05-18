@@ -168,9 +168,28 @@ Nested map/reduce operations (a mapped block outputting a collection that is the
 
 ## Multiple Instance Scheduler
 
-This system is responsible for running many concurrent pipelines on many workers.  We assume that all of the workers share a common file system.  This system maintains a Single Instance Scheduler for each pipeline that is being run, and then assigns block executions to workers.  These workers then handle the execution of the block, and then notify the scheduler of the status (successful execution or error)
+This system is responsible for running many concurrent pipelines on many workers.  Workers do not share a filesystem; data flowing between blocks moves through object storage (see `worker.md`).  This system maintains a Single Instance Scheduler for each pipeline that is being run, and then assigns block executions to workers.  These workers then handle the execution of the block, and then notify the scheduler of the status (successful execution or error)
 
 This allows for the fair and efficient execution of multiple pipelines across multiple workers.
+
+## State Management
+
+The scheduler's state must be reconstructable from durable storage at any time.  The source of truth for the scheduler is:
+
+- The pipeline DAGs stored in PostgreSQL
+- The invocation result history stored in PostgreSQL
+- The outstanding work held in the RabbitMQ queues (`spade.jobs` and `spade.results`)
+
+In-memory bookkeeping -- per-pipeline execution state, pending block readiness, in-flight invocation tracking -- is a **cache rebuilt on startup**, not a source of truth.
+
+This requirement allows the scheduler to be restarted (for deploys, crashes, or platform maintenance) without coordinated shutdown, lease handover, or external orchestration.  On startup, the scheduler:
+
+1. Reads the active pipelines and their current execution state from PostgreSQL
+2. Reconstructs each pipeline's dependency graph and identifies which blocks are ready, in-flight, complete, or failed
+3. Begins consuming from `spade.results` and idempotently applies any results already in the queue (see `worker.md`: idempotency is keyed by invocation ID, so duplicates from in-flight messages at the time of restart are safely ignored)
+4. Resumes dispatching ready blocks to `spade.jobs`
+
+The broker's at-least-once delivery and the scheduler's idempotent result consumer already cover messages in flight at the time of restart.  No additional coordination is required between the scheduler and workers during a restart.
 
 ## Error Handling
 

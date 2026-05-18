@@ -11,7 +11,7 @@ The system is based on the concept of "pipelines" and "blocks".  Each data proce
 
 The system has six components:
 1. The scheduler.  This system schedules the execution of blocks on worker nodes.
-2. The worker nodes.  These are independent worker nodes (with a shared file system) that do the actual block execution
+2. The worker nodes.  These are independent worker nodes that do the actual block execution.  Workers do not share a filesystem -- each worker uses its own local disk for scratch and a worker-local input cache, and data flowing between blocks moves through object storage (see `worker.md`)
 3. The client. This is a web-based GUI where users submit and create jobs using a flowchart-like interface.  
 4. The server layer.  Currently, we are using PocketBase here.  This component holds authentication and data for the client app and submit jobs for the scheduler. 
 5. The CLI.  This command line application is the development tooling for the system and allows for running pipelines locally.  This includes a lot of tools for developing blocks as well.  
