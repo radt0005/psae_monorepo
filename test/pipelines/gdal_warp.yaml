@@ -1,18 +1,18 @@
-id: 019dd04d-07a9-7fe0-8038-b491735efff7
+id: 019e3c4a-4a96-77c2-8038-36e7bf2a52c6
 name: gdal_warp
 version: "1.0"
 description: Reproject raster to UTM zone 10N
 blocks:
-- id: 019dd04d-07a9-7807-8036-23950a50dd8b
+- id: 019e3c4a-4a96-77eb-8036-c0fbcb03554e
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dd04d-07a9-7db8-8037-e5800d393f88
+- id: 019e3c4a-4a96-7f38-8037-5c3105fbd2e6
   name: gdal.warp
   inputs:
-  - 019dd04d-07a9-7807-8036-23950a50dd8b
+  - 019e3c4a-4a96-77eb-8036-c0fbcb03554e
   args:
     target_crs: EPSG:32610
     resolution: 0

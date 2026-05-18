@@ -1,18 +1,18 @@
-id: 019dd04d-07f6-7453-8106-b49618ff8b67
+id: 019e3c4a-4b7a-7329-8106-42d32f6ff24e
 name: data_usgs_3dep
 version: "1.0"
 description: '[NETWORK] Fetch 3DEP DEM tiles for AOI'
 blocks:
-- id: 019dd04d-07f6-721f-8104-10444c9286a2
+- id: 019e3c4a-4b7a-7449-8104-32eaf35debed
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019dd04d-07f6-782c-8105-86b0c8b776d6
+- id: 019e3c4a-4b7a-7773-8105-7a4c51e6d760
   name: data.usgs_3dep
   inputs:
-  - 019dd04d-07f6-721f-8104-10444c9286a2
+  - 019e3c4a-4b7a-7449-8104-32eaf35debed
   args:
     resolution: 30m
     product: DEM

@@ -1,18 +1,18 @@
-id: 019dd04d-07ae-7dd6-8047-54ef68a4e9e4
+id: 019e3c4a-4aa4-7ed8-8047-64eaff2afbaa
 name: gdal_nearblack
 version: "1.0"
 description: Clean near-black edge pixels
 blocks:
-- id: 019dd04d-07ae-729e-8045-e05e523659bb
+- id: 019e3c4a-4aa4-741e-8045-3f9d8fc6f45f
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dd04d-07ae-7f50-8046-5013cb1cb69b
+- id: 019e3c4a-4aa4-7061-8046-ebb97c3c9928
   name: gdal.nearblack
   inputs:
-  - 019dd04d-07ae-729e-8045-e05e523659bb
+  - 019e3c4a-4aa4-741e-8045-3f9d8fc6f45f
   args:
     near: 15
     white: false

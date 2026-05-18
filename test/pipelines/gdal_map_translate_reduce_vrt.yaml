@@ -1,24 +1,24 @@
-id: 019dd04d-07e2-7ddd-80d1-a2a4c7093545
+id: 019e3c4a-4b39-7c2a-80d1-f3c69a75d657
 name: gdal_map_translate_reduce_vrt
 version: "1.0"
 description: Map raster tiles, translate each to Byte, build VRT
 blocks:
-- id: 019dd04d-07e2-7253-80cd-4acedc408a2a
+- id: 019e3c4a-4b39-7db5-80cd-c04411f62a2d
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster*.tif
     format: GeoTIFF
     max_items: 10
-- id: 019dd04d-07e2-7fb5-80ce-0671d148d91b
+- id: 019e3c4a-4b39-7303-80ce-e96e47a34dd6
   name: gdal.map_raster_tiles
   inputs:
-  - 019dd04d-07e2-7253-80cd-4acedc408a2a
+  - 019e3c4a-4b39-7db5-80cd-c04411f62a2d
   args: {}
-- id: 019dd04d-07e2-76bb-80cf-7cc1a8a9daf7
+- id: 019e3c4a-4b39-75a5-80cf-df12d0fea013
   name: gdal.translate
   inputs:
-  - 019dd04d-07e2-7fb5-80ce-0671d148d91b
+  - 019e3c4a-4b39-7303-80ce-e96e47a34dd6
   args:
     output_format: GTiff
     output_type: Byte
@@ -26,9 +26,9 @@ blocks:
     height: 0
     scale_min: 0
     scale_max: 0
-- id: 019dd04d-07e2-79b6-80d0-f8126565b337
+- id: 019e3c4a-4b39-736b-80d0-313560810abf
   name: gdal.reduce_vrt
   inputs:
-  - 019dd04d-07e2-76bb-80cf-7cc1a8a9daf7
+  - 019e3c4a-4b39-75a5-80cf-df12d0fea013
   args:
     resolution: highest

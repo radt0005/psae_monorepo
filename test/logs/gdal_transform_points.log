@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_transform_points (019dd04d-07df-77af-80c7-346a1d6a491e)
+Loaded pipeline: gdal_transform_points (019e3c4a-4b30-7c27-80c7-36e7f4a06cbc)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.transform_points running...
   [2/2] gdal.transform_points complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.557s
+Pipeline complete: 2 block(s) executed (1 cached) in 5.647s

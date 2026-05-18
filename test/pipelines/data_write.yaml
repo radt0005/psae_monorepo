@@ -1,18 +1,18 @@
-id: 019dd04d-07e9-7217-80e3-64ac4249da3f
+id: 019e3c4a-4b55-7b17-80e3-f202884557f1
 name: data_write
 version: "1.0"
 description: Read a file and write it back to output
 blocks:
-- id: 019dd04d-07e9-7d61-80e1-dd69bc0f9391
+- id: 019e3c4a-4b55-75ac-80e1-9425cec91e76
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019dd04d-07e9-701c-80e2-0b9552f61169
+- id: 019e3c4a-4b55-782b-80e2-1c451aae187c
   name: data.write
   inputs:
-  - 019dd04d-07e9-7d61-80e1-dd69bc0f9391
+  - 019e3c4a-4b55-75ac-80e1-9425cec91e76
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/output/data_write_test.csv
     overwrite: true

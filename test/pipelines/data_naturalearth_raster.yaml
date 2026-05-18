@@ -1,9 +1,9 @@
-id: 019dd04d-07f1-7dae-80f9-2da520e1ae5a
+id: 019e3c4a-4b6c-731a-80f9-f5714d2746a2
 name: data_naturalearth_raster
 version: "1.0"
 description: '[NETWORK] Download Natural Earth hypsometric raster'
 blocks:
-- id: 019dd04d-07f1-7d24-80f8-128ab06b4fb6
+- id: 019e3c4a-4b6c-7b9b-80f8-791823763d96
   name: data.naturalearth_raster
   inputs: []
   args:

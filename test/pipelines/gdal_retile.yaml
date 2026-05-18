@@ -1,18 +1,18 @@
-id: 019dd04d-07b2-7cda-804e-f546e4a72584
+id: 019e3c4a-4aac-7ff7-804e-16498e9a15fe
 name: gdal_retile
 version: "1.0"
 description: Split raster into 32x32 tiles
 blocks:
-- id: 019dd04d-07b2-73de-804c-bab8ac698a7f
+- id: 019e3c4a-4aac-7b8d-804c-a3a57f033a00
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dd04d-07b2-791b-804d-5111b8b2fcbc
+- id: 019e3c4a-4aac-7ab9-804d-74ea0715bddf
   name: gdal.retile
   inputs:
-  - 019dd04d-07b2-73de-804c-bab8ac698a7f
+  - 019e3c4a-4aac-7b8d-804c-a3a57f033a00
   args:
     tile_width: 32
     tile_height: 32

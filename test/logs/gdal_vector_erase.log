@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_vector_erase (019dd04d-07db-7524-80bb-af83f72d58c4)
+Loaded pipeline: gdal_vector_erase (019e3c4a-4b1f-74b6-80bb-6b72f1d64d20)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.vector_erase running...
   [3/3] gdal.vector_erase complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 2.768s
+Pipeline complete: 3 block(s) executed (2 cached) in 5.917s

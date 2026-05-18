@@ -1,18 +1,18 @@
-id: 019dd04d-07ca-7fb9-8092-cd44d2b47f3c
+id: 019e3c4a-4afb-7ecb-8092-7c5060eb277e
 name: gdal_location_info
 version: "1.0"
 description: Read raster values at a point
 blocks:
-- id: 019dd04d-07ca-7eb5-8090-2f9811abe1a3
+- id: 019e3c4a-4afb-7865-8090-d8d9a93881be
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dd04d-07ca-76a5-8091-55ac59f6c0e1
+- id: 019e3c4a-4afb-78bc-8091-44301ecce569
   name: gdal.location_info
   inputs:
-  - 019dd04d-07ca-7eb5-8090-2f9811abe1a3
+  - 019e3c4a-4afb-7865-8090-d8d9a93881be
   args:
     x: -122.25
     y: 37.75

@@ -1,27 +1,27 @@
-id: 019dd04d-07d1-7a79-80a3-cc7132d066c9
+id: 019e3c4a-4b09-7ae9-80a3-0e593bab49aa
 name: gdal_vector_union
 version: "1.0"
 description: Union of two vector layers
 blocks:
-- id: 019dd04d-07d1-7726-80a0-5f444604af97
+- id: 019e3c4a-4b09-718b-80a0-2a1f5430b1fe
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019dd04d-07d1-7ef8-80a1-10c74e115234
+- id: 019e3c4a-4b09-7ac1-80a1-14db6cd6949a
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019dd04d-07d1-7085-80a2-f8b1a9e854f1
+- id: 019e3c4a-4b09-7bed-80a2-b4bf4f080dd9
   name: gdal.vector_union
   inputs:
-  - block: 019dd04d-07d1-7726-80a0-5f444604af97
+  - block: 019e3c4a-4b09-718b-80a0-2a1f5430b1fe
     output: file
     as: a
-  - block: 019dd04d-07d1-7ef8-80a1-10c74e115234
+  - block: 019e3c4a-4b09-7ac1-80a1-14db6cd6949a
     output: file
     as: b
   args: {}

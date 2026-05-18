@@ -1,27 +1,27 @@
-id: 019dd04d-07b3-7358-8052-78b9e6b486cb
+id: 019e3c4a-4ab0-77c5-8052-ff69be1312ea
 name: gdal_rasterize
 version: "1.0"
 description: Burn vectors into raster
 blocks:
-- id: 019dd04d-07b2-7303-804f-770a7b27d590
+- id: 019e3c4a-4ab0-71c3-804f-155b5ab3f625
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019dd04d-07b3-7bf2-8050-bd9c5041f4e7
+- id: 019e3c4a-4ab0-71fc-8050-bb43f859ce03
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019dd04d-07b3-792c-8051-11da22c10d42
+- id: 019e3c4a-4ab0-7765-8051-ddd0b52b2d37
   name: gdal.rasterize
   inputs:
-  - block: 019dd04d-07b2-7303-804f-770a7b27d590
+  - block: 019e3c4a-4ab0-71c3-804f-155b5ab3f625
     output: file
     as: vectors
-  - block: 019dd04d-07b3-7bf2-8050-bd9c5041f4e7
+  - block: 019e3c4a-4ab0-71fc-8050-bb43f859ce03
     output: file
     as: reference
   args:

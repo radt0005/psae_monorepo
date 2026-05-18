@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_viewshed (019dd04d-07bb-7366-806a-4efc258b0082)
+Loaded pipeline: gdal_viewshed (019e3c4a-4ac8-7914-806a-3da6822c6a7f)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.viewshed running...
   [2/2] gdal.viewshed complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.686s
+Pipeline complete: 2 block(s) executed (1 cached) in 6.147s

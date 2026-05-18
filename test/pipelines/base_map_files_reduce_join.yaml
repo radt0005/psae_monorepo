@@ -1,31 +1,31 @@
-id: 019dd04d-07a3-7d77-802c-a179a0d8d7ef
+id: 019e3c4a-4a8b-7e8e-802c-e28610c578a6
 name: base_map_files_reduce_join
 version: "1.0"
 description: Map over join_*.csv, convert to Parquet, inner-join on id
 blocks:
-- id: 019dd04d-07a3-711a-8028-d2acd6ef0a5a
+- id: 019e3c4a-4a8a-7005-8028-2107a680bbcc
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/join_*.csv
     format: CSV
     max_items: 10
-- id: 019dd04d-07a3-76b8-8029-b46bba96ac92
+- id: 019e3c4a-4a8a-77d6-8029-6dfe12918915
   name: base.map_files
   inputs:
-  - 019dd04d-07a3-711a-8028-d2acd6ef0a5a
+  - 019e3c4a-4a8a-7005-8028-2107a680bbcc
   args: {}
-- id: 019dd04d-07a3-78ae-802a-c0ea043a454f
+- id: 019e3c4a-4a8b-790b-802a-f2e6f9c398bc
   name: base.csv_to_parquet
   inputs:
-  - 019dd04d-07a3-76b8-8029-b46bba96ac92
+  - 019e3c4a-4a8a-77d6-8029-6dfe12918915
   args:
     delimiter: ','
     has_header: true
-- id: 019dd04d-07a3-70ba-802b-cb6b27090c9a
+- id: 019e3c4a-4a8b-70a6-802b-690eed33e9c9
   name: base.reduce_join
   inputs:
-  - 019dd04d-07a3-78ae-802a-c0ea043a454f
+  - 019e3c4a-4a8b-790b-802a-f2e6f9c398bc
   args:
     'on': id
     how: inner

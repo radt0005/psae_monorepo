@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_tpi (019dd04d-07c5-784c-8084-fdedcf74509f)
+Loaded pipeline: gdal_tpi (019e3c4a-4aeb-7641-8084-76d52734f36f)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.tpi running...
   [2/2] gdal.tpi complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.518s
+Pipeline complete: 2 block(s) executed (1 cached) in 5.941s

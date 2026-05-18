@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_slope (019dd04d-07c0-793d-8077-c03e2b46c75b)
+Loaded pipeline: gdal_slope (019e3c4a-4ada-752c-8077-be922acdd6c4)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.slope running...
   [2/2] gdal.slope complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.84s
+Pipeline complete: 2 block(s) executed (1 cached) in 6.879s
