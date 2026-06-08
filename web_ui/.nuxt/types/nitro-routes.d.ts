@@ -44,14 +44,24 @@ declare module "nitropack/types" {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/index.get').default>>>>
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipelines/index.post').default>>>>
     }
-    '/api/results/:id/:name': {
-      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/results/[id]/[name].get').default>>>>
+    '/api/runs/:id/files/:name': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/files/[name].get').default>>>>
     }
-    '/api/results/:id': {
-      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/results/[id]/index.get').default>>>>
+    '/api/runs/:id': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/index.get').default>>>>
+      'patch': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/index.patch').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/index.put').default>>>>
     }
-    '/api/schema/:id': {
-      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/schema/[id].get').default>>>>
+    '/api/runs/:id/share': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/share.delete').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/share.post').default>>>>
+    }
+    '/api/runs/:id/zip': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/[id]/zip.get').default>>>>
+    }
+    '/api/runs': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/runs/index.post').default>>>>
     }
     '/api/uploads/data/complete': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/uploads/data/complete.post').default>>>>

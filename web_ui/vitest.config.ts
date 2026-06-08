@@ -8,6 +8,10 @@ export default defineConfig({
     environment: "happy-dom",
     globals: false,
     include: ["tests/**/*.test.ts"],
+    // PGlite (Postgres-in-WASM) cold start in the DB repository tests can
+    // exceed the 5s default on first spin-up; give them headroom.
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
   resolve: {
     alias: {

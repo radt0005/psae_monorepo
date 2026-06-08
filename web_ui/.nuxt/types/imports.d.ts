@@ -5,12 +5,14 @@ declare global {
   const _useShortcuts: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useShortcuts')['_useShortcuts']
   const abortNavigation: typeof import('../../node_modules/nuxt/dist/app/composables/router')['abortNavigation']
   const acceptHMRUpdate: typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['acceptHMRUpdate']
+  const activeMapFor: typeof import('../../utils/mapContext')['activeMapFor']
   const addRouteMiddleware: typeof import('../../node_modules/nuxt/dist/app/composables/router')['addRouteMiddleware']
   const callOnce: typeof import('../../node_modules/nuxt/dist/app/composables/once')['callOnce']
   const cancelIdleCallback: typeof import('../../node_modules/nuxt/dist/app/compat/idle-callback')['cancelIdleCallback']
   const clearError: typeof import('../../node_modules/nuxt/dist/app/composables/error')['clearError']
   const clearNuxtData: typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['clearNuxtData']
   const clearNuxtState: typeof import('../../node_modules/nuxt/dist/app/composables/state')['clearNuxtState']
+  const computeMapContext: typeof import('../../utils/mapContext')['computeMapContext']
   const computed: typeof import('vue')['computed']
   const createError: typeof import('../../node_modules/nuxt/dist/app/composables/error')['createError']
   const createPopper: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/usePopper')['createPopper']
@@ -39,6 +41,7 @@ declare global {
   const hasUnresolvedEdges: typeof import('../../utils/wiring')['hasUnresolvedEdges']
   const inject: typeof import('vue')['inject']
   const injectHead: typeof import('../../node_modules/nuxt/dist/app/composables/head')['injectHead']
+  const isBroadcastEdge: typeof import('../../utils/mapContext')['isBroadcastEdge']
   const isNuxtError: typeof import('../../node_modules/nuxt/dist/app/composables/error')['isNuxtError']
   const isPrerendered: typeof import('../../node_modules/nuxt/dist/app/composables/payload')['isPrerendered']
   const isProxy: typeof import('vue')['isProxy']
@@ -134,12 +137,12 @@ declare global {
   const useLazyFetch: typeof import('../../node_modules/nuxt/dist/app/composables/fetch')['useLazyFetch']
   const useLink: typeof import('../../node_modules/vue-router')['useLink']
   const useLoadingIndicator: typeof import('../../node_modules/nuxt/dist/app/composables/loading-indicator')['useLoadingIndicator']
+  const useMapContext: typeof import('../../composables/useMapContext')['useMapContext']
   const useModal: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useModal')['useModal']
   const useModel: typeof import('vue')['useModel']
   const useNuxtApp: typeof import('../../node_modules/nuxt/dist/app/nuxt')['useNuxtApp']
   const useNuxtData: typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']
   const useNuxtDevTools: typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']
-  const usePB: typeof import('../../composables/usePB')['default']
   const usePinia: typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']
   const usePipelineStore: typeof import('../../stores/pipeline')['usePipelineStore']
   const usePopper: typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/usePopper')['usePopper']
@@ -214,6 +217,9 @@ declare global {
   export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
   // @ts-ignore
+  export type { MapGraphNode, MapContextResult } from '../../utils/mapContext'
+  import('../../utils/mapContext')
+  // @ts-ignore
   export type { PipelineBuilder } from '../../utils/pipeline'
   import('../../utils/pipeline')
   // @ts-ignore
@@ -234,12 +240,14 @@ declare module 'vue' {
     readonly _useShortcuts: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useShortcuts')['_useShortcuts']>
     readonly abortNavigation: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/router')['abortNavigation']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['acceptHMRUpdate']>
+    readonly activeMapFor: UnwrapRef<typeof import('../../utils/mapContext')['activeMapFor']>
     readonly addRouteMiddleware: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/router')['addRouteMiddleware']>
     readonly callOnce: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/once')['callOnce']>
     readonly cancelIdleCallback: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/compat/idle-callback')['cancelIdleCallback']>
     readonly clearError: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/error')['clearError']>
     readonly clearNuxtData: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['clearNuxtData']>
     readonly clearNuxtState: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/state')['clearNuxtState']>
+    readonly computeMapContext: UnwrapRef<typeof import('../../utils/mapContext')['computeMapContext']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createError: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/error')['createError']>
     readonly createPopper: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/usePopper')['createPopper']>
@@ -268,6 +276,7 @@ declare module 'vue' {
     readonly hasUnresolvedEdges: UnwrapRef<typeof import('../../utils/wiring')['hasUnresolvedEdges']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectHead: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/head')['injectHead']>
+    readonly isBroadcastEdge: UnwrapRef<typeof import('../../utils/mapContext')['isBroadcastEdge']>
     readonly isNuxtError: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/error')['isNuxtError']>
     readonly isPrerendered: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/payload')['isPrerendered']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
@@ -363,12 +372,12 @@ declare module 'vue' {
     readonly useLazyFetch: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/fetch')['useLazyFetch']>
     readonly useLink: UnwrapRef<typeof import('../../node_modules/vue-router')['useLink']>
     readonly useLoadingIndicator: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/loading-indicator')['useLoadingIndicator']>
+    readonly useMapContext: UnwrapRef<typeof import('../../composables/useMapContext')['useMapContext']>
     readonly useModal: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/useModal')['useModal']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
     readonly useNuxtApp: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/nuxt')['useNuxtApp']>
     readonly useNuxtData: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']>
     readonly useNuxtDevTools: UnwrapRef<typeof import('../../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools')['useNuxtDevTools']>
-    readonly usePB: UnwrapRef<typeof import('../../composables/usePB')['default']>
     readonly usePinia: UnwrapRef<typeof import('../../node_modules/@pinia/nuxt/dist/runtime/composables')['usePinia']>
     readonly usePipelineStore: UnwrapRef<typeof import('../../stores/pipeline')['usePipelineStore']>
     readonly usePopper: UnwrapRef<typeof import('../../node_modules/@nuxt/ui/dist/runtime/composables/usePopper')['usePopper']>

@@ -1,22 +1,33 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { useDb } from "./db";
-
-let cached: ReturnType<typeof betterAuth> | null = null;
+import { users, sessions, accounts, verifications } from "./db/schema";
 
 /**
- * Server-side Better Auth instance, lazy so the DB pool isn't opened at
- * import time.
+ * Build the Better Auth instance. Factored out so `cached` infers the exact
+ * `Auth<…concrete options…>` type — `Auth` is invariant in its options param,
+ * so the defaulted `ReturnType<typeof betterAuth>` (`Auth<BetterAuthOptions>`)
+ * wouldn't accept it.
  */
-export function useAuth() {
-  if (cached) return cached;
+function createAuth() {
   const config = useRuntimeConfig();
   const db = useDb();
 
-  cached = betterAuth({
+  return betterAuth({
     secret: (config.betterAuthSecret as string) || process.env.BETTER_AUTH_SECRET,
     baseURL: (config.betterAuthUrl as string) || "http://localhost:3000",
-    database: drizzleAdapter(db, { provider: "pg" }),
+    // Map Better Auth's model names (singular) to our drizzle table objects.
+    // Our tables are exported under plural keys (`users`, `sessions`, …), which
+    // the adapter can't resolve on its own — so pass the schema explicitly.
+    database: drizzleAdapter(db, {
+      provider: "pg",
+      schema: {
+        user: users,
+        session: sessions,
+        account: accounts,
+        verification: verifications,
+      },
+    }),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // flip on once we have an email transport
@@ -27,6 +38,15 @@ export function useAuth() {
       },
     },
   });
+}
 
+let cached: ReturnType<typeof createAuth> | null = null;
+
+/**
+ * Server-side Better Auth instance, lazy so the DB pool isn't opened at
+ * import time.
+ */
+export function useAuth() {
+  if (!cached) cached = createAuth();
   return cached;
 }

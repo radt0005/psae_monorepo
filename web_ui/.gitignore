@@ -3,3 +3,7 @@ node_modules
 *.db
 .nuxt
 .output
+test-results
+playwright-report
+blob-report
+.playwright

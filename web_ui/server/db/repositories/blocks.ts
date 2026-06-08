@@ -30,8 +30,7 @@ export function makeBlockRepo(db: Db) {
     },
 
     /**
-     * Insert or update a block by name. Used by the admin upload endpoint
-     * and by the migration script that ports rows from PocketBase.
+     * Insert or update a block by name. Used by the admin upload endpoint.
      */
     async upsert(input: {
       label: string;

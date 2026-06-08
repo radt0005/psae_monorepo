@@ -18,14 +18,24 @@ export async function makeTestDb() {
   const client = new PGlite();
   await client.waitReady;
 
-  const migrationSql = fs.readFileSync(
-    path.resolve(__dirname, "../../server/db/migrations/0000_hot_odin.sql"),
-    "utf8",
-  );
-  for (const stmt of migrationSql.split("--> statement-breakpoint")) {
-    const trimmed = stmt.trim();
-    if (trimmed.length === 0) continue;
-    await client.exec(trimmed);
+  // Apply every generated migration in order so the embedded DB matches the
+  // production schema (drizzle names them `NNNN_*.sql`, lexicographically
+  // sortable).
+  const migrationsDir = path.resolve(__dirname, "../../server/db/migrations");
+  const files = fs
+    .readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  for (const file of files) {
+    const migrationSql = fs.readFileSync(
+      path.join(migrationsDir, file),
+      "utf8",
+    );
+    for (const stmt of migrationSql.split("--> statement-breakpoint")) {
+      const trimmed = stmt.trim();
+      if (trimmed.length === 0) continue;
+      await client.exec(trimmed);
+    }
   }
 
   const db = drizzle(client, { schema });

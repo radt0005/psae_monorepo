@@ -31,13 +31,7 @@ interface _GlobalComponents {
     'FlowProblems': typeof import("../components/flow/Problems.vue")['default']
     'MapsBase': typeof import("../components/maps/Base.vue")['default']
     'MapsGeojson': typeof import("../components/maps/Geojson.vue")['default']
-    'ResultsFileList': typeof import("../components/results/FileList.vue")['default']
-    'ResultsGeojson': typeof import("../components/results/Geojson.vue")['default']
-    'ResultsImage': typeof import("../components/results/Image.vue")['default']
-    'ResultsStd': typeof import("../components/results/Std.vue")['default']
-    'ResultsTable': typeof import("../components/results/Table.vue")['default']
-    'ResultsText': typeof import("../components/results/Text.vue")['default']
-    'ResultsJson': typeof import("../components/results/json.vue")['default']
+    'ResultsRunFileViewer': typeof import("../components/results/RunFileViewer.vue")['default']
     'UAccordion': typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue")['default']
     'UAlert': typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue")['default']
     'UAvatar': typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue")['default']
@@ -154,13 +148,7 @@ interface _GlobalComponents {
     'LazyFlowProblems': LazyComponent<typeof import("../components/flow/Problems.vue")['default']>
     'LazyMapsBase': LazyComponent<typeof import("../components/maps/Base.vue")['default']>
     'LazyMapsGeojson': LazyComponent<typeof import("../components/maps/Geojson.vue")['default']>
-    'LazyResultsFileList': LazyComponent<typeof import("../components/results/FileList.vue")['default']>
-    'LazyResultsGeojson': LazyComponent<typeof import("../components/results/Geojson.vue")['default']>
-    'LazyResultsImage': LazyComponent<typeof import("../components/results/Image.vue")['default']>
-    'LazyResultsStd': LazyComponent<typeof import("../components/results/Std.vue")['default']>
-    'LazyResultsTable': LazyComponent<typeof import("../components/results/Table.vue")['default']>
-    'LazyResultsText': LazyComponent<typeof import("../components/results/Text.vue")['default']>
-    'LazyResultsJson': LazyComponent<typeof import("../components/results/json.vue")['default']>
+    'LazyResultsRunFileViewer': LazyComponent<typeof import("../components/results/RunFileViewer.vue")['default']>
     'LazyUAccordion': LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue")['default']>
     'LazyUAlert': LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue")['default']>
     'LazyUAvatar': LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue")['default']>
@@ -283,13 +271,7 @@ export const FlowCustomBlock: typeof import("../components/flow/CustomBlock.vue"
 export const FlowProblems: typeof import("../components/flow/Problems.vue")['default']
 export const MapsBase: typeof import("../components/maps/Base.vue")['default']
 export const MapsGeojson: typeof import("../components/maps/Geojson.vue")['default']
-export const ResultsFileList: typeof import("../components/results/FileList.vue")['default']
-export const ResultsGeojson: typeof import("../components/results/Geojson.vue")['default']
-export const ResultsImage: typeof import("../components/results/Image.vue")['default']
-export const ResultsStd: typeof import("../components/results/Std.vue")['default']
-export const ResultsTable: typeof import("../components/results/Table.vue")['default']
-export const ResultsText: typeof import("../components/results/Text.vue")['default']
-export const ResultsJson: typeof import("../components/results/json.vue")['default']
+export const ResultsRunFileViewer: typeof import("../components/results/RunFileViewer.vue")['default']
 export const UAccordion: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue")['default']
 export const UAlert: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue")['default']
 export const UAvatar: typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue")['default']
@@ -406,13 +388,7 @@ export const LazyFlowCustomBlock: LazyComponent<typeof import("../components/flo
 export const LazyFlowProblems: LazyComponent<typeof import("../components/flow/Problems.vue")['default']>
 export const LazyMapsBase: LazyComponent<typeof import("../components/maps/Base.vue")['default']>
 export const LazyMapsGeojson: LazyComponent<typeof import("../components/maps/Geojson.vue")['default']>
-export const LazyResultsFileList: LazyComponent<typeof import("../components/results/FileList.vue")['default']>
-export const LazyResultsGeojson: LazyComponent<typeof import("../components/results/Geojson.vue")['default']>
-export const LazyResultsImage: LazyComponent<typeof import("../components/results/Image.vue")['default']>
-export const LazyResultsStd: LazyComponent<typeof import("../components/results/Std.vue")['default']>
-export const LazyResultsTable: LazyComponent<typeof import("../components/results/Table.vue")['default']>
-export const LazyResultsText: LazyComponent<typeof import("../components/results/Text.vue")['default']>
-export const LazyResultsJson: LazyComponent<typeof import("../components/results/json.vue")['default']>
+export const LazyResultsRunFileViewer: LazyComponent<typeof import("../components/results/RunFileViewer.vue")['default']>
 export const LazyUAccordion: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue")['default']>
 export const LazyUAlert: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue")['default']>
 export const LazyUAvatar: LazyComponent<typeof import("../node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue")['default']>

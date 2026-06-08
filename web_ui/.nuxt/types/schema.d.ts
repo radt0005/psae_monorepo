@@ -187,13 +187,7 @@ declare module 'nuxt/schema' {
 
    rabbitmqQueue: string,
 
-   pocketbaseUrl: string,
-
-   pocketbaseAdminUser: string,
-
-   pocketbaseAdminPassword: string,
-
-   runsDir: string,
+   workerCallbackSecret: string,
 
    nitro: {
       envPrefix: string,
@@ -204,8 +198,6 @@ declare module 'nuxt/schema' {
    },
   }
   interface PublicRuntimeConfig {
-   pocketbaseUrl: string,
-
    betterAuthUrl: string,
   }
 }

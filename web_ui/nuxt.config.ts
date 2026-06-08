@@ -24,16 +24,9 @@ export default defineNuxtConfig({
     // Worker queue
     rabbitmqUrl: process.env.RABBITMQ_URL || "amqp://localhost",
     rabbitmqQueue: process.env.RABBITMQ_QUEUE || "user_submissions",
-    // Legacy (still used by the runs page until B.5)
-    pocketbaseUrl: process.env.POCKETBASE_URL || "",
-    pocketbaseAdminUser: process.env.POCKETBASE_USER || "",
-    pocketbaseAdminPassword: process.env.POCKETBASE_PASSWORD || "",
-    runsDir: process.env.RUNS_DIR || "",
+    // Shared secret the scheduler/worker presents on run-status callbacks.
+    workerCallbackSecret: process.env.WORKER_CALLBACK_SECRET || "",
     public: {
-      pocketbaseUrl:
-        process.env.NUXT_PUBLIC_POCKETBASE_URL ||
-        process.env.POCKETBASE_URL ||
-        "",
       betterAuthUrl:
         process.env.NUXT_PUBLIC_BETTER_AUTH_URL ||
         process.env.BETTER_AUTH_URL ||

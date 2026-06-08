@@ -125,7 +125,6 @@ declare global {
   const useEvent: typeof import('../../node_modules/nitropack/dist/runtime/internal/context')['useEvent']
   const useNitroApp: typeof import('../../node_modules/nitropack/dist/runtime/internal/app')['useNitroApp']
   const useRuntimeConfig: typeof import('../../node_modules/nitropack/dist/runtime/internal/config')['useRuntimeConfig']
-  const useServerPocketbase: typeof import('../../server/utils/useServerPocketbase')['useServerPocketbase']
   const useSession: typeof import('../../node_modules/h3')['useSession']
   const useStorage: typeof import('../../node_modules/nitropack/dist/runtime/internal/storage')['useStorage']
   const writeEarlyHints: typeof import('../../node_modules/h3')['writeEarlyHints']
@@ -146,4 +145,3 @@ export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsUR
 export { defineAppConfig } from '/home/krbundy/UMaine/psae_monorepo/web_ui/node_modules/nuxt/dist/core/runtime/nitro/utils/config';
 export { connectRabbitMQ, publishJob } from '/home/krbundy/UMaine/psae_monorepo/web_ui/server/utils/rabbitmq';
 export { requireUser, getUserOrNull } from '/home/krbundy/UMaine/psae_monorepo/web_ui/server/utils/requireUser';
-export { useServerPocketbase } from '/home/krbundy/UMaine/psae_monorepo/web_ui/server/utils/useServerPocketbase';

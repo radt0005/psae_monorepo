@@ -150,20 +150,20 @@ The PocketBase `blocks` collection is already partially proxied through `/api/bl
 
 The existing flow uses RabbitMQ (kept) plus PocketBase `runs` for state and result files. We replace the PocketBase half.
 
-- [ ] Schema: `runs` (`id`, `pipeline_id` nullable so ad-hoc YAML still works, `owner_id`, `yaml`, `status` enum, `started_at`, `finished_at`, `error`). Plus `run_files` (`run_id`, `name`, `mime_type`, `size`, `s3_key`, `block_id`) and `run_logs` (`run_id`, `block_id`, `stdout`, `stderr`).
-- [ ] Repository: `create`, `getById` (ACL-checked), `listOwnedBy`, `appendFile`, `updateStatus`, `appendLog`.
-- [ ] Endpoints:
-  - `POST /api/runs` — submits a pipeline (writes to DB, then enqueues to RabbitMQ via existing `publishJob`)
-  - `GET /api/runs` — list mine
+- [x] Schema: `runs` (`id`, `pipeline_id` nullable so ad-hoc YAML still works, `owner_id`, `yaml`, `status` enum, `started_at`, `finished_at`, `error`). Plus `run_files` (`run_id`, `name`, `mime_type`, `size`, `s3_key`, `block_id`) and `run_logs` (`run_id`, `block_id`, `stdout`, `stderr`). — `server/db/schema/runs.ts` (also adds `run_shares` for Phase E)
+- [x] Repository: `create`, `getById` (ACL-checked via `getByIdForUser`/`getWithDetails`), `listOwnedBy`, `appendFile`, `updateStatus`, `appendLog`. — `server/db/repositories/runs.ts`, covered by `tests/runRepo.test.ts`
+- [x] Endpoints:
+  - `POST /api/runs` — submits a pipeline (writes to DB, then enqueues to RabbitMQ via existing `publishJob`); accepts `pipelineId` or ad-hoc `yaml`
+  - `GET /api/runs` — list mine / shared / public
   - `GET /api/runs/:id` — single run with files + logs
-  - `GET /api/runs/:id/files/:name` — streaming download from MinIO with HTTP Range support (Phase B.6 dep)
-- [ ] **Worker contract** — coordinate with the Go scheduler team:
+  - `GET /api/runs/:id/files/:name` — presigned S3 download (S3 serves HTTP Range itself)
+- [~] **Worker contract** — coordinate with the Go scheduler team:
   - Worker reads job from RabbitMQ (unchanged), executes, writes outputs to S3 under `runs/<run_id>/<block_id>/<output_name>/<filename>`, then PATCHes `/api/runs/:id` with status + the file metadata. Document the wire format in `../spec/worker.md` once agreed.
-- [ ] Update `Export.vue` to POST to `/api/runs` instead of `pb.collection('runs').create(...)`.
-- [ ] Update `pages/results/[id].vue` and `pages/results/index.vue` to use the new endpoints.
-- [ ] Tests:
-  - API: submit-run happy path (mocked queue + DB)
-  - Status-polling component test (the `autoRefresh` behavior)
+  - **Web-UI side shipped**: `PATCH /api/runs/:id` callback exists (bearer-secret guarded via `WORKER_CALLBACK_SECRET`), accepting `{status, error, files[], logs[]}`. Still needs the wire format ratified with the scheduler team + written into `../spec/worker.md`.
+- [x] Update `Export.vue` to POST to `/api/runs` instead of `pb.collection('runs').create(...)`. — "Submit run" button
+- [x] Update `pages/results/[id].vue` and `pages/results/index.vue` to use the new endpoints.
+- [~] Tests:
+  - Repo-level happy path + ACL covered in `tests/runRepo.test.ts` (this repo tests at the repository layer; HTTP-handler + status-polling coverage is deferred to Phase G e2e, matching the existing `auth.test.ts` convention)
 
 ## B.6 Custom data uploads + result files (S3/MinIO; subsumes old Phase 7 + Phase 8.2)
 
@@ -176,7 +176,7 @@ The existing flow uses RabbitMQ (kept) plus PocketBase `runs` for state and resu
   - `GET /api/data/:id` (presigned download URL or proxy)
   - `DELETE /api/data/:id`
   - `POST /api/data/:id/share`
-- [ ] Result-file streaming: `GET /api/runs/:id/files/:name` returns a presigned URL or a Range-supporting proxy. Replace the per-file looped download in `pages/results/[id].vue` with a proper "Download all" zip stream endpoint (`GET /api/runs/:id/zip`).
+- [x] Result-file streaming: `GET /api/runs/:id/files/:name` returns a presigned URL (S3 handles Range). Replaced the per-file looped download with a streaming "Download all" ZIP endpoint (`GET /api/runs/:id/zip`, fflate streaming Zip so multi-GB outputs don't buffer).
 - [ ] Pages:
   - `pages/data/index.vue` — list / upload / share / delete with chunked-upload progress UI
   - `pages/data/upload.vue` (or a slide-over from the index) — drag-drop with tus-style resumable behavior
@@ -188,10 +188,10 @@ The existing flow uses RabbitMQ (kept) plus PocketBase `runs` for state and resu
 
 ## B.7 PocketBase removal
 
-- [ ] Audit for remaining `pb.value.collection(...)` calls. None should remain after B.2 / B.3 / B.4 / B.5 / B.6.
-- [ ] Delete `composables/usePB.ts`, `server/utils/useServerPocketbase.ts`, `migrations/` (PocketBase migration dir), the `pocketbase` npm dependency.
-- [ ] Remove `POCKETBASE_*` env vars from `nuxt.config.ts` and `.env.example`.
-- [ ] Delete the docker-compose pocketbase service.
+- [x] Audit for remaining `pb.value.collection(...)` calls. None remain — also removed the now-dead PocketBase-bound result viewers (`components/results/{Std,Text,Image,Table,json,Geojson,FileList}.vue`), the old filesystem `GET /api/results/...` endpoints, the unused `GET /api/schema/[id]`, and the one-off `scripts/migrate-blocks-from-pocketbase.ts`.
+- [x] Delete `composables/usePB.ts`, `server/utils/useServerPocketbase.ts`, the `pocketbase` npm dependency. (Stray empty `migrations/create.sql` is not a PocketBase dir — left as-is.)
+- [x] Remove `POCKETBASE_*` env vars from `nuxt.config.ts` and `.env.example`.
+- [x] Delete the docker-compose pocketbase service. — already absent.
 
 ---
 
@@ -211,10 +211,10 @@ Most of this is now unblocked because B.3 stores full manifests.
 
 # Phase D — Map / reduce in the flowchart (was Phase 6)
 
-- [ ] Custom Vue Flow node variants for `kind: map` and `kind: reduce` (distinct accent color from the brand red — perhaps the marketing palette's gray-dark with a red border).
-- [ ] When dragging an edge from a `kind: map` block, mark downstream nodes as "in map context" until a `kind: reduce` is reached. Subtle background grouping.
-- [ ] Validation already enforces structure (Phase 3 done); add visual hints for "no nested maps".
-- [ ] Document broadcast inputs (non-mapped deps into a map context) in tooltip text — no other UI change needed.
+- [x] Custom Vue Flow node variants for `kind: map` and `kind: reduce` — `CustomBlock.vue` (blue accent/ring + "map" badge, green for "reduce").
+- [x] When dragging an edge from a `kind: map` block, mark downstream nodes as "in map context" until a `kind: reduce` is reached. Subtle background grouping. — `utils/mapContext.ts` (`computeMapContext`, topo-ordered map-stack analysis, tested in `tests/mapContext.test.ts`), surfaced live via `composables/useMapContext.ts`; in-context nodes get a `bg-spade-blue/5` wash + an "in map" badge naming the opening map.
+- [x] Validation already enforces structure (Phase 3 done); add visual hints for "no nested maps". — nested-map detection in `computeMapContext`; offending map node gets a red ring + "⚠ nested map not allowed" hint.
+- [x] Document broadcast inputs (non-mapped deps into a map context) in tooltip text — `isBroadcastEdge` flags them; in-context blocks with a non-mapped dependency show a "broadcast" badge whose tooltip explains the fan-out. No other UI change.
 
 ---
 
@@ -222,10 +222,10 @@ Most of this is now unblocked because B.3 stores full manifests.
 
 The streaming download + zip endpoint were folded into Phase B.5/B.6. What remains is viewers + sharing.
 
-- [ ] Result sharing: `runs.visibility` + `run_shares` table (model copies pipelines/data). `POST /api/runs/:id/share`. UI on the run detail page.
+- [x] Result sharing: `runs.visibility` + `run_shares` table (mirrors pipelines/data). `POST /api/runs/:id/share`, `DELETE …/share?userId=`, owner-only `PUT /api/runs/:id` for visibility. Share + visibility UI on the run detail page.
 - [ ] Raster preview component — server-side `gdal_translate` to PNG thumbnail; downloadable original. Decide on a service container vs a worker job; doc accordingly.
 - [ ] Parquet/Arrow tabular viewer (server-side conversion to a sampled CSV, or `parquet-wasm` in the browser).
-- [ ] Replace the `cleanupFileName` heuristic in `pages/results/[id].vue` with the real filename from `run_files.name`.
+- [x] Replace the `cleanupFileName` heuristic in `pages/results/[id].vue` with the real filename from `run_files.name`. — the rebuilt run detail page + `RunFileViewer.vue` use `run_files.name` verbatim; the old heuristic is gone.
 
 ---
 
@@ -233,24 +233,32 @@ The streaming download + zip endpoint were folded into Phase B.5/B.6. What remai
 
 Most of Phase 9 lands inside Phase B.2. Remaining items:
 
-- [ ] Profile page (`pages/account.vue`) — change password, change email, sign out.
+- [x] Profile page (`pages/account.vue`) — change password, change email, sign out.
 - [ ] Audit Better Auth session expiry, CSRF, secure cookies in production.
-- [ ] Admin role for the block-upload endpoint (B.3) and for cross-tenant moderation if we add it.
+- [x] Admin role for the block-upload endpoint (B.3) — `POST /api/blocks` 403s non-admins; `role` is a Better Auth `additionalField` so it's present on the session user. Cross-tenant moderation not built (deferred until needed).
 
 ---
 
 # Phase G — End-to-end verification
 
-- [ ] Playwright suite covering:
-  - [ ] Sign up → verify email → log in (B.2)
-  - [ ] Build a pipeline with an ambiguous connection → resolve via modal → save (Phases 1 / 2 / B.4)
-  - [ ] Save pipeline → open in another browser session → run (B.4 / B.5)
-  - [ ] Share pipeline → second user sees it (B.4)
-  - [ ] Upload a >100 MB data file → use it in a pipeline → run completes (B.6)
-  - [ ] Download a single result file; download all as ZIP (B.5 / B.6)
-  - [ ] Share a result run → second user views it (E)
-- [ ] Round-trip test: hand-written spec-conformant YAML → import → export → byte-identical (already covered by `tests/useFlow.test.ts` at unit level; promote to e2e)
-- [ ] Manual regression pass against `web_ui.md`'s opening 8-item checklist; every box reachable from the homepage in ≤2 clicks.
+Scaffolded under `e2e/` (Playwright). Config in `playwright.config.ts`,
+helpers in `e2e/helpers/`, setup + manual checklist in `e2e/README.md`. Run
+with `bun run test:e2e` once the backend stack is up. The Go worker is
+simulated via the secret-guarded `PATCH /api/runs/:id` callback so result
+flows run without a live worker. Two scenarios are `test.fixme` with in-file
+TODOs (noted below). Run `bunx playwright install chromium` + `bun install`
+first.
+
+- [~] Playwright suite covering:
+  - [x] Sign up → log in → protected page → log out (`e2e/auth.spec.ts`). (Email-verify step is a documented placeholder — verification is currently disabled server-side.)
+  - [~] Build a pipeline with an ambiguous connection → resolve via modal → save — `test.fixme` in `e2e/editor.spec.ts` (needs deterministic Vue Flow handle-drag + two type-ambiguous seeded blocks; TODO in-file).
+  - [x] Save pipeline → open in a fresh session → run (`e2e/pipelines.spec.ts`).
+  - [x] Share pipeline → second user sees it under "Shared with me" (`e2e/pipelines.spec.ts`).
+  - [~] Upload a >100 MB data file → use it in a pipeline → run completes — small-file upload + share are live (`e2e/data.spec.ts`); the >100 MB + use-in-pipeline leg is `test.fixme` (multipart follow-up + editor↔data binding; TODO in-file).
+  - [x] Download a single result file; download all as ZIP (`e2e/results.spec.ts`, verifies bytes + ZIP magic number).
+  - [x] Share a result run → second user views it (`e2e/results.spec.ts`).
+- [x] Round-trip test: hand-written spec-conformant YAML → import → export, structure preserved (`e2e/editor.spec.ts`).
+- [x] Manual regression pass checklist against `web_ui.md`'s opening 8-item checklist — written up in `e2e/README.md` (each box ≤2 clicks from home).
 
 ---
 

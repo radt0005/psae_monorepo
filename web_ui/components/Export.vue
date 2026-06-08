@@ -32,11 +32,29 @@ const exportPipeline = () => {
   pipelineText.value = baseText.split("\n");
 };
 
-// Submission is disabled until the cloud scheduler (B.5) is online.
-// Users can still save pipelines via the Pipelines library and download YAML.
-const submissionDisabled = true;
-const submissionReason =
-  "Pipeline submission is offline while the cloud scheduler is being rebuilt. Save the pipeline to your library, or download the YAML.";
+// Submit the current pipeline as a run (B.5). Posts the resolved YAML to
+// /api/runs, which validates, persists a queued run, and enqueues it to the
+// scheduler, then routes to the run detail page.
+const submitting = ref(false);
+const submitError = ref<string | null>(null);
+
+const submitRun = async () => {
+  submitError.value = null;
+  const yaml = pipelineText.value.join("\n");
+  if (!yaml.trim()) return;
+  submitting.value = true;
+  try {
+    const run = await $fetch<{ id: string }>("/api/runs", {
+      method: "POST",
+      body: { yaml, name: flow.pipelineMeta.name },
+    });
+    await navigateTo(`/results/${run.id}`);
+  } catch (e: any) {
+    submitError.value = e?.data?.statusMessage ?? "Submission failed";
+  } finally {
+    submitting.value = false;
+  }
+};
 
 const downloadYAML = () => {
   const yamlContent = pipelineText.value.join("\n");
@@ -69,10 +87,10 @@ const handleClose = () => emit("close");
       <pre>{{ text }}</pre>
     </div>
     <p
-      v-if="submissionDisabled && pipelineText.length > 0"
-      class="mt-spade-md p-spade-md border-l-4 border-spade-yellow bg-spade-yellow-light text-sm"
+      v-if="submitError"
+      class="mt-spade-md p-spade-md border-l-4 border-spade-red bg-spade-red-light text-sm"
     >
-      {{ submissionReason }}
+      {{ submitError }}
     </p>
 
     <template #footer>
@@ -88,6 +106,17 @@ const handleClose = () => emit("close");
             hasUnresolvedEdges(flow.edges)
           "
         >Download</UButton>
+        <UButton
+          class="p-3"
+          color="primary"
+          :loading="submitting"
+          @click="submitRun"
+          :disabled="
+            pipelineText.length === 0 ||
+            validationErrors.length > 0 ||
+            hasUnresolvedEdges(flow.edges)
+          "
+        >Submit run</UButton>
       </UButtonGroup>
     </template>
   </UCard>
