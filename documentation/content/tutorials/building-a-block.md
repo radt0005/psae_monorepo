@@ -277,7 +277,6 @@ Now create a pipeline that uses your NDVI block. In a real scenario, the red and
 Create `ndvi-pipeline.yaml`:
 
 ```yaml
-id: 019d1000-0000-7000-0000-000000000000
 name: ndvi-computation
 version: "1.0"
 description: >
@@ -286,7 +285,7 @@ description: >
 
 blocks:
   # Step 1: Download satellite imagery
-  - id: 019d1000-0001-7000-0000-000000000000
+  - id: "@source"
     name: data.sentinel2
     inputs: []
     args:
@@ -294,22 +293,22 @@ blocks:
       date_range: "2025-06-01/2025-09-01"
 
   # Step 2: Split into individual bands
-  - id: 019d1000-0002-7000-0000-000000000000
+  - id: "@split"
     name: raster.split-bands
     inputs:
-      - 019d1000-0001-7000-0000-000000000000
+      - "@source"
     args:
       red_band: 4
       nir_band: 8
 
   # Step 3: Compute NDVI using our new block
-  - id: 019d1000-0003-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - block: 019d1000-0002-7000-0000-000000000000
+      - block: "@split"
         output: red
         as: red_band
-      - block: 019d1000-0002-7000-0000-000000000000
+      - block: "@split"
         output: nir
         as: nir_band
     args:

@@ -111,10 +111,10 @@ if __name__ == "__main__":
 
 ```yaml
 blocks:
-  - id: 019cf4bc-a001-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-a000-7000-0000-000000000000  # upstream block producing a raster
+      - "@source"  # upstream block producing a raster
     args:
       target_crs: "EPSG:4326"
       resolution: 30
@@ -299,10 +299,10 @@ For a CSV with columns `station`, `temperature`, and `humidity`, called with `co
 
 ```yaml
 blocks:
-  - id: 019cf4bc-b001-7000-0000-000000000000
+  - id: "@csv-stats"
     name: analysis.csv-stats
     inputs:
-      - 019cf4bc-b000-7000-0000-000000000000  # upstream block producing a CSV
+      - "@source"  # upstream block producing a CSV
     args:
       columns: "temperature,humidity,pressure"
 ```
@@ -479,7 +479,7 @@ In a pipeline, this map block fans out to a processing block and then a reduce b
 ```yaml
 blocks:
   # Step 1: Enumerate tiles (map block)
-  - id: 019cf4bc-c001-7000-0000-000000000000
+  - id: "@enumerate"
     name: tiles.enumerate
     inputs: []
     args:
@@ -487,18 +487,18 @@ blocks:
       zoom: 14
 
   # Step 2: Process each tile (runs N times, once per tile)
-  - id: 019cf4bc-c002-7000-0000-000000000000
+  - id: "@analyze"
     name: raster.analyze
     inputs:
-      - 019cf4bc-c001-7000-0000-000000000000
+      - "@enumerate"
     args:
       analysis_type: ndvi
 
   # Step 3: Collect results (reduce block)
-  - id: 019cf4bc-c003-7000-0000-000000000000
+  - id: "@aggregate"
     name: analysis.aggregate
     inputs:
-      - 019cf4bc-c002-7000-0000-000000000000
+      - "@analyze"
     args:
       method: mean
 ```

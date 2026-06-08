@@ -116,7 +116,7 @@ spade install file://.
 
 ```yaml
 blocks:
-  - id: 019cf4bc-a001-7000-0000-000000000000
+  - id: "@reproject"
     name: raster-tools.reproject
     inputs: []
     args:

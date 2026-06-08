@@ -32,48 +32,6 @@ spade install https://github.com/spade-dev/gdal-blocks.git
 Create a file called `reproject-pipeline.yaml`:
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
-name: reproject-example
-version: "1.0"
-description: Download satellite imagery and reproject it
-
-blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
-    name: data.sentinel2
-    inputs: []
-    args:
-      region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
-      date_range: "2025-01-01/2025-06-01"
-
-  - id: 019cf4bc-2222-7000-0000-000000000000
-    name: raster.reproject
-    inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
-    args:
-      target_crs: "EPSG:4326"
-```
-
-Let's walk through each field:
-
-- **`id`** — A unique identifier for the pipeline (UUIDv7 format)
-- **`name`** — A human-readable name
-- **`version`** — The pipeline version
-- **`blocks`** — The list of processing steps
-
-For each block:
-
-- **`id`** — A unique invocation ID (UUIDv7 format, unique within this pipeline)
-- **`name`** — Which block to run (format: `collection.block`)
-- **`inputs`** — Which earlier blocks provide data to this one. An empty list `[]` means this block has no dependencies (it's a source block)
-- **`args`** — Parameters passed to the block at runtime
-
-Notice that the second block lists the first block's ID in its `inputs`. This tells Spade that the second block depends on the first block's output. Spade automatically matches the output type of `data.sentinel2` (a raster file) to the input type expected by `raster.reproject`.
-
-### Easier authoring with short codes
-
-Typing UUIDv7 strings is tedious. For hand-authored pipelines, Spade accepts `@`-prefixed **short codes** as a friendlier alternative. The same pipeline using short codes looks like this:
-
-```yaml
 name: reproject-example
 version: "1.0"
 description: Download satellite imagery and reproject it
@@ -94,9 +52,26 @@ blocks:
       target_crs: "EPSG:4326"
 ```
 
-Notice that the pipeline-level `id` is omitted -- the CLI generates one at run time. The CLI resolves the short codes (`@source`, `@reproject`) into UUIDv7s on the first `spade check` or `spade run`, writing the bindings to a sibling `pipeline.lock.yaml` so the same labels resolve to the same UUIDs on subsequent runs.
+Block IDs use `@source` and `@reproject` — **short codes** — rather than long UUID strings. Short codes are the recommended form for hand-authored pipelines: they are readable, diff-friendly, and easy to type correctly. The CLI resolves them to stable UUIDs automatically on the first `spade check` or `spade run` and stores the bindings in a sibling `reproject-pipeline.lock.yaml` file.
 
-The rest of this tutorial uses the UUID form for clarity, but everything works identically with short codes. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+Let's walk through each field:
+
+- **`name`** — A human-readable name for the pipeline
+- **`version`** — The pipeline version (must be a quoted string)
+- **`blocks`** — The list of processing steps
+
+For each block:
+
+- **`id`** — A short code (`@<identifier>`) uniquely identifying this block invocation within the pipeline. Short codes must start with a letter or underscore and contain only letters, digits, and underscores after the `@`.
+- **`name`** — Which block to run (format: `collection.block`)
+- **`inputs`** — Which earlier blocks provide data to this one. An empty list `[]` means this block has no dependencies (it is a source block that runs first).
+- **`args`** — Parameters passed to the block at runtime
+
+The second block lists `"@source"` in its `inputs`. This tells Spade that the second block depends on the first block's output. Spade automatically matches the output type of `data.sentinel2` (a raster file) to the input type expected by `raster.reproject`.
+
+{% note() %}
+The pipeline-level `id` is omitted here — the CLI generates a fresh UUID at run time. This is the recommended pattern for hand-authored pipelines. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+{% end %}
 
 ## Validate the pipeline
 
@@ -113,7 +88,24 @@ Pipeline 'reproject-example' is valid.
   2 blocks, 0 errors.
 ```
 
-If there's an issue — for example, a missing block or an invalid reference — Spade will describe the problem.
+The first time you run `spade check` (or `spade run`), the CLI also creates a `reproject-pipeline.lock.yaml` file alongside your pipeline:
+
+```yaml
+# reproject-pipeline.lock.yaml
+pipeline: reproject-example
+version: "1.0"
+bindings:
+  "@source":    019cf4bc-1111-7000-0000-000000000001
+  "@reproject": 019cf4bc-2222-7000-0000-000000000002
+```
+
+This file stores the UUID assigned to each short code so that reruns use the same IDs — enabling Spade's result cache to work correctly.
+
+{% tip() %}
+Commit `reproject-pipeline.lock.yaml` to version control alongside the pipeline file, the same way you would commit a `package-lock.json` or `Cargo.lock`. This lets collaborators reproduce your cache hits.
+{% end %}
+
+If there's an issue — for example, a missing block or an invalid reference — `spade check` will describe the problem precisely.
 
 ## Run the pipeline
 
@@ -158,4 +150,8 @@ Inside the working directory, each block invocation has its own folder with `inp
 
 ## Next steps
 
-Now that you've run a pipeline, learn how to [create your own block](/getting-started/first-block/).
+Now that you've run a pipeline, learn how to create your own block:
+
+- [Your First Block (Python)](/getting-started/first-block/)
+- [Your First Block (R)](/getting-started/first-block-r/)
+- Or go straight to the [library documentation](/libraries/) for your language.

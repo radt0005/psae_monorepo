@@ -4,7 +4,7 @@ description = "Create a custom processing block from scratch using Python."
 weight = 3
 +++
 
-In this guide, you'll create a custom block that reads a CSV file, computes basic summary statistics, and writes the results as JSON. We'll use Python, but the same workflow applies to any supported language.
+In this guide, you'll create a custom block that reads a CSV file, computes basic summary statistics, and writes the results as JSON. This guide uses **Python**. If you prefer another language, see the guides for [R](/getting-started/first-block-r/), [TypeScript](/libraries/typescript/quickstart/), [Go](/libraries/go/quickstart/), and [Rust](/libraries/rust/quickstart/).
 
 ## Step 1: Create a block collection
 
@@ -151,13 +151,12 @@ This builds the Python package and registers the block in `~/.spade/blocks/csv-s
 Now create a pipeline that uses your new block. Create `test-pipeline.yaml`:
 
 ```yaml
-id: 019cf4bc-a000-7000-0000-000000000000
 name: csv-stats-test
 version: "1.0"
 description: Test the summarize block
 
 blocks:
-  - id: 019cf4bc-a001-7000-0000-000000000000
+  - id: "@summarize"
     name: csv-stats.summarize
     inputs: []
     args:
@@ -170,6 +169,7 @@ For this test, you'll need to provide an input CSV file. In a real pipeline, the
 
 ## Next steps
 
+- [Your First Block (R)](/getting-started/first-block-r/) — the same walkthrough for R users
 - Learn about [block types and the manifest format](/concepts/blocks/) in detail
 - Explore [library documentation](/libraries/) for your preferred language
 - Read the [Building a Block](/tutorials/building-a-block/) tutorial for a comprehensive walkthrough

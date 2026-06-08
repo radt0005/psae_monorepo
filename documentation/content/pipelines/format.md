@@ -12,22 +12,22 @@ Every pipeline file begins with four top-level fields:
 
 | Field         | Type   | Required | Description |
 |---------------|--------|----------|-------------|
-| `id`          | string | yes      | A globally unique identifier for the pipeline, in UUIDv7 format |
+| `id`          | string | no       | A globally unique identifier for the pipeline. Omit this for hand-authored pipelines — the CLI generates a UUIDv7 at run time. |
 | `name`        | string | yes      | A human-readable name for the pipeline |
 | `version`     | string | yes      | The pipeline version (any string, typically semver) |
 | `description` | string | no       | A short description of what the pipeline does |
 
 ### The `id` field
 
-Pipeline IDs use [UUIDv7](https://www.ietf.org/rfc/rfc9562.html) format. UUIDv7 is a time-ordered UUID, meaning IDs generated later sort after IDs generated earlier. The format looks like this:
+For hand-authored pipelines, **omit the `id` field entirely**. The CLI generates a fresh UUIDv7 at run time. This is the recommended pattern for any pipeline written by hand or by an LLM. See [Short Codes and Hand-Authoring](/pipelines/short-codes/).
+
+If you need to specify an `id` — for example, to share a pipeline with a known stable identifier — use [UUIDv7](https://www.ietf.org/rfc/rfc9562.html) format:
 
 ```
 019cf4bc-0000-7000-0000-000000000000
 ```
 
-You can generate a UUIDv7 using the Spade CLI or any UUIDv7 library. The important thing is that the ID is globally unique across all pipelines.
-
-When you are hand-authoring a pipeline, you can omit the pipeline-level `id` entirely. The CLI generates a fresh UUIDv7 at run time. This is the recommended pattern for files written by hand or by an LLM. See [Short Codes and Hand-Authoring](/pipelines/short-codes/).
+Pipelines exported from the web UI always include a `id` field. When editing such a pipeline locally, you can leave the `id` in place.
 
 ### The `name` field
 
@@ -64,9 +64,12 @@ Each block invocation has the following fields:
 
 ### The block `id`
 
-Each block invocation gets its own UUIDv7 identifier, separate from the pipeline ID. This ID must be unique within the pipeline. It is used by other blocks to reference this invocation in their `inputs` lists.
+Each block invocation must have an `id` that is unique within the pipeline. Two forms are accepted:
 
-For hand-authored or LLM-generated pipelines, you can use a **short code** like `"@reproject"` in place of a UUID. The CLI resolves short codes to UUIDv7s via a sibling lockfile so the cache continues to work across reruns. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for the full reference.
+- **Short code (recommended for hand-authored pipelines):** `"@reproject"`, `"@source"`, `"@filter"`. A short code is `@` followed by an identifier (`[A-Za-z_][A-Za-z0-9_]*`). The CLI resolves short codes to stable UUIDv7s on the first `spade check` or `spade run` and persists the bindings in a sibling lockfile. See [Short Codes and Hand-Authoring](/pipelines/short-codes/).
+- **UUIDv7:** `019cf4bc-1111-7000-0000-000000000001`. UUIDv7 is a time-ordered UUID. Use this form when editing a pipeline that already uses UUIDs (for example, one exported from the web UI).
+
+Both forms can be mixed freely within the same pipeline file.
 
 ### The block `name`
 
@@ -148,16 +151,12 @@ The block's handler function receives these values as typed parameters. In Pytho
 
 ## Complete annotated example
 
-Below is a complete pipeline file with inline comments explaining every field:
+The recommended form for hand-authored pipelines uses **short codes** for block IDs. The pipeline-level `id` is omitted so the CLI generates one at run time.
 
 ```yaml
 # -------------------------------------------------------
 # Top-level pipeline metadata
 # -------------------------------------------------------
-
-# Globally unique pipeline ID (UUIDv7 format).
-# Generate one with `spade uuid` or any UUIDv7 library.
-id: 019cf4bc-0000-7000-0000-000000000000
 
 # Human-readable name. Appears in CLI output and logs.
 name: satellite-reproject
@@ -176,9 +175,9 @@ description: >
 blocks:
 
   # ------ Block 1: Download satellite imagery -----------
-  - id: 019cf4bc-1111-7000-0000-000000000000
-      # Unique invocation ID (UUIDv7) within this pipeline.
-      # Other blocks reference this ID to depend on this block.
+  - id: "@source"
+      # Short code identifying this block invocation.
+      # Other blocks reference "@source" in their inputs.
 
     name: data.sentinel2
       # Which block to run: the "sentinel2" block from the
@@ -196,11 +195,11 @@ blocks:
         # ISO 8601 date range for the imagery search window.
 
   # ------ Block 2: Reproject the downloaded raster ------
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
-        # Bare reference to Block 1's invocation ID.
+      - "@source"
+        # Bare reference to the "@source" block.
         # Spade will match Block 1's raster output to this
         # block's raster input by type. See "Input References"
         # for details on bare vs. explicit references.
@@ -210,10 +209,10 @@ blocks:
         # The coordinate reference system to reproject into.
 
   # ------ Block 3: Compute NDVI from the reprojected raster
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@reproject"
         # Depends on Block 2 (the reprojected raster).
     args:
       red_band: 4
@@ -228,11 +227,13 @@ This pipeline forms the following DAG:
 data.sentinel2 --> raster.reproject --> raster.ndvi
 ```
 
-Spade executes `data.sentinel2` first (no dependencies), then `raster.reproject` (depends on Block 1), then `raster.ndvi` (depends on Block 2). Each block's output directory becomes available as input to the next block via symlinks.
+Spade executes `data.sentinel2` first (no dependencies), then `raster.reproject` (depends on `@source`), then `raster.ndvi` (depends on `@reproject`). Each block's output directory becomes available as input to the next block via symlinks.
+
+The first time you run `spade check` or `spade run`, the CLI creates a sibling `pipeline.lock.yaml` that binds each short code to a stable UUIDv7. On subsequent runs, those UUIDs are reused so the result cache continues to hit. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) for details.
 
 ## Summary of rules
 
-- The pipeline `id` and every block `id` must be valid UUIDv7 strings (or short codes for hand-authored pipelines -- see [Short Codes](/pipelines/short-codes/)).
+- Every block `id` must be unique within the pipeline. Use short codes (`@name`) for hand-authored pipelines or UUIDv7 strings for pipeline files exported from the web UI.
 - All block `id` values must be unique within the pipeline.
 - Block `name` values must refer to installed blocks using `collection.block` format.
 - `inputs` references must point to `id` values that exist in the same pipeline.

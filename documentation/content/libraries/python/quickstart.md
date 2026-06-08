@@ -173,13 +173,12 @@ You can now reference `raster-tools.info` in any pipeline YAML file.
 Create a pipeline YAML file that uses your block:
 
 ```yaml
-id: 019cf4bc-b000-7000-0000-000000000000
 name: raster-info-test
 version: "1.0"
 description: Test the raster info block
 
 blocks:
-  - id: 019cf4bc-b001-7000-0000-000000000000
+  - id: "@info"
     name: raster-tools.info
     inputs: []
     args:

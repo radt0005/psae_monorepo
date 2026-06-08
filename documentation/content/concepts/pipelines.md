@@ -21,38 +21,39 @@ Spade uses this graph structure to determine:
 Here is a simple pipeline with three blocks:
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: ndvi-analysis
 version: "1.0"
 description: Download satellite imagery, compute NDVI, and generate a report
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@source"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
       date_range: "2025-06-01/2025-09-01"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@source"
     args: {}
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@report"
     name: report.summary
     inputs:
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@ndvi"
     args:
       format: html
 ```
+
+Block IDs use `@`-prefixed **short codes** (`@source`, `@ndvi`, `@report`). Short codes are the recommended form for hand-authored pipelines — they are readable, easy to type, and the CLI resolves them to stable UUIDv7s automatically via a sibling lockfile. The pipeline-level `id` is omitted; the CLI generates one at run time.
 
 ### Pipeline-level fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | Yes | A unique identifier for the pipeline (UUIDv7 format). |
+| `id` | No | A unique identifier for the pipeline (UUIDv7 format). Omit for hand-authored pipelines — the CLI generates one at run time. |
 | `name` | Yes | A human-readable name for the pipeline. |
 | `version` | Yes | The pipeline version string. |
 | `description` | No | A description of what the pipeline does. |
@@ -85,23 +86,23 @@ Consider this pipeline:
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@imagery"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@elevation"
     name: data.dem
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@composite"
     name: raster.composite
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@imagery"
+      - "@elevation"
     args: {}
 ```
 

@@ -490,32 +490,31 @@ Write a minimal pipeline that exercises just your block:
 
 ```yaml
 # test-ndvi-pipeline.yaml
-id: 019d4000-0000-7000-0000-000000000000
 name: test-ndvi
 version: "1.0"
 description: Integration test for the NDVI block
 
 blocks:
   # Use a data source block to provide input files
-  - id: 019d4000-0001-7000-0000-000000000000
+  - id: "@source-red"
     name: data.local-file
     inputs: []
     args:
       path: "/path/to/test/red_band.tif"
 
-  - id: 019d4000-0002-7000-0000-000000000000
+  - id: "@source-nir"
     name: data.local-file
     inputs: []
     args:
       path: "/path/to/test/nir_band.tif"
 
-  - id: 019d4000-0003-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - block: 019d4000-0001-7000-0000-000000000000
+      - block: "@source-red"
         output: file
         as: red_band
-      - block: 019d4000-0002-7000-0000-000000000000
+      - block: "@source-nir"
         output: file
         as: nir_band
     args:
@@ -551,13 +550,13 @@ After the pipeline runs, check the block's working directory:
 
 ```bash
 # Find the working directory
-ls ~/.spade/pipelines/019d4000-0000-7000-0000-000000000000/
+ls ~/.spade/pipelines/<pipeline-id>/
 
 # Check the NDVI block's outputs
-ls ~/.spade/pipelines/019d4000-0000-7000-0000-000000000000/019d4000-0003-7000-0000-000000000000/outputs/
+ls ~/.spade/pipelines/<pipeline-id>/<block-invocation-id>/outputs/
 
 # Check logs for any warnings
-cat ~/.spade/pipelines/019d4000-0000-7000-0000-000000000000/019d4000-0003-7000-0000-000000000000/logs/stderr.log
+cat ~/.spade/pipelines/<pipeline-id>/<block-invocation-id>/logs/stderr.log
 ```
 
 ### Debugging failures

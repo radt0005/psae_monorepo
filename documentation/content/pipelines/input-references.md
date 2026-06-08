@@ -12,7 +12,7 @@ A bare reference is the simplest form. You provide only the invocation ID of the
 
 ```yaml
 inputs:
-  - 019cf4bc-1111-7000-0000-000000000000
+  - "@upstream"
 ```
 
 When Spade encounters a bare reference, it uses type matching to determine which output from the upstream block connects to which input on the current block. This works well when the connection is unambiguous -- for example, when the upstream block produces a single raster output and the current block expects a single raster input.
@@ -28,16 +28,16 @@ The pipeline:
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@source"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@source"
     args:
       target_crs: "EPSG:4326"
 ```
@@ -55,7 +55,7 @@ An explicit reference is an object with two keys:
 
 ```yaml
 inputs:
-  - block: 019cf4bc-1111-7000-0000-000000000000
+  - block: "@classify"
     output: classified_raster
 ```
 
@@ -77,20 +77,20 @@ Using bare references here would be ambiguous -- Spade cannot determine which ou
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@split"
     name: raster.split-bands
     inputs:
-      - 019cf4bc-0000-7000-0000-000000000000
+      - "@source"
     args:
       red_band: 4
       nir_band: 8
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@ratio"
     name: raster.band-ratio
     inputs:
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@split"
         output: nir
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@split"
         output: red
     args: {}
 ```
@@ -103,16 +103,16 @@ You can combine bare and explicit references in the same `inputs` list. This is 
 
 ```yaml
 blocks:
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@combine"
     name: analysis.combine
     inputs:
       # Bare reference: the upstream block has one output that
       # matches one of this block's inputs by type.
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@imagery"
 
       # Explicit reference: this upstream block has multiple
       # outputs, so we name the specific one we want.
-      - block: 019cf4bc-2222-7000-0000-000000000000
+      - block: "@stats"
         output: summary_stats
 ```
 
@@ -156,10 +156,10 @@ And Block B expects:
 Block B's pipeline entry:
 
 ```yaml
-- id: 019cf4bc-2222-7000-0000-000000000000
+- id: "@classify"
   name: raster.classify
   inputs:
-    - 019cf4bc-1111-7000-0000-000000000000
+    - "@source"
   args:
     threshold: 0.5
 ```
@@ -184,10 +184,10 @@ And Block B expects:
 Block B's pipeline entry using bare references:
 
 ```yaml
-- id: 019cf4bc-2222-7000-0000-000000000000
+- id: "@difference"
   name: raster.difference
   inputs:
-    - 019cf4bc-1111-7000-0000-000000000000
+    - "@split"
   args: {}
 ```
 
@@ -201,12 +201,12 @@ Resolution proceeds as:
 The fix is to use explicit references:
 
 ```yaml
-- id: 019cf4bc-2222-7000-0000-000000000000
+- id: "@difference"
   name: raster.difference
   inputs:
-    - block: 019cf4bc-1111-7000-0000-000000000000
+    - block: "@split"
       output: nir
-    - block: 019cf4bc-1111-7000-0000-000000000000
+    - block: "@split"
       output: red
   args: {}
 ```

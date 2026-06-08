@@ -119,24 +119,24 @@ Spade handles this automatically. If a downstream block has inputs from both a m
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@tiles"
     name: tiles.enumerate
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
       zoom: 14
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@model"
     name: ml.train
     inputs: []
     args:
       model_type: random_forest
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@tiles"
+      - "@model"
     args:
       confidence_threshold: 0.8
 ```
@@ -190,7 +190,6 @@ The reduce block processes all items together and produces a single combined out
 Here is a full pipeline that uses map/reduce to process satellite imagery:
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: land-cover-classification
 version: "1.0"
 description: >
@@ -199,7 +198,7 @@ description: >
 
 blocks:
   # Step 1: Enumerate tiles for the region (map block)
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@tiles"
     name: tiles.enumerate
     inputs: []
     args:
@@ -207,7 +206,7 @@ blocks:
       zoom: 14
 
   # Step 2: Train or load a classification model (standard block)
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@model"
     name: ml.train
     inputs: []
     args:
@@ -215,29 +214,29 @@ blocks:
       training_data: s3://my-bucket/training-samples.geojson
 
   # Step 3: Preprocess each tile (runs N times, once per tile)
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@normalize"
     name: raster.normalize
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@tiles"
     args:
       method: min_max
 
   # Step 4: Classify each preprocessed tile (runs N times)
   #         Receives a different tile from raster.normalize AND
   #         the same model from ml.train (broadcast)
-  - id: 019cf4bc-4444-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019cf4bc-3333-7000-0000-000000000000
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@normalize"
+      - "@model"
     args:
       confidence_threshold: 0.8
 
   # Step 5: Mosaic all classified tiles into one raster (reduce block)
-  - id: 019cf4bc-5555-7000-0000-000000000000
+  - id: "@mosaic"
     name: raster.mosaic
     inputs:
-      - 019cf4bc-4444-7000-0000-000000000000
+      - "@classify"
     args:
       nodata_value: -9999
 ```

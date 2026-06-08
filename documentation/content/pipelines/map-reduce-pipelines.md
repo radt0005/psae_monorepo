@@ -30,16 +30,16 @@ A map block is a block whose manifest declares `kind: map`. In the pipeline, you
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@scene"
     name: data.download-scene
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@tile"
     name: raster.tile
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@scene"
     args:
       tile_size: 256
 ```
@@ -53,24 +53,24 @@ Any block that lists a map block in its `inputs` automatically enters **map cont
 From the downstream block's perspective, nothing is different -- it receives a single input and produces a single output, just like any non-mapped block. The parallelism is handled entirely by the Spade scheduler.
 
 ```yaml
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@tile"
     args:
       red_band: 4
       nir_band: 8
 ```
 
-If `raster.tile` produced 12 tiles, Spade creates 12 parallel invocations of `raster.ndvi`, each processing one tile. The invocations are identified by appending an index to the block invocation ID: `019cf4bc-3333-7000-0000-000000000000.0`, `019cf4bc-3333-7000-0000-000000000000.1`, and so on.
+If `raster.tile` produced 12 tiles, Spade creates 12 parallel invocations of `raster.ndvi`, each processing one tile. The invocations are identified by appending an index to the resolved block invocation UUID: `@ndvi.0`, `@ndvi.1`, and so on.
 
 You can chain multiple blocks in map context. If another block depends on `raster.ndvi`, it also runs once per tile:
 
 ```yaml
-  - id: 019cf4bc-4444-7000-0000-000000000000
+  - id: "@classify"
     name: raster.classify
     inputs:
-      - 019cf4bc-3333-7000-0000-000000000000
+      - "@ndvi"
     args:
       threshold: 0.3
 ```
@@ -89,33 +89,33 @@ If a block in map context lists multiple inputs, Spade distinguishes between:
 ```yaml
 blocks:
   # Source: download a pre-trained classification model (not mapped)
-  - id: 019cf4bc-0000-7000-0000-000000000000
+  - id: "@model"
     name: data.download-model
     inputs: []
     args:
       model_name: "landcover-v2"
 
   # Source: download the satellite scene
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@scene"
     name: data.download-scene
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
   # Map: split into tiles
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@tile"
     name: raster.tile
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@scene"
     args:
       tile_size: 256
 
   # Process each tile: classify using the shared model
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@classify"
     name: raster.classify
     inputs:
-      - 019cf4bc-2222-7000-0000-000000000000  # mapped: one tile per invocation
-      - 019cf4bc-0000-7000-0000-000000000000  # broadcast: same model for all
+      - "@tile"    # mapped: one tile per invocation
+      - "@model"   # broadcast: same model for all
     args:
       threshold: 0.3
 ```
@@ -131,10 +131,10 @@ A reduce block is a block whose manifest declares `kind: reduce`. It collects th
 In the pipeline, the reduce block lists the last mapped block in its `inputs`. Spade gathers all the parallel outputs into a **collection** and passes them to the reduce block as a single input.
 
 ```yaml
-  - id: 019cf4bc-5555-7000-0000-000000000000
+  - id: "@mosaic"
     name: raster.mosaic
     inputs:
-      - 019cf4bc-3333-7000-0000-000000000000
+      - "@classify"
     args:
       method: "nearest"
 ```
@@ -155,7 +155,6 @@ Below is a complete end-to-end pipeline that demonstrates the full map/reduce pa
 6. Mosaics the classified tiles back together (reduce)
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: tile-classification
 version: "1.0"
 description: >
@@ -168,7 +167,7 @@ blocks:
   # ---- Sources (no dependencies) ----
 
   # Download the satellite imagery
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@scene"
     name: data.download-scene
     inputs: []
     args:
@@ -177,7 +176,7 @@ blocks:
       bands: ["B04", "B08"]
 
   # Download the pre-trained classification model
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@model"
     name: data.download-model
     inputs: []
     args:
@@ -186,10 +185,10 @@ blocks:
 
   # ---- Map: split the scene into tiles ----
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@tile"
     name: raster.tile
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@scene"
     args:
       tile_size: 256
       overlap: 16
@@ -197,30 +196,30 @@ blocks:
   # ---- Parallel processing (one invocation per tile) ----
 
   # Compute NDVI for each tile
-  - id: 019cf4bc-4444-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019cf4bc-3333-7000-0000-000000000000
+      - "@tile"
     args:
       red_band: 4
       nir_band: 8
 
   # Classify each tile using the broadcast model
-  - id: 019cf4bc-5555-7000-0000-000000000000
+  - id: "@classify"
     name: raster.classify
     inputs:
-      - 019cf4bc-4444-7000-0000-000000000000  # mapped: NDVI for this tile
-      - 019cf4bc-2222-7000-0000-000000000000  # broadcast: shared model
+      - "@ndvi"    # mapped: NDVI for this tile
+      - "@model"   # broadcast: shared model
     args:
       threshold: 0.3
       classes: ["water", "vegetation", "bare-soil", "urban"]
 
   # ---- Reduce: mosaic all classified tiles ----
 
-  - id: 019cf4bc-6666-7000-0000-000000000000
+  - id: "@mosaic"
     name: raster.mosaic
     inputs:
-      - 019cf4bc-5555-7000-0000-000000000000
+      - "@classify"
     args:
       method: "nearest"
       output_crs: "EPSG:4326"

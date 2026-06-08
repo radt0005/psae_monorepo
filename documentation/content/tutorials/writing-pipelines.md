@@ -60,7 +60,6 @@ Key observations:
 Create a file called `heat-island.yaml`. Start with the pipeline metadata:
 
 ```yaml
-id: 019d2000-0000-7000-0000-000000000000
 name: urban-heat-island
 version: "1.0"
 description: >
@@ -71,11 +70,7 @@ description: >
 blocks:
 ```
 
-The `id` is a UUIDv7 that uniquely identifies this pipeline. The `name` is a human-readable label that appears in CLI output and logs. The `version` is a string (note the quotes around `"1.0"` -- YAML would otherwise interpret it as a number).
-
-{% tip() %}
-For a hand-authored pipeline you can omit the top-level `id` entirely -- the CLI generates one at run time -- and use **short codes** like `"@source"`, `"@lst"`, `"@ndvi"` in place of UUIDv7s for block invocation IDs. This tutorial uses UUIDs for clarity, but the same pipeline expressed with short codes is much friendlier to write and review. See [Short Codes and Hand-Authoring](/pipelines/short-codes/) once you're comfortable with the basics.
-{% end %}
+The `name` is a human-readable label that appears in CLI output and logs. The `version` is a string (note the quotes around `"1.0"` -- YAML would otherwise interpret it as a number). The pipeline-level `id` is omitted -- the CLI generates one at run time.
 
 ## Step 3: Add the source block
 
@@ -84,7 +79,7 @@ The first block downloads the satellite imagery. It has no upstream dependencies
 ```yaml
 blocks:
   # Step 1: Download Landsat imagery for the study area
-  - id: 019d2000-0001-7000-0000-000000000000
+  - id: "@download"
     name: data.landsat
     inputs: []
     args:
@@ -104,26 +99,26 @@ Next, add the blocks that depend only on the download step. Since `raster.split-
 
 ```yaml
   # Step 2: Split into individual bands
-  - id: 019d2000-0002-7000-0000-000000000000
+  - id: "@split"
     name: raster.split-bands
     inputs:
-      - 019d2000-0001-7000-0000-000000000000
+      - "@download"
     args:
       red_band: 4
       nir_band: 5
       thermal_band: 10
 
   # Step 3: Classify land cover (runs in parallel with band splitting)
-  - id: 019d2000-0003-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019d2000-0001-7000-0000-000000000000
+      - "@download"
     args:
       model_type: random_forest
       classes: ["urban", "vegetation", "water", "bare-soil"]
 ```
 
-Both blocks reference the download block's ID (`019d2000-0001-7000-0000-000000000000`) in their `inputs`. These are **bare references** -- just the invocation ID string. Bare references work when the type matching is unambiguous. In both cases, the download block produces one raster output, and each downstream block expects one raster input.
+Both blocks reference the download block's short code (`"@download"`) in their `inputs`. These are **bare references** -- just the invocation ID string. Bare references work when the type matching is unambiguous. In both cases, the download block produces one raster output, and each downstream block expects one raster input.
 
 ## Step 5: Add downstream processing
 
@@ -131,23 +126,23 @@ Now add the blocks that depend on the band-splitting step:
 
 ```yaml
   # Step 4: Compute land surface temperature from thermal band
-  - id: 019d2000-0004-7000-0000-000000000000
+  - id: "@lst"
     name: raster.lst
     inputs:
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: thermal
         as: thermal_band
     args:
       emissivity: 0.95
 
   # Step 5: Compute NDVI from red and NIR bands
-  - id: 019d2000-0005-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: red
         as: red_band
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: nir
         as: nir_band
     args:
@@ -170,12 +165,12 @@ The last block combines all the intermediate results into a single composite out
 
 ```yaml
   # Step 6: Generate heat island analysis report
-  - id: 019d2000-0006-7000-0000-000000000000
+  - id: "@report"
     name: analysis.heat-island
     inputs:
-      - 019d2000-0004-7000-0000-000000000000
-      - 019d2000-0005-7000-0000-000000000000
-      - 019d2000-0003-7000-0000-000000000000
+      - "@lst"
+      - "@ndvi"
+      - "@classify"
     args:
       output_format: geotiff
       include_legend: true
@@ -194,7 +189,6 @@ If `analysis.heat-island` has three inputs of distinct types (temperature, veget
 Here is the full `heat-island.yaml` assembled from the sections above:
 
 ```yaml
-id: 019d2000-0000-7000-0000-000000000000
 name: urban-heat-island
 version: "1.0"
 description: >
@@ -204,7 +198,7 @@ description: >
 
 blocks:
   # Step 1: Download Landsat imagery for the study area
-  - id: 019d2000-0001-7000-0000-000000000000
+  - id: "@download"
     name: data.landsat
     inputs: []
     args:
@@ -213,54 +207,54 @@ blocks:
       bands: ["B04", "B05", "B10"]
 
   # Step 2: Split into individual bands (red, NIR, thermal)
-  - id: 019d2000-0002-7000-0000-000000000000
+  - id: "@split"
     name: raster.split-bands
     inputs:
-      - 019d2000-0001-7000-0000-000000000000
+      - "@download"
     args:
       red_band: 4
       nir_band: 5
       thermal_band: 10
 
   # Step 3: Classify land cover (parallel with Steps 4-5)
-  - id: 019d2000-0003-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019d2000-0001-7000-0000-000000000000
+      - "@download"
     args:
       model_type: random_forest
       classes: ["urban", "vegetation", "water", "bare-soil"]
 
   # Step 4: Compute land surface temperature
-  - id: 019d2000-0004-7000-0000-000000000000
+  - id: "@lst"
     name: raster.lst
     inputs:
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: thermal
         as: thermal_band
     args:
       emissivity: 0.95
 
   # Step 5: Compute NDVI
-  - id: 019d2000-0005-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: red
         as: red_band
-      - block: 019d2000-0002-7000-0000-000000000000
+      - block: "@split"
         output: nir
         as: nir_band
     args:
       nodata_value: -9999
 
   # Step 6: Combine into heat island analysis
-  - id: 019d2000-0006-7000-0000-000000000000
+  - id: "@report"
     name: analysis.heat-island
     inputs:
-      - 019d2000-0004-7000-0000-000000000000
-      - 019d2000-0005-7000-0000-000000000000
-      - 019d2000-0003-7000-0000-000000000000
+      - "@lst"
+      - "@ndvi"
+      - "@classify"
     args:
       output_format: geotiff
       include_legend: true
@@ -293,7 +287,7 @@ spade install https://github.com/example/raster-blocks.git
 
 **"Missing required argument 'emissivity'"** -- A parameter declared in the block's manifest is not provided in the pipeline's `args`. Add the missing key-value pair to the `args` map.
 
-**"Duplicate block invocation ID"** -- Two blocks have the same `id`. Generate a new UUIDv7 for one of them.
+**"Duplicate block invocation ID"** -- Two blocks have the same `id`. Rename one of the short codes to be unique.
 
 **"Dependency cycle detected"** -- There is a circular dependency. Restructure the pipeline so data flows in one direction, from sources to sinks.
 
@@ -357,15 +351,15 @@ Suppose you want to add a reprojection step after downloading. Insert a new bloc
 
 ```yaml
   # New step: Reproject to UTM
-  - id: 019d2000-0007-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019d2000-0001-7000-0000-000000000000
+      - "@download"
     args:
       target_crs: "EPSG:32614"
 ```
 
-Then update `raster.split-bands` and `ml.classify` to reference the reproject block (`019d2000-0007-...`) instead of the download block (`019d2000-0001-...`).
+Then update `raster.split-bands` and `ml.classify` to reference `"@reproject"` instead of `"@download"`.
 
 ### Changing parameters
 

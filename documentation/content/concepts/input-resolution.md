@@ -12,16 +12,16 @@ A bare reference is just the invocation ID of the upstream block:
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@source"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@source"
     args:
       target_crs: "EPSG:4326"
 ```
@@ -36,19 +36,19 @@ An explicit reference is an object with `block` and `output` keys that names a s
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@source"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@composite"
     name: raster.composite
     inputs:
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@source"
         output: red_band
         as: band_1
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@source"
         output: nir_band
         as: band_2
     args: {}
@@ -104,16 +104,16 @@ This is the most common case and keeps pipeline YAML concise.
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@download"
     name: data.download
     inputs: []
     args:
       url: "https://example.com/data.csv"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@summarize"
     name: stats.summarize
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@download"
     args:
       column: temperature
 ```
@@ -124,7 +124,7 @@ blocks:
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@split"
     name: raster.split-bands
     inputs: []
     args:
@@ -132,13 +132,13 @@ blocks:
 
   # split-bands produces outputs: red, green, blue, nir (all type: file, format: GeoTIFF)
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@split"
         output: red
         as: red_band
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@split"
         output: nir
         as: nir_band
     args: {}
@@ -150,23 +150,23 @@ Without explicit references, Spade would see four `file` outputs of format `GeoT
 
 ```yaml
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@imagery"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@model"
     name: ml.train
     inputs: []
     args:
       model_type: random_forest
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
-      - 019cf4bc-2222-7000-0000-000000000000
+      - "@imagery"
+      - "@model"
     args:
       confidence_threshold: 0.8
 ```
@@ -178,8 +178,8 @@ Here `ml.classify` has two inputs: an image (`file`, format `GeoTIFF`) and a mod
 If Spade detects an ambiguity during input resolution, it reports a clear error:
 
 ```
-Error: Ambiguous input resolution for block '019cf4bc-3333-7000-0000-000000000000' (raster.composite).
-  Upstream block '019cf4bc-1111-7000-0000-000000000000' (raster.split-bands) has
+Error: Ambiguous input resolution for block '@composite' (raster.composite).
+  Upstream block '@split' (raster.split-bands) has
   multiple outputs matching input 'band_1':
     - 'red' (file, GeoTIFF)
     - 'green' (file, GeoTIFF)

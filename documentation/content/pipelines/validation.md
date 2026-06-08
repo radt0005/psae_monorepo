@@ -28,21 +28,20 @@ Every block invocation in the pipeline must have a unique `id`. No two blocks ma
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: duplicate-id-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000  # <-- same ID
+  - id: "@sentinel2"  # <-- same ID
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
-  - id: 019cf4bc-1111-7000-0000-000000000000  # <-- same ID
+  - id: "@sentinel2"  # <-- same ID
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@sentinel2"
     args:
       target_crs: "EPSG:4326"
 ```
@@ -64,21 +63,20 @@ Every invocation ID referenced in an `inputs` list must correspond to an actual 
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: broken-ref-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@sentinel2"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-9999-7000-0000-000000000000  # <-- does not exist
+      - "@deleted-block"  # <-- does not exist
     args:
       target_crs: "EPSG:4326"
 ```
@@ -100,21 +98,20 @@ Every `name` field in the `blocks` list must refer to a block that is installed 
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: missing-block-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@sentinel2"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@fancy-transform"
     name: raster.fancy-transform  # <-- not installed
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@sentinel2"
     args: {}
 ```
 
@@ -135,27 +132,26 @@ The dependency graph formed by `inputs` references must be a directed acyclic gr
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: cycle-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@process-a"
     name: raster.process-a
     inputs:
-      - 019cf4bc-3333-7000-0000-000000000000  # depends on Block 3
+      - "@process-c"  # depends on Block 3
     args: {}
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@process-b"
     name: raster.process-b
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000  # depends on Block 1
+      - "@process-a"  # depends on Block 1
     args: {}
 
-  - id: 019cf4bc-3333-7000-0000-000000000000
+  - id: "@process-c"
     name: raster.process-c
     inputs:
-      - 019cf4bc-2222-7000-0000-000000000000  # depends on Block 2
+      - "@process-b"  # depends on Block 2
     args: {}
 ```
 
@@ -179,12 +175,11 @@ When two blocks are connected (one listed in the other's `inputs`), the upstream
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: type-mismatch-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@read-csv"
     name: tabular.read-csv
     inputs: []
     args:
@@ -192,10 +187,10 @@ blocks:
 
     # tabular.read-csv produces output of type: file, format: CSV
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@read-csv"
     args:
       target_crs: "EPSG:4326"
 
@@ -220,25 +215,24 @@ When an explicit reference uses the `output` key, the named output must actually
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: bad-output-name-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@split-bands"
     name: raster.split-bands
     inputs:
-      - 019cf4bc-0000-7000-0000-000000000001
+      - "@source"
     args:
       red_band: 4
       nir_band: 8
 
     # raster.split-bands declares outputs: "red", "nir"
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@classify"
     name: raster.classify
     inputs:
-      - block: 019cf4bc-1111-7000-0000-000000000000
+      - block: "@split-bands"
         output: blue  # <-- "blue" is not a declared output
     args:
       threshold: 0.3
@@ -262,22 +256,21 @@ Every required scalar parameter declared in a block's manifest must have a corre
 **Example of a violation:**
 
 ```yaml
-id: 019cf4bc-0000-7000-0000-000000000000
 name: missing-args-example
 version: "1.0"
 
 blocks:
-  - id: 019cf4bc-1111-7000-0000-000000000000
+  - id: "@sentinel2"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
       # Missing required arg: date_range
 
-  - id: 019cf4bc-2222-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019cf4bc-1111-7000-0000-000000000000
+      - "@sentinel2"
     args: {}
     # Missing required arg: target_crs
 ```

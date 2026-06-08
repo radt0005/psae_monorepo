@@ -11,23 +11,22 @@ This page contains complete, ready-to-use pipeline examples demonstrating common
 **Description:** Download a satellite image and reproject it to a different coordinate reference system. This is the simplest possible pipeline -- two blocks connected in sequence.
 
 ```yaml
-id: 019d0001-0000-7000-0000-000000000000
 name: simple-reproject
 version: "1.0"
 description: Download Sentinel-2 imagery and reproject to EPSG:4326
 
 blocks:
-  - id: 019d0001-0001-7000-0000-000000000000
+  - id: "@sentinel2-download"
     name: data.sentinel2
     inputs: []
     args:
       region: "POLYGON((-122.5 37.5, -122.0 37.5, -122.0 38.0, -122.5 38.0, -122.5 37.5))"
       date_range: "2025-01-01/2025-06-01"
 
-  - id: 019d0001-0002-7000-0000-000000000000
+  - id: "@reproject"
     name: raster.reproject
     inputs:
-      - 019d0001-0001-7000-0000-000000000000
+      - "@sentinel2-download"
     args:
       target_crs: "EPSG:4326"
 ```
@@ -50,7 +49,6 @@ The bare reference works here because `data.sentinel2` produces one raster outpu
 **Description:** Download satellite imagery, then run two independent analyses in parallel (NDVI computation and cloud masking), and finally combine the results into a single output.
 
 ```yaml
-id: 019d0002-0000-7000-0000-000000000000
 name: parallel-analysis
 version: "1.0"
 description: >
@@ -59,7 +57,7 @@ description: >
 
 blocks:
   # Step 1: Download the satellite scene
-  - id: 019d0002-0001-7000-0000-000000000000
+  - id: "@sentinel2-download"
     name: data.sentinel2
     inputs: []
     args:
@@ -67,28 +65,28 @@ blocks:
       date_range: "2025-07-01/2025-07-31"
 
   # Step 2a: Compute NDVI (parallel branch 1)
-  - id: 019d0002-0002-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019d0002-0001-7000-0000-000000000000
+      - "@sentinel2-download"
     args:
       red_band: 4
       nir_band: 8
 
   # Step 2b: Generate cloud mask (parallel branch 2)
-  - id: 019d0002-0003-7000-0000-000000000000
+  - id: "@cloud-mask"
     name: raster.cloud-mask
     inputs:
-      - 019d0002-0001-7000-0000-000000000000
+      - "@sentinel2-download"
     args:
       cloud_probability_threshold: 30
 
   # Step 3: Apply the cloud mask to the NDVI result
-  - id: 019d0002-0004-7000-0000-000000000000
+  - id: "@apply-mask"
     name: raster.apply-mask
     inputs:
-      - 019d0002-0002-7000-0000-000000000000
-      - 019d0002-0003-7000-0000-000000000000
+      - "@ndvi"
+      - "@cloud-mask"
     args:
       nodata_value: -9999
 ```
@@ -116,7 +114,6 @@ The bare references from `raster.apply-mask` to its two upstream blocks work bec
 **Description:** Download a large satellite scene, split it into tiles, process each tile in parallel (compute NDVI and classify), then mosaic the classified tiles back into a single output image. This demonstrates the full [map/reduce pattern](/pipelines/map-reduce-pipelines/).
 
 ```yaml
-id: 019d0003-0000-7000-0000-000000000000
 name: tile-classification
 version: "1.0"
 description: >
@@ -125,7 +122,7 @@ description: >
 
 blocks:
   # Download the satellite scene
-  - id: 019d0003-0001-7000-0000-000000000000
+  - id: "@download-scene"
     name: data.download-scene
     inputs: []
     args:
@@ -134,45 +131,45 @@ blocks:
       bands: ["B04", "B08"]
 
   # Download the pre-trained classification model (broadcast input)
-  - id: 019d0003-0002-7000-0000-000000000000
+  - id: "@download-model"
     name: data.download-model
     inputs: []
     args:
       model_name: "landcover-v2"
 
   # Map: split the scene into tiles
-  - id: 019d0003-0003-7000-0000-000000000000
+  - id: "@tile"
     name: raster.tile
     inputs:
-      - 019d0003-0001-7000-0000-000000000000
+      - "@download-scene"
     args:
       tile_size: 256
       overlap: 16
 
   # Parallel: compute NDVI for each tile
-  - id: 019d0003-0004-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster.ndvi
     inputs:
-      - 019d0003-0003-7000-0000-000000000000
+      - "@tile"
     args:
       red_band: 4
       nir_band: 8
 
   # Parallel: classify each tile using the shared model
-  - id: 019d0003-0005-7000-0000-000000000000
+  - id: "@classify"
     name: raster.classify
     inputs:
-      - 019d0003-0004-7000-0000-000000000000
-      - 019d0003-0002-7000-0000-000000000000
+      - "@ndvi"
+      - "@download-model"
     args:
       threshold: 0.3
       classes: ["water", "vegetation", "bare-soil", "urban"]
 
   # Reduce: mosaic all classified tiles
-  - id: 019d0003-0006-7000-0000-000000000000
+  - id: "@mosaic"
     name: raster.mosaic
     inputs:
-      - 019d0003-0005-7000-0000-000000000000
+      - "@classify"
     args:
       method: "nearest"
       output_crs: "EPSG:4326"
@@ -203,7 +200,6 @@ data.download-model ----broadcast-----+--> raster.ndvi (tile 1) --> raster.class
 **Description:** Split a raster into its red and near-infrared bands, then compute a band ratio. Because the upstream block produces two outputs of the same type (both GeoTIFF rasters), bare references would be ambiguous. This example uses [explicit references](/pipelines/input-references/) to wire the correct outputs to the correct inputs.
 
 ```yaml
-id: 019d0004-0000-7000-0000-000000000000
 name: explicit-references
 version: "1.0"
 description: >
@@ -212,7 +208,7 @@ description: >
 
 blocks:
   # Download multispectral satellite imagery
-  - id: 019d0004-0001-7000-0000-000000000000
+  - id: "@sentinel2-download"
     name: data.sentinel2
     inputs: []
     args:
@@ -223,10 +219,10 @@ blocks:
   # This block produces two outputs:
   #   - "red"  (type: file, format: GeoTIFF)
   #   - "nir"  (type: file, format: GeoTIFF)
-  - id: 019d0004-0002-7000-0000-000000000000
+  - id: "@split-bands"
     name: raster.split-bands
     inputs:
-      - 019d0004-0001-7000-0000-000000000000
+      - "@sentinel2-download"
     args:
       red_band: 4
       nir_band: 8
@@ -239,20 +235,20 @@ blocks:
   # Both upstream outputs are the same type (GeoTIFF), so a bare
   # reference would be ambiguous. We use explicit references to
   # wire NIR to numerator and Red to denominator.
-  - id: 019d0004-0003-7000-0000-000000000000
+  - id: "@band-ratio"
     name: raster.band-ratio
     inputs:
-      - block: 019d0004-0002-7000-0000-000000000000
+      - block: "@split-bands"
         output: nir
-      - block: 019d0004-0002-7000-0000-000000000000
+      - block: "@split-bands"
         output: red
     args: {}
 
   # Threshold the ratio to produce a binary classification
-  - id: 019d0004-0004-7000-0000-000000000000
+  - id: "@threshold"
     name: raster.threshold
     inputs:
-      - 019d0004-0003-7000-0000-000000000000
+      - "@band-ratio"
     args:
       threshold: 0.4
       above_value: 1
@@ -279,7 +275,7 @@ If you attempted to use bare references for step 3:
 ```yaml
 # THIS WOULD FAIL VALIDATION
 inputs:
-  - 019d0004-0002-7000-0000-000000000000
+  - "@split-bands"
 ```
 
 Spade would report an ambiguity error because two outputs of the same type could be paired with two inputs of the same type in more than one way. The explicit references eliminate the ambiguity.

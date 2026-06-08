@@ -167,10 +167,10 @@ In our scenario, we want to compute NDVI for each tile and then classify it. The
 
 ```yaml
   # Compute NDVI for each tile (runs N times, once per tile)
-  - id: 019d3000-0004-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - 019d3000-0003-7000-0000-000000000000
+      - "@tile"
     args:
       nodata_value: -9999
 ```
@@ -183,11 +183,11 @@ Map context propagates through the dependency chain. If you add another block th
 
 ```yaml
   # Classify each tile (also runs N times)
-  - id: 019d3000-0005-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019d3000-0004-7000-0000-000000000000
-      - 019d3000-0002-7000-0000-000000000000
+      - "@ndvi"
+      - "@model"
     args:
       confidence_threshold: 0.8
 ```
@@ -205,7 +205,7 @@ The classification block needs a pre-trained model. This model is the same for e
 
 ```yaml
   # Download the classification model (runs once, shared by all tiles)
-  - id: 019d3000-0002-7000-0000-000000000000
+  - id: "@model"
     name: data.download-model
     inputs: []
     args:
@@ -218,10 +218,10 @@ This block runs once and produces a single model file. When `ml.classify` lists 
 Here is what happens for tile 5, for example:
 
 ```
-019d3000-0005-7000-0000-000000000000.5/
+<classify-uuid>.5/
   inputs/
-    ndvi_raster -> .../019d3000-0004-7000-0000-000000000000.5/outputs/ndvi_raster/ndvi.tif
-    model       -> .../019d3000-0002-7000-0000-000000000000/outputs/model/landcover-v3.onnx
+    ndvi_raster -> .../<ndvi-uuid>.5/outputs/ndvi_raster/ndvi.tif
+    model       -> .../<model-uuid>/outputs/model/landcover-v3.onnx
   outputs/
   logs/
 ```
@@ -322,7 +322,6 @@ Notice how the handler receives a `RasterFileCollection` instead of a single `Ra
 Here is the full pipeline assembled:
 
 ```yaml
-id: 019d3000-0000-7000-0000-000000000000
 name: parallel-classification
 version: "1.0"
 description: >
@@ -334,7 +333,7 @@ blocks:
   # ---- Source blocks (run once, no dependencies) ----
 
   # Download the satellite scene
-  - id: 019d3000-0001-7000-0000-000000000000
+  - id: "@scene"
     name: data.download-scene
     inputs: []
     args:
@@ -343,7 +342,7 @@ blocks:
       bands: ["B04", "B05"]
 
   # Download the pre-trained classification model
-  - id: 019d3000-0002-7000-0000-000000000000
+  - id: "@model"
     name: data.download-model
     inputs: []
     args:
@@ -352,39 +351,39 @@ blocks:
 
   # ---- Map: split the scene into tiles ----
 
-  - id: 019d3000-0003-7000-0000-000000000000
+  - id: "@tile"
     name: raster.tile
     inputs:
-      - 019d3000-0001-7000-0000-000000000000
+      - "@scene"
     args:
       tile_size: 512
 
   # ---- Parallel processing (one invocation per tile) ----
 
   # Compute NDVI for each tile
-  - id: 019d3000-0004-7000-0000-000000000000
+  - id: "@ndvi"
     name: raster-tools.ndvi
     inputs:
-      - 019d3000-0003-7000-0000-000000000000
+      - "@tile"
     args:
       nodata_value: -9999
 
   # Classify each tile using the broadcast model
-  - id: 019d3000-0005-7000-0000-000000000000
+  - id: "@classify"
     name: ml.classify
     inputs:
-      - 019d3000-0004-7000-0000-000000000000
-      - 019d3000-0002-7000-0000-000000000000
+      - "@ndvi"
+      - "@model"
     args:
       confidence_threshold: 0.8
       classes: ["water", "vegetation", "bare-soil", "urban"]
 
   # ---- Reduce: mosaic all classified tiles ----
 
-  - id: 019d3000-0006-7000-0000-000000000000
+  - id: "@mosaic"
     name: raster.mosaic
     inputs:
-      - 019d3000-0005-7000-0000-000000000000
+      - "@classify"
     args:
       method: "nearest"
       output_crs: "EPSG:32614"
