@@ -38,6 +38,66 @@ spade run pipeline.yaml
 
 ## Commands
 
+### `spade data`
+
+Manages data files in the cloud registry. Files are transferred directly to object storage via presigned URLs — the Spade server never proxies the bytes.
+
+#### `spade data upload <file>`
+
+```bash
+spade data upload imagery.tif
+spade data upload results.geojson --name "June survey" --visibility shared
+```
+
+Flags:
+- `--name <name>` — display name (defaults to the local filename)
+- `--visibility private|shared|public` — defaults to `private`
+
+Prints the file ID on success, which you can pass to `spade data download`.
+
+#### `spade data download <id> [output]`
+
+```bash
+spade data download 0196e4a1-dead-beef-cafe-000000000001
+spade data download 0196e4a1-dead-beef-cafe-000000000001 local.tif
+```
+
+If `[output]` is omitted, the file is saved using its registered name in the current directory.
+
+#### `spade data list`
+
+```bash
+spade data list
+spade data list --scope shared
+spade data list --scope public
+```
+
+`--scope` controls which files are shown: `mine` (default), `shared`, or `public`.
+
+---
+
+### `spade login`
+
+Authenticates the CLI to the cloud registry using the OAuth 2.0 device authorization flow (RFC 8628).
+
+```bash
+spade login --server https://spade.example.com
+```
+
+A short code is displayed in the terminal. Open the printed URL in a browser, enter the code, and approve the request. The CLI polls automatically and prints a confirmation when access is granted.
+
+Credentials are stored in `~/.spade/auth/credentials.json` (mode 0600) and are used by `spade publish` and other authenticated commands.
+
+The server URL is resolved in order: `--server` flag → `SPADE_SERVER` env var → `server` key in `~/.spade.yaml`.
+
+### `spade logout`
+
+Removes the stored credentials.
+
+```bash
+spade logout
+```
+
 ### `spade setup`
 
 Creates the `~/.spade/` directory structure and initializes the block registry.

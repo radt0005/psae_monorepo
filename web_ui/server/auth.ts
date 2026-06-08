@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { deviceAuthorization } from "better-auth/plugins";
 import { useDb } from "./db";
 import { users, sessions, accounts, verifications } from "./db/schema";
 
@@ -28,6 +29,15 @@ function createAuth() {
         verification: verifications,
       },
     }),
+    plugins: [
+      deviceAuthorization({
+        verificationUri: "/device",
+        validateClient: async (clientId) => {
+          console.log(`[device-auth] authorize request client_id=${clientId}`);
+          return clientId === "spade-cli";
+        },
+      }),
+    ],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // flip on once we have an email transport

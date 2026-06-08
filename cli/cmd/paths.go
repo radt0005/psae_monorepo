@@ -36,3 +36,13 @@ func PipelinesDir() string {
 func RegistryPath() string {
 	return filepath.Join(SpadeDir(), "registry.db")
 }
+
+// AuthDir returns the directory that holds stored credentials.
+func AuthDir() string {
+	return filepath.Join(SpadeDir(), "auth")
+}
+
+// CredentialsPath returns the path to the stored credentials file.
+func CredentialsPath() string {
+	return filepath.Join(AuthDir(), "credentials.json")
+}

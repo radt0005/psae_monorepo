@@ -30,6 +30,7 @@ func runSetup() error {
 		BlocksDir(),
 		CacheDir(),
 		PipelinesDir(),
+		AuthDir(),
 	}
 
 	for _, dir := range dirs {
