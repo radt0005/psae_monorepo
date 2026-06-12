@@ -1,0 +1,225 @@
+# Full Spade stack for local development and integration testing.
+#
+# Services
+# --------
+#   postgres     — PostgreSQL shared by the web UI and scheduler
+#   rabbitmq     — AMQP broker (spade.jobs / spade.results queues)
+#   minio        — S3-compatible object storage (local Spaces substitute)
+#   createbuckets — one-shot: creates the MinIO bucket on first run
+#   migrate      — one-shot: runs web UI Drizzle migrations before startup
+#   web-ui       — Nuxt/Bun frontend + API (port 3000)
+#   scheduler    — spade-scheduler Go service (port 1323)
+#   worker       — spade-worker; privileged mode required for isolate sandbox
+#
+# Quick start
+# -----------
+#   docker compose up --build
+#
+# The `migrate` and `createbuckets` services run once and exit.
+# Subsequent `docker compose up` calls re-run them — both are idempotent.
+#
+# Sandbox note
+# ------------
+#   The worker uses the `isolate` kernel sandbox, which needs cgroup and
+#   user-namespace access.  `privileged: true` grants this inside Docker.
+#   To test scheduler/UI integration *without* real block execution
+#   (e.g. on macOS), comment out `privileged: true` and uncomment
+#   SPADE_SKIP_ISOLATE_CHECK in the worker environment.
+
+services:
+
+  # --------------------------------------------------------------------------
+  # Infrastructure
+  # --------------------------------------------------------------------------
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: spade
+      POSTGRES_PASSWORD: spade
+      POSTGRES_DB: spade
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spade -d spade"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: spade
+      RABBITMQ_DEFAULT_PASS: spade
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # management console → http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: spade
+      MINIO_ROOT_PASSWORD: spadespade
+    ports:
+      - "9000:9000"     # S3 API
+      - "9001:9001"     # admin console → http://localhost:9001
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Local stand-in for the cloud Plugin Registry (spec/registry.md).  Installs
+  # the in-repo Rust collections (base + data) into the shared worker volume
+  # AND mirrors their manifests into the Postgres `blocks` table the editor
+  # reads.  One-shot; idempotent; safe to re-run.  See seed/Dockerfile.
+  seed-blocks:
+    build:
+      context: .
+      dockerfile: seed/Dockerfile
+    environment:
+      SPADE_DIR: /var/spade
+      DATABASE_URL: postgres://spade:spade@postgres:5432/spade
+    volumes:
+      - worker-data:/var/spade
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  # Creates the S3 bucket the app expects.  Idempotent; safe to re-run.
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 spade spadespade &&
+      mc mb --ignore-existing local/spade &&
+      echo 'MinIO bucket ready'
+      "
+    restart: "no"
+
+  # --------------------------------------------------------------------------
+  # Database migrations (runs once before the web UI and scheduler start)
+  # --------------------------------------------------------------------------
+
+  migrate:
+    build:
+      context: ./web_ui
+      dockerfile: Dockerfile.migrate
+    environment:
+      DATABASE_URL: postgres://spade:spade@postgres:5432/spade
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # --------------------------------------------------------------------------
+  # Application services
+  # --------------------------------------------------------------------------
+
+  web-ui:
+    build:
+      context: ./web_ui
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://spade:spade@postgres:5432/spade
+      # Better Auth — change these secrets before exposing publicly.
+      BETTER_AUTH_SECRET: dev-secret-change-in-production
+      BETTER_AUTH_URL: http://localhost:3000
+      NUXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
+      # MinIO (S3-compatible)
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: spade
+      S3_SECRET_ACCESS_KEY: spadespade
+      S3_BUCKET: spade
+      # Shared secret for scheduler → web UI run-status callbacks.
+      # Must match SPADE_UI_CALLBACK_SECRET on the scheduler service.
+      WORKER_CALLBACK_SECRET: dev-callback-secret-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "1323:1323"
+    environment:
+      SPADE_DATABASE_URL: postgres://spade:spade@postgres:5432/spade
+      SPADE_AMQP_URL: amqp://spade:spade@rabbitmq:5672/
+      # Callbacks: scheduler calls PATCH /api/runs/:id on the web UI.
+      SPADE_UI_BASE_URL: http://web-ui:3000
+      SPADE_UI_CALLBACK_SECRET: dev-callback-secret-change-in-production
+      # Outbox polling: reads queued runs from the shared Postgres DB.
+      SPADE_UI_DB_URL: postgres://spade:spade@postgres:5432/spade
+      SPADE_HTTP_ADDR: :1323
+      SPADE_LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: runner/worker/Dockerfile
+    restart: unless-stopped
+    # isolate requires cgroup and user-namespace access.  Remove this and
+    # set SPADE_SKIP_ISOLATE_CHECK=1 if you only need scheduler/UI testing
+    # without real block execution (e.g. macOS Docker Desktop).
+    privileged: true
+    environment:
+      SPADE_AMQP_URL: amqp://spade:spade@rabbitmq:5672/
+      SPADE_WORK_ROOT: /var/spade/work
+      # Must match where the seed-blocks service writes the index:
+      # `spade install` uses $SPADE_DIR/registry.db (= /var/spade/registry.db).
+      SPADE_REGISTRY: /var/spade/registry.db
+      SPADE_CACHE_DIR: /var/spade/cache
+      SPADE_LOG_LEVEL: info
+      # Uncomment to skip the isolate startup probe (no real block execution):
+      # SPADE_SKIP_ISOLATE_CHECK: "1"
+    volumes:
+      - worker-data:/var/spade
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      # Blocks must be installed in the shared volume before the worker
+      # consumes jobs, or every invocation fails "block not installed".
+      seed-blocks:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+  minio-data:
+  worker-data:

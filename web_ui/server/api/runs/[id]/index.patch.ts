@@ -14,7 +14,13 @@ import { makeRunRepo } from "~/server/db/repositories/runs";
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const expected = config.workerCallbackSecret as string;
+  // Fall back to the live env var: runtimeConfig defaults are baked at build
+  // time (empty in the container image), so read the runtime value directly —
+  // same pattern as server/db/index.ts for DATABASE_URL.
+  const expected =
+    (config.workerCallbackSecret as string) ||
+    process.env.WORKER_CALLBACK_SECRET ||
+    "";
   if (!expected) {
     throw createError({
       statusCode: 503,

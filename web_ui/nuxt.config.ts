@@ -21,10 +21,8 @@ export default defineNuxtConfig({
     s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || "",
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
     s3Bucket: process.env.S3_BUCKET || "spade",
-    // Worker queue
-    rabbitmqUrl: process.env.RABBITMQ_URL || "amqp://localhost",
-    rabbitmqQueue: process.env.RABBITMQ_QUEUE || "user_submissions",
-    // Shared secret the scheduler/worker presents on run-status callbacks.
+    // Shared secret the Go scheduler presents on run-status callbacks
+    // (PATCH /api/runs/:id).  Must match SPADE_UI_CALLBACK_SECRET.
     workerCallbackSecret: process.env.WORKER_CALLBACK_SECRET || "",
     public: {
       betterAuthUrl:

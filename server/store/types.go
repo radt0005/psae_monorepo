@@ -59,7 +59,12 @@ type PipelineRecord struct {
 }
 
 // TableName returns the PostgreSQL table name for PipelineRecord.
-func (PipelineRecord) TableName() string { return "pipelines" }
+//
+// Prefixed with `scheduler_` to avoid colliding with the web UI's own
+// `pipelines` table: both services share one database (hosting.md §6.1),
+// but the web UI's `pipelines` (user-authored saved pipelines, owner_id
+// NOT NULL) is a different concept from the scheduler's runtime DAG state.
+func (PipelineRecord) TableName() string { return "scheduler_pipelines" }
 
 // InvocationRecord is the persisted form of a single block invocation.
 // ID is the invocation-ID string form (`<UUID>` or `<UUID>.<index>`)
@@ -81,7 +86,8 @@ type InvocationRecord struct {
 }
 
 // TableName returns the PostgreSQL table name for InvocationRecord.
-func (InvocationRecord) TableName() string { return "invocations" }
+// Prefixed with `scheduler_` for the same reason as PipelineRecord.
+func (InvocationRecord) TableName() string { return "scheduler_invocations" }
 
 // EventType labels persisted PipelineEvents.
 type EventType string
@@ -107,7 +113,8 @@ type PipelineEvent struct {
 }
 
 // TableName returns the PostgreSQL table name for PipelineEvent.
-func (PipelineEvent) TableName() string { return "pipeline_events" }
+// Prefixed with `scheduler_` for the same reason as PipelineRecord.
+func (PipelineEvent) TableName() string { return "scheduler_pipeline_events" }
 
 // ErrNotFound is returned when a record is missing.
 var ErrNotFound = errors.New("record not found")

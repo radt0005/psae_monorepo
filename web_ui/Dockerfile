@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install deps first so the layer is cached when only source changes.
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source and build the Nuxt app for the Bun preset.
 COPY . .

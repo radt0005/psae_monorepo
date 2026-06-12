@@ -221,6 +221,7 @@ declare const inlineConfig = {
       "pink",
       "rose",
       "spade",
+      "brand",
       "primary"
     ],
     "strategy": "merge"

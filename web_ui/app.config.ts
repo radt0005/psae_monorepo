@@ -2,7 +2,7 @@
 // palettes. Both names must match Tailwind color names from tailwind.config.ts.
 export default defineAppConfig({
   ui: {
-    primary: "primary", // mapped to spade-red shades in tailwind.config.ts
+    primary: "brand", // seeds --color-primary-* from the `brand` palette (spade red) in tailwind.config.ts
     gray: "neutral",
 
     button: {

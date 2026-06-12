@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -357,4 +358,160 @@ func mustMarshalPipeline(t *testing.T, p core.Pipeline) []byte {
 		t.Fatal(err)
 	}
 	return out
+}
+
+// singleBlockPipeline builds a one-block pipeline for callback tests.
+func singleBlockPipeline(t *testing.T, mp *MapManifestProvider) (core.Pipeline, uuid.UUID) {
+	t.Helper()
+	mp.Set("solo", core.BlockManifest{
+		ID:      "test.solo",
+		Version: "1",
+		Outputs: map[string]core.OutputDeclaration{"out": {Type: "file"}},
+	})
+	blockID := uuid.Must(uuid.NewV7())
+	p := core.Pipeline{
+		Id:      uuid.Must(uuid.NewV7()),
+		Name:    "solo",
+		Version: "1",
+		Blocks: []core.PipelineBlock{
+			{Id: blockID, Name: "solo", Inputs: nil, Args: map[string]any{}},
+		},
+	}
+	return p, blockID
+}
+
+func TestEngine_CallbackFiredOnComplete(t *testing.T) {
+	eng, _, _, _, mp := newTestEngine(t)
+	p, blockID := singleBlockPipeline(t, mp)
+	ctx := context.Background()
+
+	var mu sync.Mutex
+	var gotPayloads []CallbackPayload
+	eng.SetCallback(func(_ context.Context, _ uuid.UUID, payload CallbackPayload) {
+		mu.Lock()
+		gotPayloads = append(gotPayloads, payload)
+		mu.Unlock()
+	})
+
+	if err := eng.SubmitPipeline(ctx, &p, nil, "user"); err != nil {
+		t.Fatalf("SubmitPipeline: %v", err)
+	}
+	if err := eng.dispatchSweep(ctx); err != nil {
+		t.Fatalf("dispatchSweep: %v", err)
+	}
+	res := core.WorkerResult{
+		InvocationID: blockID.String(),
+		PipelineID:   p.Id,
+		Status:       core.ExecutionStatusComplete,
+	}
+	if err := eng.applyResult(ctx, res); err != nil {
+		t.Fatalf("applyResult: %v", err)
+	}
+
+	mu.Lock()
+	n := len(gotPayloads)
+	mu.Unlock()
+	if n != 1 {
+		t.Fatalf("expected 1 callback, got %d", n)
+	}
+	if gotPayloads[0].Status != store.PipelineComplete {
+		t.Errorf("callback status: got %q, want %q", gotPayloads[0].Status, store.PipelineComplete)
+	}
+}
+
+func TestEngine_CallbackFiredOnFailure(t *testing.T) {
+	eng, _, _, _, mp := newTestEngine(t)
+	p, blockID := singleBlockPipeline(t, mp)
+	ctx := context.Background()
+
+	var gotPayload CallbackPayload
+	var called bool
+	eng.SetCallback(func(_ context.Context, _ uuid.UUID, payload CallbackPayload) {
+		called = true
+		gotPayload = payload
+	})
+
+	if err := eng.SubmitPipeline(ctx, &p, nil, "user"); err != nil {
+		t.Fatalf("SubmitPipeline: %v", err)
+	}
+	if err := eng.dispatchSweep(ctx); err != nil {
+		t.Fatalf("dispatchSweep: %v", err)
+	}
+	res := core.WorkerResult{
+		InvocationID: blockID.String(),
+		PipelineID:   p.Id,
+		Status:       core.ExecutionStatusError,
+		Error:        "block crashed",
+	}
+	if err := eng.applyResult(ctx, res); err != nil {
+		t.Fatalf("applyResult: %v", err)
+	}
+
+	if !called {
+		t.Fatal("callback not called after pipeline failure")
+	}
+	if gotPayload.Status != store.PipelineFailed {
+		t.Errorf("callback status: got %q, want %q", gotPayload.Status, store.PipelineFailed)
+	}
+	if gotPayload.ErrorMsg != "block crashed" {
+		t.Errorf("callback error: got %q, want 'block crashed'", gotPayload.ErrorMsg)
+	}
+}
+
+func TestEngine_CallbackFiredOnCancel(t *testing.T) {
+	eng, _, _, _, mp := newTestEngine(t)
+	p, _ := singleBlockPipeline(t, mp)
+	ctx := context.Background()
+
+	var gotPayload CallbackPayload
+	var called bool
+	eng.SetCallback(func(_ context.Context, _ uuid.UUID, payload CallbackPayload) {
+		called = true
+		gotPayload = payload
+	})
+
+	if err := eng.SubmitPipeline(ctx, &p, nil, "user"); err != nil {
+		t.Fatalf("SubmitPipeline: %v", err)
+	}
+	if err := eng.CancelPipeline(ctx, p.Id); err != nil {
+		t.Fatalf("CancelPipeline: %v", err)
+	}
+
+	if !called {
+		t.Fatal("callback not called after cancel")
+	}
+	if gotPayload.Status != store.PipelineCancelled {
+		t.Errorf("callback status: got %q, want %q", gotPayload.Status, store.PipelineCancelled)
+	}
+}
+
+func TestEngine_CallbackNotFiredMidPipeline(t *testing.T) {
+	eng, _, _, _, mp := newTestEngine(t)
+	p, ids := linearPipeline(t, mp)
+	ctx := context.Background()
+
+	var callCount int
+	eng.SetCallback(func(_ context.Context, _ uuid.UUID, _ CallbackPayload) {
+		callCount++
+	})
+
+	if err := eng.SubmitPipeline(ctx, &p, nil, "user"); err != nil {
+		t.Fatalf("SubmitPipeline: %v", err)
+	}
+	// Complete only the first block of a 3-block pipeline — no terminal state yet.
+	if err := eng.dispatchSweep(ctx); err != nil {
+		t.Fatalf("dispatchSweep: %v", err)
+	}
+	res := core.WorkerResult{
+		InvocationID: ids[0].String(),
+		PipelineID:   p.Id,
+		Status:       core.ExecutionStatusComplete,
+	}
+	if err := eng.applyResult(ctx, res); err != nil {
+		t.Fatalf("applyResult: %v", err)
+	}
+
+	if callCount != 0 {
+		t.Errorf("callback fired after intermediate block completion; want 0 calls, got %d", callCount)
+	}
 }

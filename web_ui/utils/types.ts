@@ -91,7 +91,7 @@ export type Run = {
   runId: string;
   userId: string;
   content: string;
-  status: "pending" | "running" | "error" | "completed";
+  status: "queued" | "running" | "succeeded" | "failed" | "canceled";
 };
 
 /** Edge data carried by Vue Flow edges; bindings are produced by the wiring resolver. */

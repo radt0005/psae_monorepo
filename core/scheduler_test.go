@@ -265,6 +265,67 @@ func TestHandleMapCreatesInvocations(t *testing.T) {
 	}
 }
 
+// TestReduceDirectlyFollowsMap covers the degenerate map context with no
+// intermediate mapped block: map → reduce.  The reduce gathers the map's
+// expansion items directly, so it must become executable as soon as the map
+// completes.  Regression test for the fan-out stall where promoteReady was
+// not run after a map result.
+func TestReduceDirectlyFollowsMap(t *testing.T) {
+	idMap, _ := uuid.Parse("019cf4bc-1111-7000-0000-000000000000")
+	idReduce, _ := uuid.Parse("019cf4bc-3333-7000-0000-000000000000")
+
+	p := Pipeline{
+		Id:      uuid.New(),
+		Name:    "map-reduce-direct",
+		Version: "1.0",
+		Blocks: []PipelineBlock{
+			{Id: idMap, Name: "base.map_list", Inputs: []InputRef{}, Args: map[string]any{}},
+			{Id: idReduce, Name: "base.reduce_collection", Inputs: []InputRef{{ID: idMap}}, Args: map[string]any{}},
+		},
+	}
+	manifests := map[string]BlockManifest{
+		"base.map_list": {ID: "base.map_list", Kind: BlockKindMap,
+			Outputs: map[string]OutputDeclaration{"manifest": {Type: "expansion"}}},
+		"base.reduce_collection": {ID: "base.reduce_collection", Kind: BlockKindReduce,
+			Inputs:  map[string]InputDeclaration{"items": {Type: "collection"}},
+			Outputs: map[string]OutputDeclaration{"result": {Type: "file"}}},
+	}
+
+	s := NewSchedulerForPipeline(p)
+	s.Manifests = manifests
+	s.IdentifyMapContexts()
+
+	// Map block runs first.
+	inv, _, _ := s.Next()
+	if inv.Id != idMap {
+		t.Fatalf("expected map block first, got %s", inv.Id)
+	}
+
+	// Map completes with a 3-item expansion and no intermediate block.
+	s.Update(BlockInvocationResult{
+		Id:        idMap,
+		PipelineId: p.Id,
+		Status:    ExecutionStatusMap,
+		Expansion: &ExpansionManifest{Items: []ExpansionItem{
+			{Path: "00.json", Key: "NY"},
+			{Path: "01.json", Key: "CA"},
+			{Path: "02.json", Key: "MI"},
+		}},
+	})
+
+	// The reduce must now be executable (not stuck pending).
+	found := false
+	for _, eb := range s.ExecutableBlocks {
+		if eb.Id == idReduce {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("reduce block was not promoted to executable after map completed (executable=%d, pending=%d)",
+			len(s.ExecutableBlocks), len(s.PendingBlocks))
+	}
+}
+
 func TestMultiTenantSchedulerTwoPipelines(t *testing.T) {
 	p1 := Pipeline{
 		Id:      uuid.New(),

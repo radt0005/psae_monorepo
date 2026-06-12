@@ -37,9 +37,15 @@ export default <Config>{
             light: "#fef9e7",
           },
         },
-        // Map @nuxt/ui's primary palette to the spade red so existing
-        // <UButton> etc. inherit the brand without per-call overrides.
-        primary: {
+        // Source palette for @nuxt/ui's `primary`. Must NOT be named
+        // "primary": @nuxt/ui redefines the `primary` Tailwind color as
+        // rgb(var(--color-primary-*)) and then seeds those vars from the color
+        // named by app.config `ui.primary`. Pointing it at a color literally
+        // named "primary" is self-referential — the seed reads the var-based
+        // values (no hex), the vars stay empty, and every primary button renders
+        // white text on a transparent (white) background. Naming it "brand" and
+        // setting ui.primary: "brand" gives the seeder real hex to convert.
+        brand: {
           50: "#fdedec",
           100: "#fadbd8",
           200: "#f5b7b1",

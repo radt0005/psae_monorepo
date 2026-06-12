@@ -1,0 +1,20 @@
+id: 019e3c4a-4a8f-7743-802f-ebbf8c3d1f8a
+name: smoke_base_map_list
+version: "1.0"
+description: >-
+  Self-contained end-to-end smoke test for the docker-compose stack: no input
+  files, no network. base.map_list fans out over a literal list of values and
+  base.reduce_collection gathers the per-item outputs back into one collection.
+  Exercises worker block lookup from the seeded index, map expansion / scheduler
+  fan-out, and reduce — entirely from args.
+blocks:
+- id: 019e3c4a-4a8f-7dd7-802d-1b7fe14d9ff3
+  name: base.map_list
+  inputs: []
+  args:
+    values: '["NY","CA","MI"]'
+- id: 019e3c4a-4a8f-774d-802e-a835cb051ef1
+  name: base.reduce_collection
+  inputs:
+  - 019e3c4a-4a8f-7dd7-802d-1b7fe14d9ff3
+  args: {}

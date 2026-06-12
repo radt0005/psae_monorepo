@@ -25,9 +25,6 @@ declare module "nitropack/types" {
     '/api/data': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/data/index.get').default>>>>
     }
-    '/api/pipeline/run': {
-      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipeline/run.post').default>>>>
-    }
     '/api/pipeline/save': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/pipeline/save.post').default>>>>
     }

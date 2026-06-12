@@ -183,10 +183,6 @@ declare module 'nuxt/schema' {
 
    s3Bucket: string,
 
-   rabbitmqUrl: string,
-
-   rabbitmqQueue: string,
-
    workerCallbackSecret: string,
 
    nitro: {

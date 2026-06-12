@@ -19,14 +19,30 @@ import (
 	"spade_server/store"
 )
 
+// CallbackPayload carries the information the engine delivers to the registered
+// callback when a pipeline reaches a terminal state or is cancelled.
+type CallbackPayload struct {
+	Status      store.PipelineStatus
+	ErrorMsg    string
+	Invocations []store.InvocationRecord
+}
+
+// PipelineCallbackFn is called by the engine after each significant pipeline
+// status transition (running → succeeded/failed/canceled).  pipelineID is the
+// same UUID used as the run id in the web UI's runs table.  Callbacks run
+// synchronously in the engine's goroutine; implementations should return
+// quickly.
+type PipelineCallbackFn func(ctx context.Context, pipelineID uuid.UUID, payload CallbackPayload)
+
 // Engine is the heart of the scheduling server.  It owns the in-memory
 // MultiTenantScheduler, persists every state change to the store, and
 // drives dispatch through the broker.
 type Engine struct {
-	store     store.Store
-	publisher broker.JobPublisher
-	manifests ManifestProvider
-	logger    *slog.Logger
+	store      store.Store
+	publisher  broker.JobPublisher
+	manifests  ManifestProvider
+	logger     *slog.Logger
+	callbackFn PipelineCallbackFn
 
 	mu    sync.Mutex
 	sched *core.MultiTenantScheduler
@@ -57,6 +73,28 @@ func New(s store.Store, pub broker.JobPublisher, mp ManifestProvider, logger *sl
 		},
 		ready: make(chan struct{}, 1),
 	}
+}
+
+// SetCallback registers a function to be called on pipeline state transitions.
+// Call before starting the engine; it is not goroutine-safe after Run begins.
+func (e *Engine) SetCallback(fn PipelineCallbackFn) {
+	e.callbackFn = fn
+}
+
+// fireCallback invokes the registered callback if one is set.  It loads
+// the current invocation records so callers receive file/log metadata.
+// Errors from the store load are non-fatal; the callback still fires with
+// whatever records are available.
+func (e *Engine) fireCallback(ctx context.Context, pipelineID uuid.UUID, status store.PipelineStatus, errMsg string) {
+	if e.callbackFn == nil {
+		return
+	}
+	invocations, _ := e.store.LoadInvocations(ctx, pipelineID)
+	e.callbackFn(ctx, pipelineID, CallbackPayload{
+		Status:      status,
+		ErrorMsg:    errMsg,
+		Invocations: invocations,
+	})
 }
 
 // UpdatePublisher swaps the broker JobPublisher in place.  Used by the
@@ -187,6 +225,7 @@ func (e *Engine) CancelPipeline(ctx context.Context, id uuid.UUID) error {
 		PipelineID: id,
 		EventType:  store.EventPipelineCancelled,
 	})
+	e.fireCallback(ctx, id, store.PipelineCancelled, "")
 	return nil
 }
 
@@ -579,12 +618,14 @@ func (e *Engine) applyResult(ctx context.Context, wr core.WorkerResult) error {
 			PipelineID: wr.PipelineID,
 			EventType:  store.EventPipelineFailed,
 		})
+		e.fireCallback(ctx, wr.PipelineID, store.PipelineFailed, wr.Error)
 	} else if complete {
 		_ = e.store.UpdatePipelineStatus(ctx, wr.PipelineID, store.PipelineComplete)
 		_ = e.store.AppendEvent(ctx, store.PipelineEvent{
 			PipelineID: wr.PipelineID,
 			EventType:  store.EventPipelineCompleted,
 		})
+		e.fireCallback(ctx, wr.PipelineID, store.PipelineComplete, "")
 	}
 
 	e.signalReady()

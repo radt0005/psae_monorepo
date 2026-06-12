@@ -87,30 +87,30 @@ const (
 
 // InputDeclaration describes a declared input in a block manifest.
 type InputDeclaration struct {
-	Type        string `yaml:"type"`
-	Format      string `yaml:"format,omitempty"`
-	Description string `yaml:"description,omitempty"`
-	ItemType    string `yaml:"item_type,omitempty"`
+	Type        string `yaml:"type" json:"type"`
+	Format      string `yaml:"format,omitempty" json:"format,omitempty"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	ItemType    string `yaml:"item_type,omitempty" json:"item_type,omitempty"`
 }
 
 // OutputDeclaration describes a declared output in a block manifest.
 type OutputDeclaration struct {
-	Type        string `yaml:"type"`
-	Format      string `yaml:"format,omitempty"`
-	Description string `yaml:"description,omitempty"`
-	ItemType    string `yaml:"item_type,omitempty"`
+	Type        string `yaml:"type" json:"type"`
+	Format      string `yaml:"format,omitempty" json:"format,omitempty"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	ItemType    string `yaml:"item_type,omitempty" json:"item_type,omitempty"`
 }
 
 // BlockManifest represents a parsed block.yaml file.
 type BlockManifest struct {
-	ID          string                       `yaml:"id"`
-	Version     string                       `yaml:"version"`
-	Kind        BlockKind                    `yaml:"kind,omitempty"`
-	Network     bool                         `yaml:"network,omitempty"`
-	Description string                       `yaml:"description,omitempty"`
-	Entrypoint  string                       `yaml:"entrypoint,omitempty"`
-	Inputs      map[string]InputDeclaration  `yaml:"inputs"`
-	Outputs     map[string]OutputDeclaration `yaml:"outputs"`
+	ID          string                       `yaml:"id" json:"id"`
+	Version     string                       `yaml:"version" json:"version"`
+	Kind        BlockKind                    `yaml:"kind,omitempty" json:"kind,omitempty"`
+	Network     bool                         `yaml:"network,omitempty" json:"network,omitempty"`
+	Description string                       `yaml:"description,omitempty" json:"description,omitempty"`
+	Entrypoint  string                       `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	Inputs      map[string]InputDeclaration  `yaml:"inputs" json:"inputs"`
+	Outputs     map[string]OutputDeclaration `yaml:"outputs" json:"outputs"`
 }
 
 // LoadBlockManifest reads and parses a block.yaml file into a BlockManifest.

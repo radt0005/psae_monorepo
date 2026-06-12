@@ -173,8 +173,8 @@ func (s *PgStore) UpsertInvocation(ctx context.Context, rec InvocationRecord) er
 			Exprs: []clause.Expression{
 				clause.AndConditions{
 					Exprs: []clause.Expression{
-						clause.Neq{Column: clause.Column{Table: "invocations", Name: "status"}, Value: string(InvocationComplete)},
-						clause.Neq{Column: clause.Column{Table: "invocations", Name: "status"}, Value: string(InvocationError)},
+						clause.Neq{Column: clause.Column{Table: (InvocationRecord{}).TableName(), Name: "status"}, Value: string(InvocationComplete)},
+						clause.Neq{Column: clause.Column{Table: (InvocationRecord{}).TableName(), Name: "status"}, Value: string(InvocationError)},
 					},
 				},
 			},

@@ -1,0 +1,19 @@
+# Lightweight image for running Drizzle database migrations.
+#
+# Installs only the packages required by drizzle-kit; does not build the
+# full Nuxt application.  Used by the `migrate` service in the root
+# docker-compose.yml before the web UI starts.
+#
+# Usage:
+#   docker run --rm -e DATABASE_URL=<dsn> <image>
+
+FROM oven/bun:1
+WORKDIR /app
+
+COPY package.json bun.lock ./
+RUN bun install
+
+COPY drizzle.config.ts ./
+COPY server/db/migrations ./server/db/migrations
+
+ENTRYPOINT ["bunx", "drizzle-kit", "migrate"]

@@ -1,5 +1,8 @@
 # Built binaries
-spade-scheduler
+# Anchored so these match only the compiled binaries at the module root,
+# NOT the source directory cmd/spade-scheduler/ (the bare pattern
+# `spade-scheduler` was silently ignoring the scheduler's entry point).
+/spade-scheduler
 /server
 
 # Test database artifacts

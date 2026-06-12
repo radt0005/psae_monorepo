@@ -11,10 +11,11 @@ specifications in `../spec/`.
 
 ```
 server/
-├── api/                          Echo v4 HTTP handlers (web UI front door)
+├── api/                          Echo v4 HTTP handlers + web UI callback client
 ├── broker/                       RabbitMQ adapters: JobPublisher / ResultConsumer
 ├── cmd/spade-scheduler/app/      Binary entrypoint (signal handling, recovery)
 ├── engine/                       Scheduling engine: drives core.MultiTenantScheduler
+├── outbox/                       Postgres outbox poller (picks up queued runs from web UI)
 ├── store/                        Persistence: PgStore (Postgres) + MemStore (tests)
 ├── testutil/                     Shared test fixtures (currently empty)
 ├── go.mod / go.sum
@@ -56,10 +57,13 @@ go run .
 | Variable | Flag | Default | Purpose |
 |---|---|---|---|
 | `SPADE_AMQP_URL` | `-amqp-url` | `amqp://guest:guest@localhost:5672/` | RabbitMQ broker |
-| `SPADE_DATABASE_URL` | `-database-url` | *(empty → in-memory SQLite)* | PostgreSQL DSN |
+| `SPADE_DATABASE_URL` | `-database-url` | *(empty → in-memory SQLite)* | PostgreSQL DSN for the scheduler's own tables |
 | `SPADE_HTTP_ADDR` | `-http-addr` | `:1323` | HTTP listen address |
 | `SPADE_LOG_LEVEL` | `-log-level` | `info` | `debug` / `info` / `warn` / `error` |
 | `SPADE_SKIP_BROKER` | `-skip-broker` | unset | When `1`, do not dial RabbitMQ |
+| `SPADE_UI_BASE_URL` | `-ui-base-url` | *(empty → callbacks disabled)* | Base URL of the Nuxt web UI; scheduler calls `PATCH <url>/api/runs/:id` on status transitions |
+| `SPADE_UI_CALLBACK_SECRET` | `-ui-callback-secret` | *(empty → callbacks disabled)* | Bearer token for web UI callbacks; must match `WORKER_CALLBACK_SECRET` in the web UI's env |
+| `SPADE_UI_DB_URL` | `-ui-db-url` | *(falls back to `SPADE_DATABASE_URL`)* | DSN for the web UI's PostgreSQL database; scheduler polls the `runs` table for queued rows |
 
 ## HTTP API
 

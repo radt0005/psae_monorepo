@@ -76,41 +76,17 @@ func (s *SinglePipelineScheduler) Update(result BlockInvocationResult) error {
 
 	if result.Status == ExecutionStatusComplete {
 		s.CompletedBlocks[result.Id] = result
-
-		// Find blocks that are now executable
-		var newlyExecutable []uuid.UUID
-		for id, pending := range s.PendingBlocks {
-			allDepsCompleted := true
-			for _, input := range pending.Inputs {
-				var depID uuid.UUID
-				if input.Block != nil {
-					depID = *input.Block
-				} else {
-					depID = input.ID
-				}
-				if depID == uuid.Nil {
-					continue
-				}
-				if _, completed := s.CompletedBlocks[depID]; !completed {
-					allDepsCompleted = false
-					break
-				}
-			}
-			if allDepsCompleted {
-				newlyExecutable = append(newlyExecutable, id)
-			}
-		}
-
-		// Move newly executable blocks from pending to executable
-		for _, id := range newlyExecutable {
-			invocation := s.PendingBlocks[id]
-			s.ExecutableBlocks = append(s.ExecutableBlocks, invocation)
-			delete(s.PendingBlocks, id)
-		}
+		s.promoteReady()
 	}
 
 	if result.Status == ExecutionStatusMap {
 		s.HandleMap(result)
+		// HandleMap marks the map block complete and fans out the blocks
+		// inside its context.  Re-run the readiness scan so any block whose
+		// dependencies are now all satisfied is promoted — in particular a
+		// reduce that directly follows the map with no intermediate mapped
+		// block (an otherwise unhandled case that would stall forever).
+		s.promoteReady()
 	}
 
 	if result.Status == ExecutionStatusReduce {
@@ -118,6 +94,40 @@ func (s *SinglePipelineScheduler) Update(result BlockInvocationResult) error {
 	}
 
 	return nil
+}
+
+// promoteReady moves every pending block whose dependencies are all in
+// CompletedBlocks into ExecutableBlocks.  Dependencies are matched by their
+// base block ID (the same key HandleMap uses), so a single completed upstream
+// satisfies a dependent regardless of map fan-out.
+func (s *SinglePipelineScheduler) promoteReady() {
+	var newlyExecutable []uuid.UUID
+	for id, pending := range s.PendingBlocks {
+		allDepsCompleted := true
+		for _, input := range pending.Inputs {
+			var depID uuid.UUID
+			if input.Block != nil {
+				depID = *input.Block
+			} else {
+				depID = input.ID
+			}
+			if depID == uuid.Nil {
+				continue
+			}
+			if _, completed := s.CompletedBlocks[depID]; !completed {
+				allDepsCompleted = false
+				break
+			}
+		}
+		if allDepsCompleted {
+			newlyExecutable = append(newlyExecutable, id)
+		}
+	}
+	for _, id := range newlyExecutable {
+		invocation := s.PendingBlocks[id]
+		s.ExecutableBlocks = append(s.ExecutableBlocks, invocation)
+		delete(s.PendingBlocks, id)
+	}
 }
 
 func (s *SinglePipelineScheduler) IsReady() bool {

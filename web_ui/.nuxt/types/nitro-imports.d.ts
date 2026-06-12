@@ -13,7 +13,6 @@ declare global {
   const callNodeListener: typeof import('../../node_modules/h3')['callNodeListener']
   const clearResponseHeaders: typeof import('../../node_modules/h3')['clearResponseHeaders']
   const clearSession: typeof import('../../node_modules/h3')['clearSession']
-  const connectRabbitMQ: typeof import('../../server/utils/rabbitmq')['connectRabbitMQ']
   const createApp: typeof import('../../node_modules/h3')['createApp']
   const createAppEventHandler: typeof import('../../node_modules/h3')['createAppEventHandler']
   const createError: typeof import('../../node_modules/h3')['createError']
@@ -85,7 +84,6 @@ declare global {
   const parseCookies: typeof import('../../node_modules/h3')['parseCookies']
   const promisifyNodeListener: typeof import('../../node_modules/h3')['promisifyNodeListener']
   const proxyRequest: typeof import('../../node_modules/h3')['proxyRequest']
-  const publishJob: typeof import('../../server/utils/rabbitmq')['publishJob']
   const readBody: typeof import('../../node_modules/h3')['readBody']
   const readFormData: typeof import('../../node_modules/h3')['readFormData']
   const readMultipartFormData: typeof import('../../node_modules/h3')['readMultipartFormData']
@@ -143,5 +141,4 @@ export { defineNitroErrorHandler } from 'nitropack/runtime/internal/error/utils'
 export { appendCorsHeaders, appendCorsPreflightHeaders, appendHeader, appendHeaders, appendResponseHeader, appendResponseHeaders, assertMethod, callNodeListener, clearResponseHeaders, clearSession, createApp, createAppEventHandler, createError, createEvent, createEventStream, createRouter, defaultContentType, defineEventHandler, defineLazyEventHandler, defineNodeListener, defineNodeMiddleware, defineRequestMiddleware, defineResponseMiddleware, defineWebSocket, defineWebSocketHandler, deleteCookie, dynamicEventHandler, eventHandler, fetchWithEvent, fromNodeMiddleware, fromPlainHandler, fromWebHandler, getCookie, getHeader, getHeaders, getMethod, getProxyRequestHeaders, getQuery, getRequestFingerprint, getRequestHeader, getRequestHeaders, getRequestHost, getRequestIP, getRequestPath, getRequestProtocol, getRequestURL, getRequestWebStream, getResponseHeader, getResponseHeaders, getResponseStatus, getResponseStatusText, getRouterParam, getRouterParams, getSession, getValidatedQuery, getValidatedRouterParams, handleCacheHeaders, handleCors, isCorsOriginAllowed, isError, isEvent, isEventHandler, isMethod, isPreflightRequest, isStream, isWebResponse, lazyEventHandler, parseCookies, promisifyNodeListener, proxyRequest, readBody, readFormData, readMultipartFormData, readRawBody, readValidatedBody, removeResponseHeader, sanitizeStatusCode, sanitizeStatusMessage, sealSession, send, sendError, sendIterable, sendNoContent, sendProxy, sendRedirect, sendStream, sendWebResponse, serveStatic, setCookie, setHeader, setHeaders, setResponseHeader, setResponseHeaders, setResponseStatus, splitCookiesString, toEventHandler, toNodeListener, toPlainHandler, toWebHandler, toWebRequest, unsealSession, updateSession, useBase, useSession, writeEarlyHints } from 'h3';
 export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from '/home/krbundy/UMaine/psae_monorepo/web_ui/node_modules/nuxt/dist/core/runtime/nitro/utils/paths';
 export { defineAppConfig } from '/home/krbundy/UMaine/psae_monorepo/web_ui/node_modules/nuxt/dist/core/runtime/nitro/utils/config';
-export { connectRabbitMQ, publishJob } from '/home/krbundy/UMaine/psae_monorepo/web_ui/server/utils/rabbitmq';
 export { requireUser, getUserOrNull } from '/home/krbundy/UMaine/psae_monorepo/web_ui/server/utils/requireUser';

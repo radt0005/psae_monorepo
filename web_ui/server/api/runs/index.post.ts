@@ -4,7 +4,6 @@ import { useDb } from "~/server/db";
 import { makeRunRepo } from "~/server/db/repositories/runs";
 import { makePipelineRepo } from "~/server/db/repositories/pipelines";
 import { requireUser } from "~/server/utils/requireUser";
-import { publishJob } from "~/server/utils/rabbitmq";
 import { validatePipeline } from "~/utils/validate";
 import { resolveShortCodes } from "~/utils/short_codes";
 import type { Pipeline } from "~/utils/types";
@@ -16,9 +15,9 @@ import type { Pipeline } from "~/utils/types";
  *   { pipelineId: string }   — run a saved pipeline (ACL-checked)
  *   { yaml: string, name? }  — run ad-hoc YAML
  *
- * We snapshot the resolved (UUID-only) YAML onto the run, persist a `queued`
- * row, then enqueue to RabbitMQ. The DB write is the source of truth for the
- * UI; the queue hands the job to the scheduler.
+ * The resolved (UUID-only) YAML is snapshotted onto a `queued` run row.
+ * The Go scheduler polls for queued rows via the Postgres outbox pattern
+ * (spec/worker.md §Communication) — no RabbitMQ publish needed here.
  */
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event);
@@ -94,20 +93,6 @@ export default defineEventHandler(async (event) => {
     status: "queued",
     visibility: "private",
   });
-
-  // Enqueue for the scheduler. If the broker is down we surface a 502 but the
-  // run row remains in `queued` so it can be retried/inspected.
-  try {
-    await publishJob(user.id, runId, resolvedYaml);
-  } catch (e: any) {
-    await repo.updateStatus(runId, "failed", {
-      error: `Failed to enqueue: ${e?.message}`,
-    });
-    throw createError({
-      statusCode: 502,
-      statusMessage: "Could not enqueue run to the scheduler",
-    });
-  }
 
   return run;
 });

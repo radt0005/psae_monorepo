@@ -162,3 +162,361 @@ Most documentation work is already complete (`spec/pipeline.md` §6, `spec/cli.m
 | `README.md` (root) | Modify (maybe) | One-sentence pointer to short codes if the README documents pipelines inline. |
 
 **Files NOT touched** (confirming scope discipline): `core/types.go` (no changes to `Pipeline`, `PipelineBlock`, `InputRef`), `core/scheduler.go`, `core/executor.go`, `core/registry.go`, `core/cache.go`, `core/block.go`, anything under `runner/`, the spec files (already updated), the skill files (already updated).
+
+---
+
+# Implementation Plan: Web UI ↔ Scheduler Contract Alignment
+
+## Background
+
+A contract audit against `spec/worker.md`, `spec/scheduler.md`, and `spec/web_ui.md` found three gaps between the web UI (`web_ui/`) and the Go scheduler (`server/`):
+
+1. **Submission path uses the wrong transport.** `web_ui/server/api/runs/index.post.ts` publishes to a RabbitMQ queue named `user_submissions` after writing a `queued` row. Nothing reads `user_submissions`. `spec/worker.md` §Communication explicitly says the web UI → scheduler path uses a **Postgres outbox**, not the broker (RabbitMQ is worker ↔ scheduler only: `spade.jobs` / `spade.results`).
+
+2. **No status feedback from scheduler to web UI.** The web UI has `PATCH /api/runs/:id` ready (with bearer-token auth via `WORKER_CALLBACK_SECRET`) but the Go scheduler never calls it. Runs submitted to the scheduler will be stuck in `running` forever from the web UI's perspective.
+
+3. **Stale `Run` type in `web_ui/utils/types.ts`.** The `status` field is `"pending" | "running" | "error" | "completed"` — none match the database enum (`"queued" | "running" | "succeeded" | "failed" | "canceled"`) except `running`. The Vue pages define their own correct inline types and never import this, so there is no live breakage, but it is a trap for any future code that imports `Run` from `utils/types.ts`.
+
+**Do these in order.** Each phase is independently deployable and testable. Phases 1 and 2 are web-UI-only. Phase 3 is Go-only and can be tested with `curl`. Phase 4 is Go-only and requires a shared PostgreSQL instance. Phase 5 ties them together with file/log forwarding.
+
+**Shared infrastructure assumption.** The web UI and Go scheduler share one PostgreSQL instance (database `spade`) as shown in `web_ui/docker-compose.yml`. The scheduler's `SPADE_DATABASE_URL` and the web UI's `DATABASE_URL` both point at the same server. The scheduler reads from the web UI's `runs` table (different table, same database).
+
+---
+
+## Phase 1: Fix stale `Run` type (`web_ui/utils/types.ts`)
+
+This is a one-line fix with no runtime impact.  Do it first so no future code inherits the wrong values.
+
+- [DONE] In `web_ui/utils/types.ts` at line 94, change the `status` union on the `Run` type from:
+  ```ts
+  status: "pending" | "running" | "error" | "completed";
+  ```
+  to:
+  ```ts
+  status: "queued" | "running" | "succeeded" | "failed" | "canceled";
+  ```
+- [DONE] Confirm no other file in `web_ui/` imports `Run` from `utils/types.ts` with assumptions about the old status values.  (`grep -r 'from.*utils/types' web_ui/` and inspect each import site.)
+- [DONE] `cd web_ui && bun run typecheck` passes with no new errors.
+
+---
+
+## Phase 2: Remove RabbitMQ from the web UI submission path
+
+Per `spec/worker.md`: "the web UI ↔ scheduler path uses a Postgres outbox."  The `queued` row written by `runs/index.post.ts` is already the outbox entry.  RabbitMQ is not part of this path.
+
+### 2.1 Simplify `web_ui/server/api/runs/index.post.ts`
+
+- [ ] Delete the `import { publishJob } from "~/server/utils/rabbitmq"` line (currently line 7).
+- [ ] Remove the `try/catch` block that calls `publishJob` and marks the run `failed` on enqueue error (currently lines 99–109).  The handler now ends with `return run;` immediately after `repo.create(...)`.
+- [ ] Remove the comment block that describes the now-deleted enqueue step.
+- [ ] Confirm the handler still validates the pipeline, resolves short codes, creates the DB row, and returns the run — unchanged from current behavior for those steps.
+
+### 2.2 Delete `web_ui/server/utils/rabbitmq.ts`
+
+- [ ] Delete `web_ui/server/utils/rabbitmq.ts`.  It exports `connectRabbitMQ` and `publishJob`; after 2.1 there are no remaining callers.
+- [ ] `grep -r 'rabbitmq' web_ui/server/` to confirm no other file imports it.
+
+### 2.3 Clean up environment config
+
+- [ ] Remove `RABBITMQ_URL` and `RABBITMQ_QUEUE` from `web_ui/.env.example`.  `RABBITMQ_URL` is no longer needed by the web UI (it remains in the scheduler's env, which is a separate service).  Add a comment noting that RabbitMQ is used by the scheduler and worker, not the web UI.
+- [ ] Remove `amqplib` from `web_ui/package.json` dependencies if it is only used by the deleted `rabbitmq.ts`.  Run `grep -r 'amqplib' web_ui/` first to confirm no other file imports it.
+- [ ] `cd web_ui && bun install && bun run typecheck` passes.
+
+### 2.4 Tests
+
+- [ ] Run `cd web_ui && bun run test` — existing unit tests pass.
+- [ ] Manually POST to `http://localhost:3000/api/runs` with a valid pipeline body and confirm the response contains a `queued` run with no 502 error.
+
+---
+
+## Phase 3: Scheduler → web UI status callback (Go)
+
+The Go scheduler must call `PATCH <UI_BASE_URL>/api/runs/:id` whenever a pipeline transitions to `running`, `complete`, `failed`, or `cancelled`.  The PATCH endpoint already exists and is auth'd by a bearer token.
+
+### 3.1 Add configuration flags (`server/cmd/spade-scheduler/app/run.go`)
+
+- [ ] Add two new fields to the `Config` struct:
+  ```go
+  UIBaseURL        string  // base URL of the Nuxt web UI, e.g. http://localhost:3000
+  UICallbackSecret string  // value of WORKER_CALLBACK_SECRET in the web UI .env
+  ```
+- [ ] Register them in `ParseFlags`:
+  ```go
+  fs.StringVar(&cfg.UIBaseURL, "ui-base-url", getenv("SPADE_UI_BASE_URL", ""), "Base URL of the Spade web UI for run callbacks")
+  fs.StringVar(&cfg.UICallbackSecret, "ui-callback-secret", getenv("SPADE_UI_CALLBACK_SECRET", ""), "Bearer token for PATCH /api/runs/:id callbacks")
+  ```
+- [ ] When `UIBaseURL` is empty, log a warning at startup and skip all callback attempts (allows running the scheduler standalone without a web UI).
+
+### 3.2 Implement the callback client (`server/api/callback.go`, new file)
+
+- [ ] Create `server/api/callback.go` in package `api`.
+- [ ] Define the request body struct:
+  ```go
+  type RunCallbackBody struct {
+      Status string         `json:"status"`
+      Error  string         `json:"error,omitempty"`
+      Files  []CallbackFile `json:"files,omitempty"`
+      Logs   []CallbackLog  `json:"logs,omitempty"`
+  }
+
+  type CallbackFile struct {
+      Name     string `json:"name"`
+      S3Key    string `json:"s3Key"`
+      BlockID  string `json:"blockId,omitempty"`
+      MimeType string `json:"mimeType,omitempty"`
+  }
+
+  type CallbackLog struct {
+      BlockID string `json:"blockId,omitempty"`
+      Stdout  string `json:"stdout,omitempty"`
+      Stderr  string `json:"stderr,omitempty"`
+  }
+  ```
+- [ ] Implement `PatchRunStatus(ctx context.Context, baseURL, secret, runID string, body RunCallbackBody) error`.
+  - Marshals `body` to JSON.
+  - Issues `PATCH <baseURL>/api/runs/<runID>` with `Content-Type: application/json` and `Authorization: Bearer <secret>`.
+  - Returns nil on HTTP 200; returns a non-nil error (including the response status and body) on any other status.
+  - Uses a 10-second timeout on the HTTP request context.
+  - Does **not** retry — callers decide whether to retry.
+
+### 3.3 Wire the callback into the engine (`server/engine/engine.go`)
+
+- [ ] Add a `callbackFn func(pipelineID uuid.UUID, status store.PipelineStatus, errMsg string)` field to the `Engine` struct.  Default: `nil` (no-op).
+- [ ] Add `func (e *Engine) SetCallback(fn func(uuid.UUID, store.PipelineStatus, string))` so the app layer can inject the callback without changing `engine.New`'s signature.
+- [ ] In the engine's event-writing path, after writing each of:
+  - `EventPipelineCompleted` → call `callbackFn(pipelineID, PipelineComplete, "")`
+  - `EventPipelineFailed` → call `callbackFn(pipelineID, PipelineFailed, errorMessage)`
+  - `EventPipelineCancelled` → call `callbackFn(pipelineID, PipelineCancelled, "")`
+- [ ] Also fire the callback (with `PipelineRunning`) immediately after a pipeline is accepted and its first block is dispatched, so the web UI transitions from `queued` to `running` promptly.
+- [ ] The callback is invoked synchronously in the engine's goroutine.  Failures are logged but do not affect engine state.
+
+### 3.4 Wire up in `server/cmd/spade-scheduler/app/run.go`
+
+- [ ] After constructing `eng` and before starting the HTTP server, if `cfg.UIBaseURL != ""`:
+  ```go
+  eng.SetCallback(func(id uuid.UUID, status store.PipelineStatus, errMsg string) {
+      body := api.RunCallbackBody{Status: translateStatus(status), Error: errMsg}
+      if err := api.PatchRunStatus(context.Background(), cfg.UIBaseURL, cfg.UICallbackSecret, id.String(), body); err != nil {
+          logger.Warn("run callback failed", "run_id", id, "err", err)
+      }
+  })
+  ```
+- [ ] Implement `translateStatus(s store.PipelineStatus) string` in the same file:
+  ```go
+  func translateStatus(s store.PipelineStatus) string {
+      switch s {
+      case store.PipelineRunning:   return "running"
+      case store.PipelineComplete:  return "succeeded"
+      case store.PipelineFailed:    return "failed"
+      case store.PipelineCancelled: return "canceled"
+      default: return string(s)
+      }
+  }
+  ```
+  Note the spelling: Go uses `cancelled` (two `l`s); the web UI DB enum uses `canceled` (one `l`).
+
+### 3.5 Tests (`server/api/callback_test.go`, new file)
+
+- [ ] `TestPatchRunStatus_Success`: start an `httptest.Server` that asserts the correct method, path, Authorization header, and JSON body; respond 200; assert no error returned.
+- [ ] `TestPatchRunStatus_Non200`: httptest responds 500; assert a non-nil error is returned containing the status code.
+- [ ] `TestTranslateStatus`: table-driven over all four `PipelineStatus` values, including the `cancelled` → `canceled` spelling translation.
+- [ ] `TestEngine_CallbackFiredOnComplete`: use an existing `engine_test` fixture; set a callback via `SetCallback`; submit a pipeline that completes; assert the callback is called with `PipelineComplete`.
+- [ ] `TestEngine_CallbackFiredOnFailure`: same pattern, pipeline fails; assert callback called with `PipelineFailed`.
+- [ ] `cd server && go test ./...` passes.
+
+---
+
+## Phase 4: Scheduler outbox poller — picking up `queued` runs from PostgreSQL (Go)
+
+The scheduler polls the web UI's `runs` table for rows where `status = 'queued'` and submits each one via its own engine.  This is the Postgres outbox pattern specified in `spec/worker.md`.
+
+### 4.1 Add configuration flags (`server/cmd/spade-scheduler/app/run.go`)
+
+- [ ] Add one new field to `Config`:
+  ```go
+  UIDBUrl string  // PostgreSQL DSN for the web UI database (may be same as SPADE_DATABASE_URL)
+  ```
+- [ ] Register in `ParseFlags`:
+  ```go
+  fs.StringVar(&cfg.UIDBUrl, "ui-db-url", getenv("SPADE_UI_DB_URL", ""), "PostgreSQL DSN for the web UI database (outbox source)")
+  ```
+- [ ] If empty, fall back to `cfg.DatabaseURL` (single-DB topology; the `docker-compose.yml` default).
+- [ ] Log the resolved DSN (masked, same as `maskDSN`) at startup.
+
+### 4.2 Implement the outbox reader (`server/outbox/outbox.go`, new package)
+
+- [ ] Create `server/outbox/outbox.go` in package `outbox`.
+- [ ] Define `QueuedRun` struct matching the web UI's `runs` table columns the poller needs:
+  ```go
+  type QueuedRun struct {
+      ID      string    // text primary key (UUIDv7 string)
+      OwnerID string    // owner_id column
+      YAML    string    // yaml column — the resolved pipeline YAML
+  }
+  ```
+- [ ] Implement `FetchQueued(ctx context.Context, db *sql.DB, limit int) ([]QueuedRun, error)`:
+  ```sql
+  SELECT id, owner_id, yaml FROM runs WHERE status = 'queued' ORDER BY created_at ASC LIMIT $1
+  ```
+  Uses `database/sql` with the existing PostgreSQL driver already in the module graph.
+- [ ] Implement `MarkRunning(ctx context.Context, db *sql.DB, id string) error`:
+  ```sql
+  UPDATE runs SET status = 'running', started_at = NOW(), updated_at = NOW()
+  WHERE id = $1 AND status = 'queued'
+  ```
+  The `WHERE status = 'queued'` guard is the idempotency lock: a second concurrent poller picking up the same row will update 0 rows and can skip it.  Return `ErrAlreadyClaimed` (a sentinel defined in this package) when `rowsAffected == 0`.
+- [ ] Implement `MarkFailed(ctx context.Context, db *sql.DB, id, errMsg string) error`:
+  ```sql
+  UPDATE runs SET status = 'failed', error = $2, finished_at = NOW(), updated_at = NOW() WHERE id = $1
+  ```
+  Used if the scheduler fails to parse or submit the pipeline.
+
+### 4.3 Implement the poll loop (`server/outbox/poller.go`)
+
+- [ ] Implement `Run(ctx context.Context, db *sql.DB, submit func(ctx context.Context, run QueuedRun) error, interval time.Duration)`.
+  - On each tick: call `FetchQueued` (limit 10).
+  - For each `QueuedRun`:
+    1. Call `MarkRunning` — skip on `ErrAlreadyClaimed`.
+    2. Call `submit(ctx, run)` — on error, call `MarkFailed` with the error message and log.
+  - Sleep `interval` between polls.  Default interval: 5 seconds.
+  - Returns when `ctx` is cancelled.
+- [ ] The `submit` function is provided by the app layer (see 4.4), keeping the poller decoupled from the engine.
+
+### 4.4 Wire up in `server/cmd/spade-scheduler/app/run.go`
+
+- [ ] Open a `*sql.DB` connection to `cfg.UIDBUrl` (or fallback) alongside the existing `store.Store` connection.
+- [ ] Construct the `submit` closure:
+  ```go
+  submit := func(ctx context.Context, run outbox.QueuedRun) error {
+      var p core.Pipeline
+      if err := yaml.Unmarshal([]byte(run.YAML), &p); err != nil {
+          return fmt.Errorf("parse yaml: %w", err)
+      }
+      if err := eng.SubmitPipeline(ctx, &p, []byte(run.YAML), run.OwnerID); err != nil {
+          if errors.Is(err, store.ErrAlreadyExists) {
+              return nil // already submitted (e.g. scheduler restarted); not an error
+          }
+          return err
+      }
+      return nil
+  }
+  ```
+- [ ] Launch the poller goroutine alongside the broker goroutine:
+  ```go
+  go func() {
+      outbox.Run(ctx, uiDB, submit, 5*time.Second)
+  }()
+  ```
+- [ ] Close `uiDB` in the shutdown path after context cancellation.
+
+### 4.5 Tests (`server/outbox/outbox_test.go`)
+
+- [ ] `TestFetchQueued`: insert three rows into an in-memory SQLite `runs` table (same schema), assert correct rows returned and ordering by `created_at`.
+- [ ] `TestMarkRunning_Idempotency`: two concurrent calls to `MarkRunning` on the same row — assert exactly one returns nil and the other returns `ErrAlreadyClaimed`.
+- [ ] `TestMarkFailed`: after `MarkFailed`, a subsequent `FetchQueued` returns no rows for that ID.
+- [ ] `TestPollerSubmitsAndMarksRunning`: mock `submit` succeeds; assert `MarkRunning` was called; assert `MarkFailed` was not called.
+- [ ] `TestPollerMarksFailedOnSubmitError`: mock `submit` returns an error; assert `MarkFailed` is called with a non-empty error message.
+- [ ] `TestPollerSkipsAlreadyClaimed`: `MarkRunning` returns `ErrAlreadyClaimed`; assert `submit` is not called.
+- [ ] `cd server && go test ./...` passes.
+
+---
+
+## Phase 5: File and log forwarding in the scheduler callback
+
+After a pipeline completes, the scheduler has `InvocationRecord.LogsPath` (an S3 key) and `OutputHashesJSON` (a JSON map of output name → content hash) for each invocation.  The web UI needs file entries with `name` and `s3Key` to serve downloads.  This phase forwards that information as part of the completion callback.
+
+### 5.1 Extract invocation records at pipeline completion (`server/engine/engine.go`)
+
+- [ ] When firing the completion callback (`PipelineComplete` or `PipelineFailed`), call `store.LoadInvocations(ctx, pipelineID)` to get the full slice of `InvocationRecord` rows.
+- [ ] Pass the slice to the `callbackFn` — add it as a third parameter or encapsulate in a new `CallbackPayload` struct:
+  ```go
+  type CallbackPayload struct {
+      Status      store.PipelineStatus
+      ErrorMsg    string
+      Invocations []store.InvocationRecord
+  }
+  ```
+- [ ] Update `SetCallback` signature accordingly; update `TestEngine_CallbackFiredOnComplete` in Phase 3 tests.
+
+### 5.2 Build file entries from invocation records (`server/cmd/spade-scheduler/app/run.go`)
+
+- [ ] In the callback closure, iterate `payload.Invocations` to build `[]api.CallbackFile`:
+  - Parse `OutputHashesJSON` (a `map[string]string` of output name → hash) to enumerate output names.
+  - The S3 key convention from `spec/worker.md` is `outputs/<invocation_id>/<output_name>/...`.  Construct the S3 key prefix as `outputs/<invocation_id>/<output_name>`.
+  - Set `BlockID` to `invocation.ID` so the web UI can group files by block.
+- [ ] Build `[]api.CallbackLog` from `InvocationRecord.LogsPath`:
+  - Each invocation with a non-empty `LogsPath` produces one log entry with `BlockID = invocation.ID` and `Stdout` set to the S3 path (prefixed `s3://`).
+  - Note: the web UI's `run_logs.stdout` column holds text content, not S3 paths. This is a schema mismatch.  For this phase, store the S3 path as the stdout value so files are at least discoverable.  A follow-up task can add a `logs_path` field to the `PATCH` body and to `run_logs` to handle this cleanly without polluting the text column.
+- [ ] Pass the assembled `Files` and `Logs` slices in the `RunCallbackBody`.
+
+### 5.3 Update `web_ui/server/api/runs/[id]/index.patch.ts`
+
+- [ ] The handler currently accepts `logs: [{ blockId?, stdout?, stderr? }]` and inserts them as-is into `run_logs`.  No change needed for the initial pass — the S3 path stored in `stdout` will be visible in the log viewer as a path string, which is better than nothing.
+- [ ] Open a follow-up issue to add `logsPath?: string` to the PATCH log entry and store it in a new `run_logs.logs_path` column.  Out of scope for this plan.
+
+### 5.4 Tests
+
+- [ ] `TestBuildFilesFromInvocations`: unit test the helper that converts `[]store.InvocationRecord` with `OutputHashesJSON` → `[]api.CallbackFile`; verify S3 key format and BlockID assignment.
+- [ ] `TestBuildLogsFromInvocations`: one invocation with non-empty `LogsPath`; assert one log entry with the correct BlockID and path prefix.
+- [ ] `cd server && go test ./...` passes.
+
+---
+
+## Phase 6: Configuration and deployment
+
+- [ ] Add to `web_ui/.env.example`:
+  ```
+  # URL and secret the Go scheduler will use to POST back run status updates.
+  # The web UI itself does not call the scheduler; the scheduler calls the web UI.
+  # WORKER_CALLBACK_SECRET must match SPADE_UI_CALLBACK_SECRET in the scheduler's env.
+  WORKER_CALLBACK_SECRET=replace-me-with-a-long-random-string
+  ```
+  (This key already exists in `.env.example` but the comment was misleading — update it to clarify the scheduler is the caller, not the worker binary directly.)
+
+- [ ] Add to `server/README.md` a new "Environment variables" table covering `SPADE_UI_BASE_URL`, `SPADE_UI_CALLBACK_SECRET`, and `SPADE_UI_DB_URL` alongside the existing `SPADE_DATABASE_URL` and `SPADE_AMQP_URL` variables.
+
+- [ ] Add a `spade-scheduler` service to `web_ui/docker-compose.yml` (or a root-level `docker-compose.yml`) so the full stack — PostgreSQL, MinIO, RabbitMQ, web UI, scheduler — starts with one command.  Wire the env vars listed above.  The scheduler and web UI services must share the same `DATABASE_URL` / `SPADE_DATABASE_URL` pointing at the same PostgreSQL instance.
+
+- [ ] Confirm `web_ui/docker-compose.yml` still includes the RabbitMQ service — it remains necessary for the scheduler ↔ worker path even though the web UI no longer publishes to it.
+
+---
+
+## Phase 7: Verification
+
+- [ ] **Type check**: `cd web_ui && bun run typecheck` — no errors.
+- [ ] **Unit tests**: `cd web_ui && bun run test` — all pass.
+- [ ] **Go build**: `cd server && go build ./...` — no errors.
+- [ ] **Go tests**: `cd server && go test -count=1 ./...` — all pass, including new `outbox` and `api/callback` packages.
+- [ ] **End-to-end smoke test** (requires running `docker compose up -d`):
+  1. Start the full stack: `docker compose up -d` (postgres, minio, rabbitmq, web UI, scheduler).
+  2. Register a user via the web UI.
+  3. In the pipeline editor, build a minimal one-block pipeline (e.g. using a block that is already installed on the local test worker).
+  4. Submit the pipeline ("Run").
+  5. Confirm the web UI immediately shows the run as `queued`, then transitions to `running` within ~5 seconds (outbox poller picks it up).
+  6. When the pipeline completes, confirm the run transitions to `succeeded` or `failed` (callback fired).
+  7. Confirm output files appear in the run detail view (file entries forwarded in callback).
+  8. Cancel a running pipeline from the web UI — confirm the run transitions to `canceled`.
+  9. Restart the scheduler mid-run — confirm the run resumes and completes (Postgres outbox + engine recovery path).
+
+---
+
+## Summary of files touched
+
+| File | Action | Description |
+|------|--------|-------------|
+| `web_ui/utils/types.ts` | Modify | Fix `Run.status` union to match the actual `runStatusEnum`. |
+| `web_ui/server/api/runs/index.post.ts` | Modify | Remove `publishJob` call; handler ends after `repo.create`. |
+| `web_ui/server/utils/rabbitmq.ts` | **Delete** | No longer called; web UI no longer publishes to RabbitMQ. |
+| `web_ui/package.json` | Modify | Remove `amqplib` dependency if it has no other callers. |
+| `web_ui/.env.example` | Modify | Remove `RABBITMQ_URL` / `RABBITMQ_QUEUE`; update `WORKER_CALLBACK_SECRET` comment. |
+| `server/api/callback.go` | **New** | `PatchRunStatus`, `RunCallbackBody`, `CallbackFile`, `CallbackLog`. |
+| `server/api/callback_test.go` | **New** | Tests for HTTP callback client and status translation. |
+| `server/outbox/outbox.go` | **New** | `FetchQueued`, `MarkRunning`, `MarkFailed`, `ErrAlreadyClaimed`. |
+| `server/outbox/poller.go` | **New** | `Run` — the poll loop that drives the outbox reader. |
+| `server/outbox/outbox_test.go` | **New** | Unit tests for outbox reader and poll loop. |
+| `server/engine/engine.go` | Modify | Add `callbackFn`, `SetCallback`, and `CallbackPayload`; fire callback on state transitions. |
+| `server/cmd/spade-scheduler/app/run.go` | Modify | Wire `UIBaseURL`, `UICallbackSecret`, `UIDBUrl` config; construct callback closure; start outbox poller goroutine. |
+| `server/README.md` | Modify | Document new environment variables. |
+| `web_ui/docker-compose.yml` (or root) | Modify | Add `spade-scheduler` service with correct env wiring. |
+
+**Files NOT touched:** `runner/`, `core/`, `cli/`, `web_ui/server/api/runs/[id]/index.patch.ts` (already correct), `web_ui/server/db/schema/runs.ts` (already correct), `spec/` files.
