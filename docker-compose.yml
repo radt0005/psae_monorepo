@@ -207,6 +207,10 @@ services:
       SPADE_REGISTRY: /var/spade/registry.db
       SPADE_CACHE_DIR: /var/spade/cache
       SPADE_LOG_LEVEL: info
+      # Python (gdal) blocks: the uv-managed Python the seed built lives on the
+      # shared volume; the worker's sandbox binds + passes this so a venv built
+      # in the seed container resolves here.  Must match seed/seed.sh.
+      UV_PYTHON_INSTALL_DIR: /var/spade/uv/python
       # Uncomment to skip the isolate startup probe (no real block execution):
       # SPADE_SKIP_ISOLATE_CHECK: "1"
     volumes:

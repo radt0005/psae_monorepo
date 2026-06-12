@@ -15,23 +15,44 @@ set -euo pipefail
 : "${DATABASE_URL:?DATABASE_URL is required}"
 export SPADE_DIR
 
-# Collections to seed.  Both Rust for now; GDAL (Python) + sae (R) are a
-# later pass once the toolchains are added to this image.
-COLLECTIONS=(base data)
+# Rust collections ship as self-contained binaries; install straight from the
+# image (pre-compiled at build time, so this is a fast register-only step).
+RUST_COLLECTIONS=(base data)
 
-mkdir -p "$SPADE_DIR"
+# Python collections build a venv with absolute paths and an editable `spade`
+# lib.  Both must resolve inside the worker, which shares only $SPADE_DIR — so
+# the source tree, the uv-managed Python, and the uv cache all live there.
+PY_COLLECTIONS=(gdal)
+# Pin the interpreter: the gdal collection installs `gdal==3.10` from the
+# girder large_image_wheels, which ship binary wheels only up to cp313.  Left
+# to its own devices uv grabs the newest `>=3.12` (3.14), for which no wheel
+# exists and the `--no-build` pin then fails.
+export UV_PYTHON=3.12
+export UV_PYTHON_INSTALL_DIR="$SPADE_DIR/uv/python"
+export UV_CACHE_DIR="$SPADE_DIR/uv/cache"
+PY_SRC="$SPADE_DIR/src"   # holds blocks/<c> + libs/python on the volume
 
-echo "==> Installing block collections into worker volume ($SPADE_DIR)"
-for c in "${COLLECTIONS[@]}"; do
-  echo "--- spade install $c"
-  # SPADE_DIR drives both the install dir ($SPADE_DIR/blocks/...) and the
-  # registry path ($SPADE_DIR/registry.db); the worker reads the same paths
-  # off the shared volume (see docker-compose.yml: SPADE_REGISTRY).
+mkdir -p "$SPADE_DIR" "$UV_PYTHON_INSTALL_DIR" "$UV_CACHE_DIR"
+
+echo "==> Installing Rust collections into worker volume ($SPADE_DIR)"
+for c in "${RUST_COLLECTIONS[@]}"; do
+  echo "--- spade install $c (rust)"
   spade install "/seed/blocks/$c"
 done
 
+echo "==> Installing Python collections into worker volume ($SPADE_DIR)"
+# Stage the source on the volume preserving the `../../libs/python` relation
+# so the editable spade path the install bakes in resolves in the worker.
+mkdir -p "$PY_SRC/blocks" "$PY_SRC/libs"
+cp -a /seed/libs/python "$PY_SRC/libs/python"
+for c in "${PY_COLLECTIONS[@]}"; do
+  echo "--- spade install $c (python; first run downloads wheels)"
+  cp -a "/seed/blocks/$c" "$PY_SRC/blocks/$c"
+  spade install "$PY_SRC/blocks/$c"
+done
+
 echo "==> Mirroring block manifests into Postgres (blocks table)"
-for c in "${COLLECTIONS[@]}"; do
+for c in "${RUST_COLLECTIONS[@]}" "${PY_COLLECTIONS[@]}"; do
   for f in "/seed/blocks/$c/blocks/"*.yaml; do
     [ -e "$f" ] || continue
     id=$(yq '.id' "$f")
@@ -57,4 +78,5 @@ SQL
   done
 done
 
-echo "==> Seed complete: ${#COLLECTIONS[@]} collection(s) installed and mirrored."
+total=$(( ${#RUST_COLLECTIONS[@]} + ${#PY_COLLECTIONS[@]} ))
+echo "==> Seed complete: $total collection(s) installed and mirrored."

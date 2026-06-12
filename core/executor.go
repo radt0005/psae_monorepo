@@ -224,6 +224,11 @@ func RunBlockSubprocess(execPath string, args []string, workDir string, manifest
 		"--env=LANG",
 		"--env=LC_ALL",
 		"--env=TZ",
+		// uv-managed Python location.  When set (e.g. pointed at a shared
+		// volume so a venv built elsewhere resolves here), uv inside the
+		// sandbox must see it too; the matching --dir bind is added by
+		// languageSandboxBinds.
+		"--env=UV_PYTHON_INSTALL_DIR",
 	)
 
 	// Redirect caches into the work directory.  The sandbox uid typically
@@ -430,6 +435,12 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 				"--dir="+filepath.Join(home, ".cache/uv")+":rw:maybe",
 				"--dir="+filepath.Join(home, ".local/state/uv")+":rw:maybe",
 			)
+		}
+		// When uv-managed Python lives outside $HOME (e.g. on a shared
+		// volume via UV_PYTHON_INSTALL_DIR), bind that directory too so the
+		// venv's base interpreter resolves inside the sandbox.
+		if pyDir := os.Getenv("UV_PYTHON_INSTALL_DIR"); pyDir != "" {
+			binds = append(binds, "--dir="+pyDir+":maybe")
 		}
 		// Editable installs in the .venv point at directories outside
 		// the sandbox via .pth files; bind those directories too so

@@ -52,21 +52,32 @@ RUN curl -fsSL \
         -o /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 
+# uv — builds the Python (gdal) collection's environment.  uv fetches a
+# managed Python 3.12 itself, so no system python3.12 is required here.
+RUN curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh \
+    && ln -sf /root/.local/bin/uv /usr/local/bin/uv
+
 COPY --from=cli-build /out/spade /usr/local/bin/spade
 
-# The Rust runtime library the collections depend on via a relative path
-# (`spade = { path = "../../libs/rust" }`).  Must sit at /seed/libs/rust so
-# the `../../` from /seed/blocks/<c> resolves both here and at runtime.
+# Runtime libraries the collections depend on via relative paths
+# (`spade = { path = "../../libs/rust" }` and `../../libs/python`).  Must sit
+# at /seed/libs/<lang> so the `../../` from /seed/blocks/<c> resolves here.
 COPY libs/rust /seed/libs/rust
+COPY libs/python /seed/libs/python
 
-# Block collection sources.  Pre-compiling here (at image-build time) means
-# the runtime `spade install` finds an up-to-date target/ and is a fast
-# register-only no-op rather than a multi-minute cargo build on every
-# `docker compose up`.
+# Block collection sources.  Pre-compiling the Rust collections here (at
+# image-build time) means the runtime `spade install` finds an up-to-date
+# target/ and is a fast register-only no-op rather than a multi-minute cargo
+# build on every `docker compose up`.
 COPY blocks/base /seed/blocks/base
 COPY blocks/data /seed/blocks/data
 RUN cargo build --release --manifest-path /seed/blocks/base/Cargo.toml \
     && cargo build --release --manifest-path /seed/blocks/data/Cargo.toml
+
+# Python (gdal) collection source.  Built at runtime into the shared volume
+# (its venv carries absolute paths that must match the worker's mount), so it
+# is only staged here for the seed script to copy onto the volume.
+COPY blocks/gdal /seed/blocks/gdal
 
 COPY seed/seed.sh /usr/local/bin/seed.sh
 RUN chmod +x /usr/local/bin/seed.sh
