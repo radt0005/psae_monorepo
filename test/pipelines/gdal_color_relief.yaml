@@ -1,27 +1,27 @@
-id: 019e3c4a-4ae1-7716-807e-ea7bb525b953
+id: 019e3c66-62ed-7d51-807e-2d51bf8d7ac3
 name: gdal_color_relief
 version: "1.0"
 description: Apply color ramp to DEM
 blocks:
-- id: 019e3c4a-4ae1-72af-807b-2a22893f99d0
+- id: 019e3c66-62ed-72d8-807b-ed8c5347a859
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_dem.tif
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019e3c4a-4ae1-7e85-807c-763ce5cfab22
+- id: 019e3c66-62ed-7ed1-807c-c99642d53c69
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/color_ramp.txt
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/color_ramp.txt
     format: ''
-- id: 019e3c4a-4ae1-7e4a-807d-2c5bca3df63b
+- id: 019e3c66-62ed-763f-807d-943930470c0f
   name: gdal.color_relief
   inputs:
-  - block: 019e3c4a-4ae1-72af-807b-2a22893f99d0
+  - block: 019e3c66-62ed-72d8-807b-ed8c5347a859
     output: file
     as: source
-  - block: 019e3c4a-4ae1-7e85-807c-763ce5cfab22
+  - block: 019e3c66-62ed-7ed1-807c-c99642d53c69
     output: file
     as: color_ramp
   args: {}

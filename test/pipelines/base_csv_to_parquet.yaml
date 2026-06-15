@@ -1,18 +1,18 @@
-id: 019e3c4a-4a4f-7b2c-8003-36da133afe1b
+id: 019e3c66-62d3-75d6-8003-14b91e352d8e
 name: base_csv_to_parquet
 version: "1.0"
 description: Read CSV and convert to Parquet
 blocks:
-- id: 019e3c4a-4a4e-71f3-8001-9ecb8d6437a5
+- id: 019e3c66-62d3-7bc9-8001-801ce2d2efe1
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a4f-7953-8002-c21e16b41618
+- id: 019e3c66-62d3-7da3-8002-a170dedbd0b5
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a4e-71f3-8001-9ecb8d6437a5
+  - 019e3c66-62d3-7bc9-8001-801ce2d2efe1
   args:
     delimiter: ','
     has_header: true

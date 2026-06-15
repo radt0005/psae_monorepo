@@ -1,29 +1,29 @@
-id: 019e3c4a-4a7b-76e2-8022-3f7dca319f6d
+id: 019e3c66-62d9-7d48-8022-23de586f2882
 name: base_map_files_reduce_collection
 version: "1.0"
 description: Map over CSV collection, convert each to Parquet, reduce to collection
 blocks:
-- id: 019e3c4a-4a7b-70f9-801e-bd352d8914e2
+- id: 019e3c66-62d9-7132-801e-72cc4e859d8e
   name: data.read_collection
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data*.csv
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_data*.csv
     format: CSV
     max_items: 10
-- id: 019e3c4a-4a7b-72ac-801f-091cf02e875f
+- id: 019e3c66-62d9-7f8e-801f-ed4afa451419
   name: base.map_files
   inputs:
-  - 019e3c4a-4a7b-70f9-801e-bd352d8914e2
+  - 019e3c66-62d9-7132-801e-72cc4e859d8e
   args: {}
-- id: 019e3c4a-4a7b-77ef-8020-9c75ec9873af
+- id: 019e3c66-62d9-7d75-8020-57663d925e3f
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a7b-72ac-801f-091cf02e875f
+  - 019e3c66-62d9-7f8e-801f-ed4afa451419
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a7b-77d6-8021-5d741ec81504
+- id: 019e3c66-62d9-7cbe-8021-290bc828131b
   name: base.reduce_collection
   inputs:
-  - 019e3c4a-4a7b-77ef-8020-9c75ec9873af
+  - 019e3c66-62d9-7d75-8020-57663d925e3f
   args: {}

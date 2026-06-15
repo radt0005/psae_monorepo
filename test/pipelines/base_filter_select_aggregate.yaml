@@ -1,38 +1,38 @@
-id: 019e3c4a-4a72-71d0-801d-c49e7d5e9c5c
+id: 019e3c66-62d8-77a7-801d-9e545e447462
 name: base_filter_select_aggregate
 version: "1.0"
 description: Filter category=A, select columns, aggregate by state
 blocks:
-- id: 019e3c4a-4a72-774d-8018-f5d337273a2e
+- id: 019e3c66-62d8-79cb-8018-ade5be473187
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a72-7a73-8019-e2a0a8e08fa5
+- id: 019e3c66-62d8-75a5-8019-ab0b63dcef8d
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a72-774d-8018-f5d337273a2e
+  - 019e3c66-62d8-79cb-8018-ade5be473187
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a72-7ae4-801a-7f5a258ed18b
+- id: 019e3c66-62d8-775e-801a-15adf5e68ca8
   name: base.filter_rows
   inputs:
-  - 019e3c4a-4a72-7a73-8019-e2a0a8e08fa5
+  - 019e3c66-62d8-75a5-8019-ab0b63dcef8d
   args:
     expression: category = 'A'
-- id: 019e3c4a-4a72-7214-801b-1be09e15cf3f
+- id: 019e3c66-62d8-71da-801b-82bd3fc7fee1
   name: base.select_columns
   inputs:
-  - 019e3c4a-4a72-7ae4-801a-7f5a258ed18b
+  - 019e3c66-62d8-775e-801a-15adf5e68ca8
   args:
     columns: id,value,state
     mode: keep
-- id: 019e3c4a-4a72-7b9e-801c-be986737682a
+- id: 019e3c66-62d8-7b79-801c-f501dab84202
   name: base.aggregate
   inputs:
-  - 019e3c4a-4a72-7214-801b-1be09e15cf3f
+  - 019e3c66-62d8-71da-801b-82bd3fc7fee1
   args:
     aggregations: '[{"column": "value", "function": "mean"}]'
     group_by: state

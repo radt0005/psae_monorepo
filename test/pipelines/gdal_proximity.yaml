@@ -1,18 +1,18 @@
-id: 019e3c4a-4ac2-7c14-8064-cbb9782abd1b
+id: 019e3c66-62e7-7ee1-8064-5316b707515e
 name: gdal_proximity
 version: "1.0"
 description: Compute distance-to-features raster
 blocks:
-- id: 019e3c4a-4ac2-7a84-8062-3d25b8eefcea
+- id: 019e3c66-62e7-7c3a-8062-1005fb9e5815
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_binary.tif
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_binary.tif
     format: GeoTIFF
-- id: 019e3c4a-4ac2-766a-8063-265c5a7d0bba
+- id: 019e3c66-62e7-7d72-8063-3aab4fa190ea
   name: gdal.proximity
   inputs:
-  - 019e3c4a-4ac2-7a84-8062-3d25b8eefcea
+  - 019e3c66-62e7-7c3a-8062-1005fb9e5815
   args:
     target_values: ''
     distance_units: pixel

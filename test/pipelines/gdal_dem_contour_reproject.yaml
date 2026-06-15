@@ -1,27 +1,27 @@
-id: 019e3c4a-4b4b-79f2-80de-0504b8a65eee
+id: 019e3c66-6301-70e8-80de-d5bf336c5367
 name: gdal_dem_contour_reproject
 version: "1.0"
 description: DEM -> contour lines -> reproject to UTM
 blocks:
-- id: 019e3c4a-4b4b-7b91-80db-07279bb9d4f4
+- id: 019e3c66-6301-71ba-80db-0b6c8b6ea5a4
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_dem.tif
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019e3c4a-4b4b-7c70-80dc-735f98138655
+- id: 019e3c66-6301-74cf-80dc-cd790f133cdc
   name: gdal.contour
   inputs:
-  - 019e3c4a-4b4b-7b91-80db-07279bb9d4f4
+  - 019e3c66-6301-71ba-80db-0b6c8b6ea5a4
   args:
     band: 1
     interval: 100
     base: 0
     field_name: elev
-- id: 019e3c4a-4b4b-7fc7-80dd-bb9e1d72097d
+- id: 019e3c66-6301-7e8b-80dd-3730b4613edd
   name: gdal.vector_translate
   inputs:
-  - 019e3c4a-4b4b-7c70-80dc-735f98138655
+  - 019e3c66-6301-74cf-80dc-cd790f133cdc
   args:
     output_format: GeoJSON
     target_crs: EPSG:32610

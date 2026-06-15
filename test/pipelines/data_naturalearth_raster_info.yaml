@@ -1,17 +1,17 @@
-id: 019e3c4a-4b84-79be-810e-0e303bb6f512
+id: 019e3c66-630b-7209-810e-323173115922
 name: data_naturalearth_raster_info
 version: "1.0"
 description: '[NETWORK] Download Natural Earth raster -> GDAL info'
 blocks:
-- id: 019e3c4a-4b84-73e5-810c-e8d96e1ad770
+- id: 019e3c66-630b-78ba-810c-a78c92a230b4
   name: data.naturalearth_raster
   inputs: []
   args:
     scale: 50m
     theme: HYP_HR_SR_OB_DR
-- id: 019e3c4a-4b84-7176-810d-03aa54806761
+- id: 019e3c66-630b-7b85-810d-390b943a1ca0
   name: gdal.info
   inputs:
-  - 019e3c4a-4b84-73e5-810c-e8d96e1ad770
+  - 019e3c66-630b-78ba-810c-a78c92a230b4
   args:
     compute_stats: true

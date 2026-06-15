@@ -1,24 +1,24 @@
-id: 019e3c4a-4a59-70e7-800b-4f4c8ec4cb7d
+id: 019e3c66-62d5-74ff-800b-d44b5bae7014
 name: base_filter_rows
 version: "1.0"
 description: Filter rows where value > 15
 blocks:
-- id: 019e3c4a-4a58-7e52-8008-dc3c8da81f58
+- id: 019e3c66-62d5-7a94-8008-74105d78d6fe
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a59-7c3c-8009-40b9371ea40c
+- id: 019e3c66-62d5-7d5f-8009-62978aa59463
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a58-7e52-8008-dc3c8da81f58
+  - 019e3c66-62d5-7a94-8008-74105d78d6fe
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a59-7431-800a-de58fff842a0
+- id: 019e3c66-62d5-70dc-800a-e6c952b97320
   name: base.filter_rows
   inputs:
-  - 019e3c4a-4a59-7c3c-8009-40b9371ea40c
+  - 019e3c66-62d5-7d5f-8009-62978aa59463
   args:
     expression: value > 15

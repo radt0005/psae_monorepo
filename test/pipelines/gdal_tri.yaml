@@ -1,17 +1,17 @@
-id: 019e3c4a-4ae7-79cf-8081-d1063ea566d1
+id: 019e3c66-62ee-7572-8081-2391057bb700
 name: gdal_tri
 version: "1.0"
 description: Compute Terrain Ruggedness Index
 blocks:
-- id: 019e3c4a-4ae7-70a3-807f-1dd59a0cfb7b
+- id: 019e3c66-62ed-7f6f-807f-ce7c1e731096
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_dem.tif
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019e3c4a-4ae7-7b55-8080-bfb7722844ea
+- id: 019e3c66-62ed-7074-8080-e00f67e9591c
   name: gdal.tri
   inputs:
-  - 019e3c4a-4ae7-70a3-807f-1dd59a0cfb7b
+  - 019e3c66-62ed-7f6f-807f-ce7c1e731096
   args:
     algorithm: Wilson

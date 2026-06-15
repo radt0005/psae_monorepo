@@ -1,10 +1,10 @@
-id: 019e3c4a-4b60-7a06-80ec-be12e66c9829
+id: 019e3c66-6305-7314-80ec-5e77a3e30e14
 name: data_stat
 version: "1.0"
 description: Stat a local file
 blocks:
-- id: 019e3c4a-4b60-7a00-80eb-7aa2199e3dd8
+- id: 019e3c66-6305-7640-80eb-12d811dc9b63
   name: data.stat
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
+    uri: /home/pradtke/source/psae_monorepo/test/fixtures/test_data.csv

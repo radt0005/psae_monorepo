@@ -1,6 +1,6 @@
-Loaded pipeline: base_map_range (019e3c4a-4a91-751d-8032-b691ea7b0e96)
+Loaded pipeline: base_map_range (019e3c66-62dd-740e-8032-e5244ad85520)
 Executing pipeline with 2 block(s)...
   [1/2] base.map_range running...
   [1/2] base.map_range complete
 
-Pipeline complete: 1 block(s) executed in 778ms
+Pipeline complete: 1 block(s) executed in 175ms

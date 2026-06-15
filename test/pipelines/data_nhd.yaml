@@ -1,9 +1,9 @@
-id: 019e3c4a-4b7d-7ac3-8108-5fbbc66541e1
+id: 019e3c66-630a-7ed8-8108-e9639416fbff
 name: data_nhd
 version: "1.0"
 description: '[NETWORK] Download NHD for HUC-4 watershed'
 blocks:
-- id: 019e3c4a-4b7d-793a-8107-ed64304a2af1
+- id: 019e3c66-630a-77c6-8107-97640a7bf761
   name: data.nhd
   inputs: []
   args:

@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_aspect (019e3c4a-4add-7334-807a-9c697e4eef95)
+Loaded pipeline: gdal_aspect (019e3c66-62ec-7c36-807a-0340f36e7e49)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.aspect running...
   [2/2] gdal.aspect complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 6.53s
+Pipeline complete: 2 block(s) executed (1 cached) in 1.402s
