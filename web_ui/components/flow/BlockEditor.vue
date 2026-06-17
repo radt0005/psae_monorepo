@@ -119,6 +119,10 @@ const handleCancel = () => emit("close");
     <USelectMenu
       v-model="selectedBlock"
       :options="blocks"
+      searchable
+      :search-attributes="['name', 'label']"
+      searchable-placeholder="Filter blocks by name…"
+      placeholder="Select a block"
       class="text-black"
     />
     <p

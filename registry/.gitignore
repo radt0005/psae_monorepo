@@ -1,0 +1,12 @@
+# Built binaries
+/registryd
+/builder
+/cmd/registryd/registryd
+/cmd/builder/builder
+
+# Local SQLite + blob artifacts from running/test runs
+*.db
+*.db-wal
+*.db-shm
+/blobs/
+/tmp/

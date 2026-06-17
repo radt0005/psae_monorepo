@@ -102,7 +102,9 @@ services:
         condition: service_completed_successfully
     restart: "no"
 
-  # Creates the S3 bucket the app expects.  Idempotent; safe to re-run.
+  # Creates the S3 buckets the app expects.  Idempotent; safe to re-run.
+  #   spade            — pipeline I/O + user data (web UI / worker)
+  #   spade-artifacts  — signed collection artifacts (registry)
   createbuckets:
     image: minio/mc:latest
     depends_on:
@@ -112,7 +114,8 @@ services:
       /bin/sh -c "
       mc alias set local http://minio:9000 spade spadespade &&
       mc mb --ignore-existing local/spade &&
-      echo 'MinIO bucket ready'
+      mc mb --ignore-existing local/spade-artifacts &&
+      echo 'MinIO buckets ready'
       "
     restart: "no"
 
@@ -190,6 +193,73 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # --------------------------------------------------------------------------
+  # Plugin Registry (spec/registry.md) — the real cloud registry service.
+  #
+  # `registry` is the control plane: API, lifecycle state machine, audit log,
+  # ed25519 signing, /pubkeys, worker fetch, metadata mirror, and the build
+  # dispatcher.  The dispatcher launches an ephemeral build container per
+  # publish via the mounted docker socket (registry.md §5.2); the build
+  # container has no DB access and reports back over the registry's HTTP API.
+  #
+  # The build image (spade-builder-go) is built by the one-shot
+  # `builder-go-image` service below.  The dispatcher joins the spawned build
+  # container to this compose network via BUILDER_DOCKER_ARGS so it can reach
+  # `registry` and `minio` by name.  Adjust the network name if your compose
+  # project name differs (default: "<dir>_default").
+  # --------------------------------------------------------------------------
+
+  # One-shot: builds + tags the spade-builder-go image on the host daemon so the
+  # registry dispatcher can `docker run` it.  Does not stay up.
+  builder-go-image:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.builder-go
+    image: spade-builder-go:latest
+    entrypoint: ["true"]
+    restart: "no"
+
+  registry:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.registryd
+    restart: unless-stopped
+    ports:
+      # Host 8090 -> container 8080 (host 8080 is already in use on this box).
+      - "8090:8080"
+    environment:
+      # Container listens on 8080 (mapped to host 8090 above); the internal
+      # URLs below and the Dockerfile EXPOSE depend on this. Pinned because the
+      # standalone default is now :8090.
+      LISTEN_ADDR: ":8080"
+      DATABASE_URL: postgres://spade:spade@postgres:5432/spade
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: spade
+      S3_SECRET_ACCESS_KEY: spadespade
+      S3_BUCKET: spade-artifacts
+      S3_USE_PATH_STYLE: "true"
+      REGISTRY_INTERNAL_URL: http://registry:8080
+      REGISTRY_PUBLIC_URL: http://localhost:8090
+      BUILDER_IMAGES: go=spade-builder-go:latest
+      BUILDER_DOCKER_ARGS: "--network=psae_monorepo_default"
+      MIRROR_ENABLED: "true"
+      # Operator (recall / token admin) allowlist — set to your Better Auth
+      # user id(s).
+      ADMIN_USER_IDS: ""
+    volumes:
+      # Lets the dispatcher launch sibling build containers on the host daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      createbuckets:
+        condition: service_completed_successfully
+
   worker:
     build:
       context: .
@@ -206,6 +276,9 @@ services:
       # `spade install` uses $SPADE_DIR/registry.db (= /var/spade/registry.db).
       SPADE_REGISTRY: /var/spade/registry.db
       SPADE_CACHE_DIR: /var/spade/cache
+      # Cloud Plugin Registry for fetching signed artifacts (spec/registry.md).
+      # The seed-blocks shim remains as a fallback for the in-repo collections.
+      REGISTRY_URL: http://registry:8080
       SPADE_LOG_LEVEL: info
       # Python (gdal) blocks: the uv-managed Python the seed built lives on the
       # shared volume; the worker's sandbox binds + passes this so a venv built

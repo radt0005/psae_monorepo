@@ -72,7 +72,7 @@ const handleDeleteBlock = (data: { id: string }) => {
     <UButtonGroup class="w-full">
       <UButton @click="handleBlockButtonClick" class="flex-grow">Add Block</UButton>
       <UButton @click="handleImportButtonClick" class="flex-grow">Import</UButton>
-      <UButton @click="handleSaveButtonClick" class="flex-grow" color="primary">Save</UButton>
+      <UButton @click="handleSaveButtonClick" class="flex-grow">Save</UButton>
       <UButton @click="handleExportButtonClick" class="flex-grow">Export</UButton>
     </UButtonGroup>
     <FlowProblems />
