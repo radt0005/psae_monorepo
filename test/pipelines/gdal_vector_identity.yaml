@@ -1,27 +1,27 @@
-id: 019e3c4a-4b15-7d9e-80b3-758957b111e4
+id: 019ee02c-c75f-7cac-80b3-d3b8993885ee
 name: gdal_vector_identity
 version: "1.0"
 description: Identity overlay A with B
 blocks:
-- id: 019e3c4a-4b15-7e9d-80b0-f21fd22db715
+- id: 019ee02c-c75f-776b-80b0-826a0d74056b
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019e3c4a-4b15-7852-80b1-cc0cea57c15c
+- id: 019ee02c-c75f-7f83-80b1-70e36e4bad42
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019e3c4a-4b15-7d51-80b2-aafee4a1274c
+- id: 019ee02c-c75f-717e-80b2-476f5313caf4
   name: gdal.vector_identity
   inputs:
-  - block: 019e3c4a-4b15-7e9d-80b0-f21fd22db715
+  - block: 019ee02c-c75f-776b-80b0-826a0d74056b
     output: file
     as: a
-  - block: 019e3c4a-4b15-7852-80b1-cc0cea57c15c
+  - block: 019ee02c-c75f-7f83-80b1-70e36e4bad42
     output: file
     as: b
   args: {}

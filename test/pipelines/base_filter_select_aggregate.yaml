@@ -1,38 +1,38 @@
-id: 019e3c4a-4a72-71d0-801d-c49e7d5e9c5c
+id: 019ee02c-c72a-7fb6-801d-c118604266f5
 name: base_filter_select_aggregate
 version: "1.0"
 description: Filter category=A, select columns, aggregate by state
 blocks:
-- id: 019e3c4a-4a72-774d-8018-f5d337273a2e
+- id: 019ee02c-c72a-7878-8018-60e4dbdaff3c
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a72-7a73-8019-e2a0a8e08fa5
+- id: 019ee02c-c72a-7a38-8019-c268ad61365c
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a72-774d-8018-f5d337273a2e
+  - 019ee02c-c72a-7878-8018-60e4dbdaff3c
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a72-7ae4-801a-7f5a258ed18b
+- id: 019ee02c-c72a-703b-801a-af2e0c22d830
   name: base.filter_rows
   inputs:
-  - 019e3c4a-4a72-7a73-8019-e2a0a8e08fa5
+  - 019ee02c-c72a-7a38-8019-c268ad61365c
   args:
     expression: category = 'A'
-- id: 019e3c4a-4a72-7214-801b-1be09e15cf3f
+- id: 019ee02c-c72a-7b9b-801b-cb5e3b29ddf5
   name: base.select_columns
   inputs:
-  - 019e3c4a-4a72-7ae4-801a-7f5a258ed18b
+  - 019ee02c-c72a-703b-801a-af2e0c22d830
   args:
     columns: id,value,state
     mode: keep
-- id: 019e3c4a-4a72-7b9e-801c-be986737682a
+- id: 019ee02c-c72a-7fa1-801c-86af60a731a0
   name: base.aggregate
   inputs:
-  - 019e3c4a-4a72-7214-801b-1be09e15cf3f
+  - 019ee02c-c72a-7b9b-801b-cb5e3b29ddf5
   args:
     aggregations: '[{"column": "value", "function": "mean"}]'
     group_by: state

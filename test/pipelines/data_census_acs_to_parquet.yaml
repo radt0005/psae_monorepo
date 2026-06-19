@@ -1,9 +1,9 @@
-id: 019e3c4a-4b80-7920-810b-f13c1817ec76
+id: 019ee02c-c77c-7312-810b-8da4a765b2cd
 name: data_census_acs_to_parquet
 version: "1.0"
 description: '[NETWORK] Query Census ACS -> convert to Parquet'
 blocks:
-- id: 019e3c4a-4b80-7f3c-8109-e3e911ddc228
+- id: 019ee02c-c77c-7180-8109-5e6908837dd7
   name: data.census_acs
   inputs: []
   args:
@@ -12,10 +12,10 @@ blocks:
     table: B01003
     geography: state:*
     variables: ''
-- id: 019e3c4a-4b80-74a9-810a-6276ecb8c77e
+- id: 019ee02c-c77c-7a6b-810a-3fc730538432
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4b80-7f3c-8109-e3e911ddc228
+  - 019ee02c-c77c-7180-8109-5e6908837dd7
   args:
     delimiter: ','
     has_header: true

@@ -1,0 +1,6 @@
+id: sae.helloWorld
+version: 0.1.0
+kind: standard
+entrypoint: helloWorld
+inputs: {}
+outputs: {}

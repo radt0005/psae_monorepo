@@ -1,15 +1,15 @@
-id: 019e3c4a-4a8f-7743-802f-ebbf8c3d1f8a
+id: 019ee02c-c733-7df2-802f-c933574647a3
 name: base_map_list
 version: "1.0"
 description: Fan out over literal list of state codes and reduce
 blocks:
-- id: 019e3c4a-4a8f-7dd7-802d-1b7fe14d9ff3
+- id: 019ee02c-c733-7fdf-802d-9ae14f1afcf4
   name: base.map_list
   inputs: []
   args:
     values: '["NY","CA","MI"]'
-- id: 019e3c4a-4a8f-774d-802e-a835cb051ef1
+- id: 019ee02c-c733-7cac-802e-92fbda7cd34a
   name: base.reduce_collection
   inputs:
-  - 019e3c4a-4a8f-7dd7-802d-1b7fe14d9ff3
+  - 019ee02c-c733-7fdf-802d-9ae14f1afcf4
   args: {}

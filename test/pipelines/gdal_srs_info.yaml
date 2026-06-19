@@ -1,9 +1,9 @@
-id: 019e3c4a-4b2c-7afb-80c4-abeec983527f
+id: 019ee02c-c766-7ff1-80c4-b72b91e1b2b8
 name: gdal_srs_info
 version: "1.0"
 description: Report CRS metadata
 blocks:
-- id: 019e3c4a-4b2c-7783-80c3-0efadfcd46bd
+- id: 019ee02c-c766-7873-80c3-b291e5fc278e
   name: gdal.srs_info
   inputs: []
   args:

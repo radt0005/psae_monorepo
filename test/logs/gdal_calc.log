@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_calc (019e3c4a-4abb-7108-805b-73e9ab5f590c)
+Loaded pipeline: gdal_calc (019ee02c-c743-7bf6-805b-997dcb1fde70)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.calc running...
   [2/2] gdal.calc complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 7.202s
+Pipeline complete: 2 block(s) executed (1 cached) in 2.413s

@@ -1,18 +1,18 @@
-id: 019e3c4a-4b05-7f20-809c-adf418557fb2
+id: 019ee02c-c759-702f-809c-f9598148dc67
 name: gdal_vector_merge
 version: "1.0"
 description: Merge vector collection
 blocks:
-- id: 019e3c4a-4b05-70b1-809a-dd3351c015bf
+- id: 019ee02c-c759-7473-809a-f86eb02267ed
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors*.geojson
     format: GeoJSON
     max_items: 10
-- id: 019e3c4a-4b05-70a6-809b-d371242a98ec
+- id: 019ee02c-c759-7915-809b-810e6e67100c
   name: gdal.vector_merge
   inputs:
-  - 019e3c4a-4b05-70b1-809a-dd3351c015bf
+  - 019ee02c-c759-7473-809a-f86eb02267ed
   args:
     output_format: GeoJSON

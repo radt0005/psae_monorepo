@@ -1,25 +1,25 @@
-id: 019e3c4a-4a5e-71b4-800f-4413871805f4
+id: 019ee02c-c722-7c38-800f-520265f28441
 name: base_select_columns
 version: "1.0"
 description: Select id, name, value columns
 blocks:
-- id: 019e3c4a-4a5e-7a44-800c-04a9044da13a
+- id: 019ee02c-c722-7efa-800c-f4a13d1529e2
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a5e-733f-800d-b00bbd1193ad
+- id: 019ee02c-c722-78ac-800d-c82f6ce4a24b
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a5e-7a44-800c-04a9044da13a
+  - 019ee02c-c722-7efa-800c-f4a13d1529e2
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a5e-7594-800e-56bd2b7011d7
+- id: 019ee02c-c722-79bc-800e-02ee13a5ab3b
   name: base.select_columns
   inputs:
-  - 019e3c4a-4a5e-733f-800d-b00bbd1193ad
+  - 019ee02c-c722-78ac-800d-c82f6ce4a24b
   args:
     columns: id,name,value
     mode: keep

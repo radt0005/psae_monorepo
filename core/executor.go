@@ -450,6 +450,15 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 		}
 	case CollectionLanguageR:
 		bindTool("Rscript")
+		// R's startup wrapper (/usr/lib/R/bin/R) sources its ldpaths file,
+		// which on Debian/Ubuntu is a symlink into /etc (/usr/lib/R/etc/ldpaths
+		// -> /etc/R/ldpaths).  Without it, LD_LIBRARY_PATH is never set and the
+		// R executable fails to load shared libraries (e.g. libblas.so.3).
+		// Those libraries are themselves alternatives symlinks into
+		// /etc/alternatives, and the dynamic linker needs /etc/ld.so.cache to
+		// find multiarch library directories.  isolate binds /usr by default
+		// but not /etc, so bind it read-only here.
+		binds = append(binds, "--dir=/etc")
 		if home != "" {
 			binds = append(binds,
 				"--dir="+filepath.Join(home, ".local/share/R")+":maybe",

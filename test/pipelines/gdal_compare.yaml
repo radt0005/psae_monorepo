@@ -1,27 +1,27 @@
-id: 019e3c4a-4afe-7529-8096-f6b1fc998cf3
+id: 019ee02c-c757-733a-8096-90f0d1b4e5dc
 name: gdal_compare
 version: "1.0"
 description: Compare two rasters
 blocks:
-- id: 019e3c4a-4afd-763f-8093-4505786ea802
+- id: 019ee02c-c756-7384-8093-ae2c0e1f5897
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019e3c4a-4afd-7fff-8094-52dd45da4b65
+- id: 019ee02c-c756-770d-8094-3fb061872586
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster2.tif
     format: GeoTIFF
-- id: 019e3c4a-4afd-7092-8095-9bf72f27c31d
+- id: 019ee02c-c757-7ed1-8095-934cc2b05bc9
   name: gdal.compare
   inputs:
-  - block: 019e3c4a-4afd-763f-8093-4505786ea802
+  - block: 019ee02c-c756-7384-8093-ae2c0e1f5897
     output: file
     as: golden
-  - block: 019e3c4a-4afd-7fff-8094-52dd45da4b65
+  - block: 019ee02c-c756-770d-8094-3fb061872586
     output: file
     as: new
   args: {}

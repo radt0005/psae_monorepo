@@ -1,25 +1,25 @@
-id: 019e3c4a-4a54-7db5-8007-91c3e3c00644
+id: 019ee02c-c71e-7025-8007-3906934fcba7
 name: base_parquet_to_csv
 version: "1.0"
 description: CSV -> Parquet -> CSV roundtrip
 blocks:
-- id: 019e3c4a-4a54-7d69-8004-0e02a2bc2cb9
+- id: 019ee02c-c71e-767b-8004-5b9b3ac080f0
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019e3c4a-4a54-7ab8-8005-36db3635ea9b
+- id: 019ee02c-c71e-7bec-8005-7c23758d9574
   name: base.csv_to_parquet
   inputs:
-  - 019e3c4a-4a54-7d69-8004-0e02a2bc2cb9
+  - 019ee02c-c71e-767b-8004-5b9b3ac080f0
   args:
     delimiter: ','
     has_header: true
-- id: 019e3c4a-4a54-707d-8006-35a724345d54
+- id: 019ee02c-c71e-7840-8006-20d788a9126d
   name: base.parquet_to_csv
   inputs:
-  - 019e3c4a-4a54-7ab8-8005-36db3635ea9b
+  - 019ee02c-c71e-7bec-8005-7c23758d9574
   args:
     delimiter: ','
     include_header: true

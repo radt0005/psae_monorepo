@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_roughness (019e3c4a-4aee-7ca0-8087-a65bfe19f908)
+Loaded pipeline: gdal_roughness (019ee008-ab6d-7859-8087-0934c09ee2a5)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.roughness running...
   [2/2] gdal.roughness complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 5.904s
+Pipeline complete: 2 block(s) executed (1 cached) in 2.368s
