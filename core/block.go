@@ -341,7 +341,12 @@ func ResolveEntrypoint(entry BlockRegistryEntry) (string, []string, error) {
 			"-m", moduleSpec,
 		}, nil
 	case CollectionLanguageR:
-		return "Rscript", []string{entrypoint}, nil
+		// R block scripts are installed at <installedPath>/R/<entrypoint>.R.
+		// The entrypoint defaults to the block name (the filename stem), so we
+		// must expand it to the absolute script path — Rscript receives a bare
+		// name otherwise and fails to find the file in the work directory.
+		scriptPath := filepath.Join(entry.InstalledPath, "R", entrypoint+".R")
+		return "Rscript", []string{scriptPath}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported language: %s", entry.Language)
 	}

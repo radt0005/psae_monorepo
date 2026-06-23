@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +50,27 @@ func TestScaffoldPython(t *testing.T) {
 	assertFileExists(t, "pyproject.toml")
 	assertFileExists(t, filepath.Join("src", "test_collection", "__init__.py"))
 	assertDirExists(t, "blocks")
+
+	// The generated pyproject.toml must be a complete, buildable package so
+	// `spade install` can produce a distribution that `uv run -m` can import.
+	data, err := os.ReadFile("pyproject.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(data)
+	for _, want := range []string{
+		`name = "test-collection"`,
+		`requires-python = ">=3.12"`,
+		`"pyyaml"`,
+		"[build-system]",
+		`build-backend = "uv_build"`,
+		"[tool.uv.build-backend]",
+		`module-name = "test_collection"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("pyproject.toml missing %q\n---\n%s", want, got)
+		}
+	}
 }
 
 func TestScaffoldTypeScript(t *testing.T) {

@@ -1,18 +1,42 @@
 [project]
-name = "spade"
+# Distribution (PyPI) name. The import name stays "spade" via
+# [tool.uv.build-backend].module-name below, so block code keeps using
+# `import spade` regardless of this.
+name = "spade-block"
 version = "0.1.0"
 description = "Spade block authoring library for Python"
 readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
 authors = [
     { name = "krbundy", email = "kenneth.bundy@maine.edu" }
 ]
-requires-python = ">=3.12"
+keywords = ["spade", "blocks", "pipeline", "data"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 dependencies = [
     "pydantic>=2.12.5",
     "pyyaml>=6.0",
-    "pytest>=9.0.2",
+]
+
+[project.urls]
+Repository = "https://github.com/krbundy/psae_monorepo"
+Issues = "https://github.com/krbundy/psae_monorepo/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
 ]
 
 [build-system]
 requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "spade"

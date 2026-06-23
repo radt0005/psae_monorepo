@@ -276,3 +276,114 @@ func TestComputeContentHash(t *testing.T) {
 		t.Errorf("expected 64-char hash for dir, got %d chars", len(dirHash))
 	}
 }
+
+func TestResolveEntrypoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		entry    BlockRegistryEntry
+		wantExec string
+		wantArgs []string
+	}{
+		{
+			name: "go uses collection binary with block subcommand",
+			entry: BlockRegistryEntry{
+				Language:       "go",
+				CollectionName: "gdal",
+				BlockName:      "rasterize",
+				InstalledPath:  "/blocks/gdal",
+			},
+			wantExec: "/blocks/gdal/gdal",
+			wantArgs: []string{"rasterize"},
+		},
+		{
+			name: "rust uses collection binary with block subcommand",
+			entry: BlockRegistryEntry{
+				Language:       "rust",
+				CollectionName: "gdal",
+				BlockName:      "rasterize",
+				InstalledPath:  "/blocks/gdal",
+			},
+			wantExec: "/blocks/gdal/gdal",
+			wantArgs: []string{"rasterize"},
+		},
+		{
+			name: "typescript uses bundled binary with block subcommand",
+			entry: BlockRegistryEntry{
+				Language:       "typescript",
+				CollectionName: "gdal",
+				BlockName:      "rasterize",
+				InstalledPath:  "/blocks/gdal",
+			},
+			wantExec: "/blocks/gdal/gdal",
+			wantArgs: []string{"rasterize"},
+		},
+		{
+			name: "python defaults module to collection package",
+			entry: BlockRegistryEntry{
+				Language:       "python",
+				CollectionName: "my-coll",
+				BlockName:      "read",
+				InstalledPath:  "/blocks/my-coll",
+			},
+			wantExec: "uv",
+			wantArgs: []string{"run", "--project", "/blocks/my-coll", "--no-sync", "-m", "my_coll.read"},
+		},
+		{
+			name: "python passes qualified module through verbatim",
+			entry: BlockRegistryEntry{
+				Language:       "python",
+				CollectionName: "my-coll",
+				BlockName:      "read",
+				Entrypoint:     "pkg.sub.read",
+				InstalledPath:  "/blocks/my-coll",
+			},
+			wantExec: "uv",
+			wantArgs: []string{"run", "--project", "/blocks/my-coll", "--no-sync", "-m", "pkg.sub.read"},
+		},
+		{
+			name: "r expands block-name default to absolute script path",
+			entry: BlockRegistryEntry{
+				Language:      "r",
+				BlockName:     "hello_world",
+				InstalledPath: "/blocks/phils-code",
+			},
+			wantExec: "Rscript",
+			wantArgs: []string{"/blocks/phils-code/R/hello_world.R"},
+		},
+		{
+			name: "r honors explicit entrypoint",
+			entry: BlockRegistryEntry{
+				Language:      "r",
+				BlockName:     "hello_world",
+				Entrypoint:    "greet",
+				InstalledPath: "/blocks/phils-code",
+			},
+			wantExec: "Rscript",
+			wantArgs: []string{"/blocks/phils-code/R/greet.R"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exec, args, err := ResolveEntrypoint(tt.entry)
+			if err != nil {
+				t.Fatalf("ResolveEntrypoint returned error: %v", err)
+			}
+			if exec != tt.wantExec {
+				t.Errorf("exec = %q, want %q", exec, tt.wantExec)
+			}
+			if len(args) != len(tt.wantArgs) {
+				t.Fatalf("args = %v, want %v", args, tt.wantArgs)
+			}
+			for i := range args {
+				if args[i] != tt.wantArgs[i] {
+					t.Errorf("args[%d] = %q, want %q", i, args[i], tt.wantArgs[i])
+				}
+			}
+		})
+	}
+
+	if _, _, err := ResolveEntrypoint(BlockRegistryEntry{Language: "cobol"}); err == nil {
+		t.Error("expected error for unsupported language, got nil")
+	}
+}
