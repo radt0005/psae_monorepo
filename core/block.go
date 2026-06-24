@@ -341,7 +341,8 @@ func ResolveEntrypoint(entry BlockRegistryEntry) (string, []string, error) {
 			"-m", moduleSpec,
 		}, nil
 	case CollectionLanguageR:
-		return "Rscript", []string{entrypoint}, nil
+		scriptPath := filepath.Join(entry.InstalledPath, "R", entrypoint+".R")
+		return "Rscript", []string{scriptPath}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported language: %s", entry.Language)
 	}

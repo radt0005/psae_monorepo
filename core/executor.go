@@ -448,22 +448,72 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 		for _, p := range pythonEditableInstallPaths(entry.InstalledPath) {
 			binds = append(binds, "--dir="+p+":maybe")
 		}
+
 	case CollectionLanguageR:
 		bindTool("Rscript")
+		// R's runtime libraries live under /lib/ (not /usr/lib/). Bind the
+		// full /lib tree so the dynamic linker can find libR.so, libblas.so.3,
+		// and the other deps shown by `ldd /usr/lib/R/bin/exec/R`.
+		// Also bind the R installation tree for etc/, library/, modules/ etc.
+		// On Debian/Ubuntu, libblas.so.3 and similar are Debian alternatives
+		// symlinks that chain through /etc/alternatives/ before resolving to
+		// /usr/lib/<arch>/blas/libblas.so.3.10.0; bind both so the chain
+		// is fully traversable inside the sandbox.
+		binds = append(binds,
+			"--dir=/lib:maybe",
+			"--dir=/lib64:maybe",
+			"--dir=/usr/lib/R:maybe",
+			"--dir=/usr/lib/x86_64-linux-gnu:maybe",
+			"--dir=/usr/share/R:maybe",
+			"--dir=/etc/alternatives:maybe",
+			"--dir=/etc/R:maybe",
+		)
+		// Set LD_LIBRARY_PATH explicitly because ldpaths may be a broken
+		// symlink (points to /etc/R/ldpaths which may not exist), leaving
+		// the dynamic linker with no configured search path inside the sandbox.
+		ldLibPaths := []string{"/lib/R/lib"}
+		for _, d := range globDirs("/lib/*-linux-gnu") {
+			ldLibPaths = append(ldLibPaths, d)
+		}
+		binds = append(binds, "--env=LD_LIBRARY_PATH="+strings.Join(ldLibPaths, ":"))
 		if home != "" {
+			userRLibBase := filepath.Join(home, "R")
+		userRLibDirs := globDirs(filepath.Join(home, "R", "*-linux-gnu-library", "*"))
+		userRLib := userRLibBase
+		if len(userRLibDirs) > 0 {
+			userRLib = userRLibDirs[len(userRLibDirs)-1]
+		}
 			binds = append(binds,
 				"--dir="+filepath.Join(home, ".local/share/R")+":maybe",
-				"--dir="+filepath.Join(home, "R")+":maybe",
+				"--dir="+userRLib+":maybe",
+				// R_LIBS_USER is not set when the system Renviron is absent;
+				// set it explicitly so library() finds user-installed packages.
+				"--env=R_LIBS_USER="+userRLib,
 			)
 		}
-	case CollectionLanguageTypeScript:
-		bindTool("bun")
-		if home != "" {
-			binds = append(binds,
-				"--dir="+filepath.Join(home, ".bun")+":maybe",
+		case CollectionLanguageTypeScript:
+			bindTool("bun")
+			if home != "" {
+				binds = append(binds,
+					"--dir="+filepath.Join(home, ".bun")+":maybe",
 			)
 		}
 	}
 
 	return binds
 }
+// globDirs returns all existing directories matching the given glob pattern.
+func globDirs(pattern string) []string {
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil
+	}
+	var dirs []string
+	for _, m := range matches {
+		if info, err := os.Stat(m); err == nil && info.IsDir() {
+			dirs = append(dirs, m)
+		}
+	}
+	return dirs
+}
+
