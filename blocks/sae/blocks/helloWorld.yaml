@@ -1,6 +1,13 @@
 id: sae.helloWorld
 version: 0.1.0
 kind: standard
-entrypoint: helloWorld
-inputs: {}
-outputs: {}
+description: Minimal base-R block that writes a greeting; used to verify R execution.
+network: false
+inputs:
+  name:
+    type: string
+    description: Who to greet (defaults to "World").
+outputs:
+  greeting:
+    type: file
+    description: A text file containing the greeting.

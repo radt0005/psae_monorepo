@@ -450,19 +450,52 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 		}
 	case CollectionLanguageR:
 		bindTool("Rscript")
-		// R's startup wrapper (/usr/lib/R/bin/R) sources its ldpaths file,
-		// which on Debian/Ubuntu is a symlink into /etc (/usr/lib/R/etc/ldpaths
-		// -> /etc/R/ldpaths).  Without it, LD_LIBRARY_PATH is never set and the
-		// R executable fails to load shared libraries (e.g. libblas.so.3).
-		// Those libraries are themselves alternatives symlinks into
-		// /etc/alternatives, and the dynamic linker needs /etc/ld.so.cache to
-		// find multiarch library directories.  isolate binds /usr by default
-		// but not /etc, so bind it read-only here.
-		binds = append(binds, "--dir=/etc")
+		// R's startup wrapper (<RHOME>/bin/R) sources its ldpaths file to set
+		// LD_LIBRARY_PATH before loading libR.so / libblas.so.3.  On
+		// Debian/Ubuntu that file is a symlink into /etc (<RHOME>/etc/ldpaths
+		// -> /etc/R/ldpaths) and on some installs it is missing entirely,
+		// leaving LD_LIBRARY_PATH unset so the dynamic linker cannot find R's
+		// shared libraries.  Rather than depend on it being sourced, we bind
+		// the directories R needs and set LD_LIBRARY_PATH explicitly below.
+		//
+		// Bind /etc (the alternatives symlinks for libblas et al., the
+		// /etc/ld.so.cache the linker consults, and R's config under /etc/R),
+		// plus /lib and /lib64 — isolate exposes /usr by default but not these,
+		// and on merged-/usr systems libR.so resolves via /lib/<arch>.
+		binds = append(binds,
+			"--dir=/etc",
+			"--dir=/lib:maybe",
+			"--dir=/lib64:maybe",
+		)
+		// Build LD_LIBRARY_PATH from <RHOME>/lib plus every multiarch library
+		// directory, mirroring what ldpaths sets but discovered by glob so this
+		// works on x86_64 and arm64 without hardcoding the architecture.  The
+		// RHOME tree is bound explicitly so user-installed R (e.g. via rig or
+		// /opt, outside the default /usr mount) is also fully visible.
+		ldLibPaths := []string{}
+		if rhome := rHome(); rhome != "" {
+			binds = append(binds, "--dir="+rhome+":maybe")
+			ldLibPaths = append(ldLibPaths, filepath.Join(rhome, "lib"))
+		}
+		ldLibPaths = append(ldLibPaths, globDirs("/usr/lib/*-linux-gnu")...)
+		ldLibPaths = append(ldLibPaths, globDirs("/lib/*-linux-gnu")...)
+		if len(ldLibPaths) > 0 {
+			binds = append(binds, "--env=LD_LIBRARY_PATH="+strings.Join(ldLibPaths, ":"))
+		}
 		if home != "" {
+			// R_LIBS_USER is the versioned per-user library
+			// (~/R/<arch>-library/<x.y>); discover it by glob so the
+			// architecture and R version are not hardcoded, falling back to
+			// ~/R.  Setting it explicitly lets library() find user-installed
+			// packages when the system Renviron is absent inside the sandbox.
+			userRLib := filepath.Join(home, "R")
+			if dirs := globDirs(filepath.Join(home, "R", "*-library", "*")); len(dirs) > 0 {
+				userRLib = dirs[len(dirs)-1]
+			}
 			binds = append(binds,
 				"--dir="+filepath.Join(home, ".local/share/R")+":maybe",
-				"--dir="+filepath.Join(home, "R")+":maybe",
+				"--dir="+userRLib+":maybe",
+				"--env=R_LIBS_USER="+userRLib,
 			)
 		}
 	case CollectionLanguageTypeScript:
@@ -475,4 +508,33 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 	}
 
 	return binds
+}
+
+// globDirs returns the existing directories matching a glob pattern. It is used
+// to discover architecture- and version-specific paths (multiarch library
+// directories, versioned R user libraries) without hardcoding them.
+func globDirs(pattern string) []string {
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil
+	}
+	var dirs []string
+	for _, m := range matches {
+		if info, err := os.Stat(m); err == nil && info.IsDir() {
+			dirs = append(dirs, m)
+		}
+	}
+	return dirs
+}
+
+// rHome returns R's home directory (the value of `R RHOME`), or "" if R is not
+// found. This locates the R runtime regardless of whether R is system-installed
+// under /usr or user-installed elsewhere (rig, /opt, conda), so its lib/ tree
+// can be bound and added to LD_LIBRARY_PATH inside the sandbox.
+func rHome() string {
+	out, err := exec.Command("R", "RHOME").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
