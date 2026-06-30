@@ -148,6 +148,15 @@ BLOCK_DEFAULTS: dict[str, dict[str, object]] = {
     "gdal.map_raster_tiles":   {},
     "gdal.reduce_mosaic":      {"resampling": "nearest"},
     "gdal.reduce_vrt":         {"resolution": "highest"},
+    # ---- stats ----
+    "stats.summary":           {"columns": ""},
+    "stats.correlation":       {"method": "pearson", "columns": ""},
+    "stats.frequency":         {"column": "", "by": ""},
+    "stats.t_test":            {"value_column": "", "group_column": "", "mu": 0,
+                                "alternative": "two.sided", "paired": False,
+                                "conf_level": 0.95},
+    "stats.anova":             {"value_column": "", "group_column": ""},
+    "stats.chisq_test":        {"column": "", "by": "", "correct": True},
 }
 
 
@@ -274,6 +283,27 @@ def create_fixtures():
         [
             ["5", "eps3", "50.0", "Z", "WA"],
             ["6", "zeta3", "60.0", "Z", "OR"],
+        ],
+    )
+
+    # Stats fixture: two numeric columns (x, y) for descriptive/correlation
+    # blocks, a two-level grouping column (group) for two-sample t-tests and
+    # ANOVA, and a second categorical column (region) for frequency and
+    # chi-squared independence tests.
+    _csv(
+        "stats_data.csv",
+        ["group", "region", "x", "y"],
+        [
+            ["A", "east", "1.0", "10.2"],
+            ["A", "west", "2.1", "11.8"],
+            ["A", "east", "1.7", "10.9"],
+            ["A", "west", "2.4", "12.5"],
+            ["B", "east", "3.2", "9.4"],
+            ["B", "west", "4.1", "8.9"],
+            ["B", "east", "3.8", "9.1"],
+            ["B", "west", "4.6", "8.2"],
+            ["A", "east", "1.3", "10.5"],
+            ["B", "west", "3.9", "8.7"],
         ],
     )
 
@@ -440,6 +470,7 @@ def generate_pipelines():
     generated += _base_pipelines()
     generated += _gdal_pipelines()
     generated += _data_pipelines()
+    generated += _stats_pipelines()
 
     print(f"Generated {len(generated)} pipelines in {PIPELINES}")
     return generated
@@ -1183,6 +1214,50 @@ def _data_pipelines() -> list[str]:
         "[NETWORK] Download Natural Earth raster -> GDAL info",
         [ne_r, info],
     )))
+
+    return paths
+
+
+# ---- Stats collection pipelines (R) ----
+
+def _stats_pipelines() -> list[str]:
+    paths = []
+    fp = fixture_path
+    csv = fp("stats_data.csv")
+
+    def with_data(name: str, args: dict) -> dict:
+        """Read the stats fixture CSV, then run a stats block over it."""
+        read = block("data.read", args={"uri": csv, "format": "CSV"})
+        blk = block(name, inputs=[bare(read)], args=args)
+        return pipeline(
+            name.replace(".", "_"),
+            _read_desc(ROOT.parent / "blocks" / "stats" / "blocks"
+                       / f"{name.split('.')[1]}.yaml"),
+            [read, blk],
+        )
+
+    # 1. summary — descriptive statistics over the numeric columns
+    paths.append(save(with_data("stats.summary", {"columns": "x,y"})))
+
+    # 2. correlation — pearson correlation matrix of x and y
+    paths.append(save(with_data(
+        "stats.correlation", {"method": "pearson", "columns": "x,y"})))
+
+    # 3. frequency — contingency table of group x region
+    paths.append(save(with_data(
+        "stats.frequency", {"column": "group", "by": "region"})))
+
+    # 4. t_test — two-sample t-test of x across the two groups
+    paths.append(save(with_data(
+        "stats.t_test", {"value_column": "x", "group_column": "group"})))
+
+    # 5. anova — one-way ANOVA of x across group
+    paths.append(save(with_data(
+        "stats.anova", {"value_column": "x", "group_column": "group"})))
+
+    # 6. chisq_test — independence of group and region
+    paths.append(save(with_data(
+        "stats.chisq_test", {"column": "group", "by": "region"})))
 
     return paths
 

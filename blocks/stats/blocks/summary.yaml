@@ -1,0 +1,19 @@
+id: stats.summary
+version: 0.1.0
+kind: standard
+network: false
+description: Compute per-column descriptive statistics (n, mean, sd, min, quartiles, max, missing) for the numeric columns of a tabular dataset.
+
+inputs:
+  data:
+    type: file
+    format: CSV
+    description: Input table to summarize.
+  columns:
+    type: string
+    description: Optional comma-separated list of numeric columns to summarize. If empty, all numeric columns are used.
+
+outputs:
+  result:
+    type: json
+    description: Per-column descriptive statistics keyed by column name.

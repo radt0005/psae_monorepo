@@ -1,0 +1,25 @@
+id: stats.chisq_test
+version: 0.1.0
+kind: standard
+network: false
+description: Pearson's chi-squared test of independence between two categorical columns.
+
+inputs:
+  data:
+    type: file
+    format: CSV
+    description: Input table containing the two categorical columns.
+  column:
+    type: string
+    description: Name of the first categorical column.
+  by:
+    type: string
+    description: Name of the second categorical column to test for independence against the first.
+  correct:
+    type: boolean
+    description: Whether to apply Yates' continuity correction (only affects 2x2 tables). Defaults to true.
+
+outputs:
+  result:
+    type: json
+    description: Test results - chi-squared statistic, degrees of freedom, p-value, and the observed contingency table.
