@@ -2,7 +2,7 @@
 # Distribution (PyPI) name. The import name stays "spade" via
 # [tool.uv.build-backend].module-name below, so block code keeps using
 # `import spade` regardless of this.
-name = "spade-block"
+name = "spade"
 version = "0.1.0"
 description = "Spade block authoring library for Python"
 readme = "README.md"

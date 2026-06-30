@@ -1,6 +1,5 @@
 # Block: helloWorld
-#
-# Minimal R block that verifies the spade R runtime library works end-to-end
+## Minimal R block that verifies the spade R runtime library works end-to-end
 # inside the sandbox: `library(spade)` loads, scalar params are passed from
 # params.yaml, and a returned File is collected into outputs/. The collection's
 # setup.R installs the spade package so `library(spade)` resolves at runtime.
