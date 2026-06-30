@@ -1,0 +1,18 @@
+id: 019f18ed-0fec-7e82-8114-1f3a2f4fc398
+name: stats_correlation
+version: "1.0"
+description: Compute a correlation matrix over the numeric columns of a tabular dataset.
+blocks:
+- id: 019f18ed-0feb-73d3-8112-73ab01770d2b
+  name: data.read
+  inputs: []
+  args:
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
+    format: CSV
+- id: 019f18ed-0feb-7537-8113-e141b7f75c11
+  name: stats.correlation
+  inputs:
+  - 019f18ed-0feb-73d3-8112-73ab01770d2b
+  args:
+    method: pearson
+    columns: x,y

@@ -1,0 +1,22 @@
+id: stats.frequency
+version: 0.1.0
+kind: standard
+network: false
+description: Build a frequency table for a categorical column, optionally cross-tabulated by a second column.
+
+inputs:
+  data:
+    type: file
+    format: CSV
+    description: Input table containing the column(s) to tabulate.
+  column:
+    type: string
+    description: Name of the categorical column to count.
+  by:
+    type: string
+    description: Optional second column to cross-tabulate against (produces a contingency table). If empty, a one-way frequency table is produced.
+
+outputs:
+  result:
+    type: json
+    description: Frequency counts. One-way tables include counts and proportions; cross-tabs are nested by the first column then the second.

@@ -1,0 +1,22 @@
+id: stats.correlation
+version: 0.1.0
+kind: standard
+network: false
+description: Compute a correlation matrix over the numeric columns of a tabular dataset.
+
+inputs:
+  data:
+    type: file
+    format: CSV
+    description: Input table whose numeric columns are correlated.
+  method:
+    type: string
+    description: Correlation method - one of "pearson", "spearman", or "kendall". Defaults to "pearson".
+  columns:
+    type: string
+    description: Optional comma-separated list of numeric columns to include. If empty, all numeric columns are used.
+
+outputs:
+  result:
+    type: json
+    description: Correlation matrix as a nested object plus the method and column order used.

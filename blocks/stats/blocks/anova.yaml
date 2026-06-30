@@ -1,0 +1,22 @@
+id: stats.anova
+version: 0.1.0
+kind: standard
+network: false
+description: One-way analysis of variance (ANOVA) of a numeric response across the levels of a grouping column.
+
+inputs:
+  data:
+    type: file
+    format: CSV
+    description: Input table containing the response and grouping columns.
+  value_column:
+    type: string
+    description: Name of the numeric response column.
+  group_column:
+    type: string
+    description: Name of the grouping (factor) column defining the groups to compare.
+
+outputs:
+  result:
+    type: json
+    description: ANOVA table - degrees of freedom, sums of squares, mean squares, F statistic, and p-value for the group term and residuals.
