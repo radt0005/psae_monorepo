@@ -14,7 +14,7 @@
 #      `blocks` table the web UI reads for its block picker / connection
 #      resolver (web_ui/server/db/schema/blocks.ts).
 #
-# Scope: base + data (both Rust).  GDAL (Python) and sae (R) are a later pass.
+# Scope: base + data (Rust), gdal (Python), sae + stats (R).
 #
 # The build context must be the *monorepo root* so this image can reach
 # core/, cli/, blocks/, and seed/ (cli/go.mod has `replace core => ../core`).
@@ -42,8 +42,12 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
 FROM rust:1-bookworm AS seed
 ARG DEBIAN_FRONTEND=noninteractive
 
+# postgresql-client + curl for the tooling below; r-base / r-base-dev provide
+# Rscript and the compilers/headers (gcc, g++, gfortran) needed to build the R
+# collections' package library (spade + jsonlite + yaml) from source in seed.sh.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         postgresql-client ca-certificates curl \
+        r-base r-base-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # yq (mikefarah) — YAML → JSON for the manifest mirror step.
@@ -64,6 +68,9 @@ COPY --from=cli-build /out/spade /usr/local/bin/spade
 # at /seed/libs/<lang> so the `../../` from /seed/blocks/<c> resolves here.
 COPY libs/rust /seed/libs/rust
 COPY libs/python /seed/libs/python
+# R collections install the spade authoring library from source; setup.R
+# resolves it via `../../libs/R` relative to the collection root.
+COPY libs/R /seed/libs/R
 
 # Block collection sources.  Pre-compiling the Rust collections here (at
 # image-build time) means the runtime `spade install` finds an up-to-date
@@ -78,6 +85,12 @@ RUN cargo build --release --manifest-path /seed/blocks/base/Cargo.toml \
 # (its venv carries absolute paths that must match the worker's mount), so it
 # is only staged here for the seed script to copy onto the volume.
 COPY blocks/gdal /seed/blocks/gdal
+
+# R (sae, stats) collection sources.  Their setup.R installs the package
+# library into R_LIBS_USER on the shared volume at runtime (see seed.sh), so
+# these are only staged here for the seed script to `spade install`.
+COPY blocks/sae /seed/blocks/sae
+COPY blocks/stats /seed/blocks/stats
 
 COPY seed/seed.sh /usr/local/bin/seed.sh
 RUN chmod +x /usr/local/bin/seed.sh

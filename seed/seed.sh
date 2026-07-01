@@ -32,6 +32,16 @@ export UV_PYTHON_INSTALL_DIR="$SPADE_DIR/uv/python"
 export UV_CACHE_DIR="$SPADE_DIR/uv/cache"
 PY_SRC="$SPADE_DIR/src"   # holds blocks/<c> + libs/python on the volume
 
+# R collections install their package library (spade + jsonlite + yaml) via
+# setup.R.  The worker's isolate sandbox derives R_LIBS_USER from $HOME
+# (core/executor.go, languageSandboxBinds: it uses $HOME/R when no versioned
+# arch-library exists), so the library must live on the shared volume under a
+# $HOME the worker also uses.  We install into $SPADE_DIR/rhome/R here and the
+# worker service sets HOME=$SPADE_DIR/rhome in docker-compose.yml so its
+# executor falls back to that exact path.
+R_COLLECTIONS=(sae stats)
+R_HOME_DIR="$SPADE_DIR/rhome"
+
 mkdir -p "$SPADE_DIR" "$UV_PYTHON_INSTALL_DIR" "$UV_CACHE_DIR"
 
 echo "==> Installing Rust collections into worker volume ($SPADE_DIR)"
@@ -51,8 +61,20 @@ for c in "${PY_COLLECTIONS[@]}"; do
   spade install "$PY_SRC/blocks/$c"
 done
 
+echo "==> Installing R collections into worker volume ($SPADE_DIR)"
+# setup.R reads R_LIBS_USER and installs there; HOME must match so the worker's
+# executor resolves the same library path.  First run compiles spade + deps from
+# source (a few minutes); the volume persists so re-runs skip the compiled deps.
+export HOME="$R_HOME_DIR"
+export R_LIBS_USER="$R_HOME_DIR/R"
+mkdir -p "$R_LIBS_USER"
+for c in "${R_COLLECTIONS[@]}"; do
+  echo "--- spade install $c (r; first run compiles spade + deps)"
+  spade install "/seed/blocks/$c"
+done
+
 echo "==> Mirroring block manifests into Postgres (blocks table)"
-for c in "${RUST_COLLECTIONS[@]}" "${PY_COLLECTIONS[@]}"; do
+for c in "${RUST_COLLECTIONS[@]}" "${PY_COLLECTIONS[@]}" "${R_COLLECTIONS[@]}"; do
   for f in "/seed/blocks/$c/blocks/"*.yaml; do
     [ -e "$f" ] || continue
     id=$(yq '.id' "$f")
@@ -78,5 +100,5 @@ SQL
   done
 done
 
-total=$(( ${#RUST_COLLECTIONS[@]} + ${#PY_COLLECTIONS[@]} ))
+total=$(( ${#RUST_COLLECTIONS[@]} + ${#PY_COLLECTIONS[@]} + ${#R_COLLECTIONS[@]} ))
 echo "==> Seed complete: $total collection(s) installed and mirrored."

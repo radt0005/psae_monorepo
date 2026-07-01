@@ -83,9 +83,10 @@ services:
       retries: 10
 
   # Local stand-in for the cloud Plugin Registry (spec/registry.md).  Installs
-  # the in-repo Rust collections (base + data) into the shared worker volume
-  # AND mirrors their manifests into the Postgres `blocks` table the editor
-  # reads.  One-shot; idempotent; safe to re-run.  See seed/Dockerfile.
+  # the in-repo collections — base + data (Rust), gdal (Python), sae + stats
+  # (R) — into the shared worker volume AND mirrors their manifests into the
+  # Postgres `blocks` table the editor reads.  One-shot; idempotent; safe to
+  # re-run.  See seed/Dockerfile.
   seed-blocks:
     build:
       context: .
@@ -284,6 +285,12 @@ services:
       # shared volume; the worker's sandbox binds + passes this so a venv built
       # in the seed container resolves here.  Must match seed/seed.sh.
       UV_PYTHON_INSTALL_DIR: /var/spade/uv/python
+      # R (sae, stats) blocks: the seed installs the spade R library plus
+      # jsonlite/yaml into $HOME/R on the shared volume.  The worker's isolate
+      # sandbox derives R_LIBS_USER from $HOME (core/executor.go,
+      # languageSandboxBinds), so HOME must point at the same volume path the
+      # seed used ($SPADE_DIR/rhome in seed/seed.sh) for library() to resolve.
+      HOME: /var/spade/rhome
       # Uncomment to skip the isolate startup probe (no real block execution):
       # SPADE_SKIP_ISOLATE_CHECK: "1"
     volumes:
