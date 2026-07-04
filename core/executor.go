@@ -229,6 +229,8 @@ func RunBlockSubprocess(execPath string, args []string, workDir string, manifest
 		// sandbox must see it too; the matching --dir bind is added by
 		// languageSandboxBinds.
 		"--env=UV_PYTHON_INSTALL_DIR",
+		"--env=FIADB_USER",
+		"--env=FIADB_PASSWORD",
 	)
 
 	// Redirect caches into the work directory.  The sandbox uid typically
