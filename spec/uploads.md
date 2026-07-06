@@ -39,9 +39,9 @@ An uploaded file is a first-class, persistent **asset**, not a per-pipeline atta
 - **Metadata** lives in the managed PostgreSQL cluster (`hosting.md` §6.1): asset id, owner (Better Auth identity), display name, declared spade type, content hash, object key, size, created timestamp.
 - **Bytes** live in the `spade-user-data/` Spaces bucket (`hosting.md` §6.2).
 
-Because assets are content-addressed, **sharing requires no re-upload**: sharing an asset is granting another user a reference to the same asset id, and re-using a file across pipelines re-uses the same object key.  The worker-local input cache (`worker.md` Storage Model) de-duplicates fetches by content hash, so a shared reference dataset is fetched once per worker.
+The **object key is owner-namespaced and content-addressed**: `<owner_id>/<content_hash>`.  This does double duty.  Content addressing means re-using a file across pipelines re-uses the same object key, and the worker-local input cache (`worker.md` Storage Model) de-duplicates fetches by content hash so a reference dataset is fetched once per worker.  The owner prefix is the authorization anchor for URL minting (§6): the worker can confirm a pipeline may read an object by matching the key prefix against the pipeline owner, without a catalog round-trip.
 
-Assets are created through the web UI (§8) and, later, a CLI command (`spade data upload`, see §7 and `cli.md`).  Ownership and sharing semantics beyond "owner may read and reference" are out of scope for this document.
+Assets are created through the web UI (§8) and, later, a CLI command (`spade data upload`, see §7 and `cli.md`).  Ownership and sharing semantics beyond "owner may read and reference" are out of scope for this document; cross-user sharing in particular breaks the owner-prefix authorization shortcut and requires catalog-backed grants (§11).
 
 ---
 
@@ -97,14 +97,14 @@ The block has **no source block inputs** (`inputs: []` in the pipeline); the ass
 
 ## 6. Pre-Signed URL Provisioning
 
-The pipeline stores a **stable asset reference**, never a URL (pre-signed URLs are short-lived and must not be persisted).  The URL is minted at execution time:
+The pipeline stores a **stable asset reference** (the object key), never a URL (pre-signed URLs are short-lived and must not be persisted).  The URL is minted at execution time:
 
-1. The pipeline block entry names an allow-listed upload block and carries the asset id in `args` (§7).
-2. At dispatch, the **worker** recognizes the block name against its trusted-upload allow-list.  It resolves the asset id to its object key via the user-data catalog, then mints a short-TTL pre-signed GET URL against `spade-user-data/`.  The worker already holds Spaces credentials (`hosting.md` §4.3), so no new credential distribution is required.
+1. The pipeline block entry names an allow-listed upload block and carries the asset's `object_key` (and `asset_id` for provenance) in `args` (§7).
+2. At dispatch, the **worker** recognizes the block name against its trusted-upload allow-list.  It **authorizes** the request by confirming the `object_key` is prefixed with the pipeline owner's id (§3), then mints a short-TTL pre-signed GET URL against `spade-user-data/`.  The worker already holds Spaces credentials (`hosting.md` §4.3), so no new credential distribution is required, and because the key travels in the args the worker needs no catalog (Postgres) round-trip.
 3. The worker writes the URL into the invocation's `params.yaml` (as the `url` argument) before starting the sandbox.
 4. The block GETs the URL and writes the output.
 
-The **scheduler stays storage-agnostic** -- it does not mint URLs or hold Spaces credentials.  A non-allow-listed block never receives a URL, so a third-party block cannot obtain one by declaring the same argument shape.
+The **scheduler stays storage-agnostic** -- it does not mint URLs or hold Spaces credentials.  Two things gate the capability: a non-allow-listed block never receives a URL (so a third-party block cannot obtain one by imitating the argument shape), and the owner-prefix check prevents an allow-listed block from presigning another user's object.
 
 Because the URL is provisioned per invocation and expires quickly, at-least-once job redelivery (`worker.md`) is safe: a redelivered job mints a fresh URL.
 
@@ -112,7 +112,7 @@ Because the URL is provisioned per invocation and expires quickly, at-least-once
 
 ## 7. Pipeline Representation
 
-An upload appears as an ordinary source block.  The pipeline stores the asset id; the worker turns it into a URL at dispatch (§6):
+An upload appears as an ordinary source block.  The pipeline stores the object key (which the worker presigns at dispatch, §6) plus the asset id for provenance and UI lookups:
 
 ```yaml
 blocks:
@@ -121,6 +121,7 @@ blocks:
     inputs: []
     args:
       asset_id: 019cf4bc-aaaa-7000-0000-000000000000
+      object_key: 019cf4bc-owner-.../a1b2c3...      # <owner_id>/<content_hash>
 
   - id: 019cf4bc-2222-7000-0000-000000000000
     name: raster.reproject
@@ -161,9 +162,9 @@ This mirrors the local/cloud split in secrets management (`secrets.md`): the pip
 ## 10. End-to-End Flow (cloud)
 
 1. The user uploads `boundary.tif` in the web UI, tags it `raster` (defaulted from `.tif`), and the platform stores metadata in PostgreSQL and bytes in `spade-user-data/`, returning an asset id.
-2. The user drops an Upload node, selects the asset, and connects it to `raster.reproject`.  The UI serializes a `cloud.upload_raster` block with that `asset_id`.
+2. The user drops an Upload node, selects the asset, and connects it to `raster.reproject`.  The UI serializes a `cloud.upload_raster` block with the asset's `asset_id` and `object_key`.
 3. On run, the scheduler dispatches the `cloud.upload_raster` invocation.
-4. The worker recognizes the allow-listed block, resolves `asset_id` to the object key, mints a short-TTL pre-signed GET URL, and writes it into `params.yaml`.
+4. The worker recognizes the allow-listed block, confirms the `object_key` is owned by the pipeline owner, mints a short-TTL pre-signed GET URL, and writes it into `params.yaml`.
 5. The block GETs the URL and writes `outputs/raster/boundary.tif`.
 6. `raster.reproject` consumes it as a normal `RasterFile` input via the worker-local cache.
 
@@ -173,6 +174,6 @@ This mirrors the local/cloud split in secrets management (`secrets.md`): the pip
 
 - Large-file / resumable upload transport in the web UI and CLI.
 - Retention and lifecycle policy for `spade-user-data/` (cleanup of unreferenced assets).
-- Cross-user sharing ACLs beyond the owner-read model of §3.
+- Cross-user sharing ACLs beyond the owner-read model of §3.  Sharing breaks the owner-prefix authorization shortcut (§6) and requires catalog-backed read grants (and either a catalog check at mint time or scheduler-side minting).
 - Format conversion or validation on ingest -- the upload block passes bytes through; the declared type is the user's assertion.
 - Additional `cloud` collection blocks beyond uploads.
