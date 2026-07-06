@@ -50,3 +50,28 @@ func TestBuildJobRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip changed invocation: %+v", got)
 	}
 }
+
+func TestBuildJobCarriesPinnedCollectionVersion(t *testing.T) {
+	a := uuid.Must(uuid.NewV7())
+	pipeline := core.Pipeline{
+		Id:   uuid.Must(uuid.NewV7()),
+		Name: "tp",
+		Blocks: []core.PipelineBlock{
+			{Id: a, Name: "src", Version: "2.3.1", Args: map[string]any{}},
+		},
+	}
+	inv := core.BlockInvocation{Id: a, BlockId: "coll.src", PipelineId: pipeline.Id, Arguments: map[string]any{}}
+
+	// The owning block's pinned version reaches the assignment (Option A).
+	job := BuildJobForInvocation(inv, pipeline, nil, "")
+	if job.Assignment.CollectionVersion != "2.3.1" {
+		t.Fatalf("CollectionVersion = %q, want 2.3.1", job.Assignment.CollectionVersion)
+	}
+
+	// Back-compat: an unpinned block yields an empty version (legacy lookup).
+	pipeline.Blocks[0].Version = ""
+	job = BuildJobForInvocation(inv, pipeline, nil, "")
+	if job.Assignment.CollectionVersion != "" {
+		t.Fatalf("unpinned block must leave CollectionVersion empty, got %q", job.Assignment.CollectionVersion)
+	}
+}

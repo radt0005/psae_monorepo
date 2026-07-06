@@ -1,0 +1,9 @@
+Package: sae.collection
+Title: Spade sae block collection
+Version: 0.1.0
+Description: Dependency manifest for the sae Spade block collection. Lists the
+    CRAN packages the handlers use directly; the local spade runtime library is
+    installed separately (see the collection reference) until it is published.
+Imports:
+    yaml
+Encoding: UTF-8

@@ -25,20 +25,21 @@ type Builder interface {
 	Build(ctx context.Context, srcDir, collection, version string) (artifactDir string, err error)
 }
 
-// BuilderFor returns the Builder for a language, or an error for unimplemented
-// languages. Only Go is a real builder today; the rest are stubs.
+// BuilderFor returns the Builder for a language, or an error for an unsupported
+// language. All five supported languages (Go, Rust, TypeScript/Bun, Python, R)
+// have real builders.
 func BuilderFor(lang string) (Builder, error) {
 	switch core.CollectionLanguage(lang) {
 	case core.CollectionLanguageGo:
 		return GoBuilder{}, nil
 	case core.CollectionLanguageRust:
-		return stubBuilder{lang: "rust"}, nil
-	case core.CollectionLanguagePython:
-		return stubBuilder{lang: "python"}, nil
+		return RustBuilder{}, nil
 	case core.CollectionLanguageTypeScript:
-		return stubBuilder{lang: "typescript"}, nil
+		return BunBuilder{}, nil
+	case core.CollectionLanguagePython:
+		return PythonBuilder{}, nil
 	case core.CollectionLanguageR:
-		return stubBuilder{lang: "r"}, nil
+		return RBuilder{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported language %q", lang)
 	}
@@ -74,14 +75,6 @@ func (GoBuilder) Build(ctx context.Context, srcDir, collection, version string) 
 		return "", err
 	}
 	return artifactDir, nil
-}
-
-// stubBuilder returns a clear "unimplemented" error for languages whose real
-// builders are not yet written.
-type stubBuilder struct{ lang string }
-
-func (s stubBuilder) Build(ctx context.Context, srcDir, collection, version string) (string, error) {
-	return "", fmt.Errorf("builder for %s is not yet implemented", s.lang)
 }
 
 // copyBlocksDir copies <src>/blocks/*.yaml into <dst>/blocks/.

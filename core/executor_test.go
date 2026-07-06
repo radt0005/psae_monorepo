@@ -3,6 +3,7 @@ package core
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -166,5 +167,43 @@ func TestInvocationID(t *testing.T) {
 	expected := id.String() + ".7"
 	if inv.InvocationID() != expected {
 		t.Errorf("expected %s, got %s", expected, inv.InvocationID())
+	}
+}
+
+func TestLanguageSandboxBindsRLibs(t *testing.T) {
+	hasBind := func(binds []string, want string) bool {
+		for _, b := range binds {
+			if b == want {
+				return true
+			}
+		}
+		return false
+	}
+
+	// With a shipped library, R_LIBS points at <InstalledPath>/renv/library so
+	// library(<dep>) resolves the artifact's packages inside the sandbox (C2).
+	installed := t.TempDir()
+	artifactLib := filepath.Join(installed, "renv", "library")
+	if err := os.MkdirAll(artifactLib, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	binds := languageSandboxBinds(BlockRegistryEntry{
+		Language:      string(CollectionLanguageR),
+		InstalledPath: installed,
+	})
+	if !hasBind(binds, "--env=R_LIBS="+artifactLib) {
+		t.Errorf("expected R_LIBS bind for %s; got %v", artifactLib, binds)
+	}
+
+	// Base-R collections without a shipped library get no R_LIBS binding. (Note
+	// R_LIBS_USER may still be set; the "R_LIBS=" prefix excludes it.)
+	bare := languageSandboxBinds(BlockRegistryEntry{
+		Language:      string(CollectionLanguageR),
+		InstalledPath: t.TempDir(),
+	})
+	for _, b := range bare {
+		if strings.HasPrefix(b, "--env=R_LIBS=") {
+			t.Errorf("unexpected R_LIBS bind when no library shipped: %s", b)
+		}
 	}
 }

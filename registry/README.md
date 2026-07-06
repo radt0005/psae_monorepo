@@ -41,8 +41,15 @@ Key decisions (confirmed with the project owner; some refine the spec):
   `.sig`. The private key never reaches the untrusted build container.
 - **Screening is a pluggable no-op** today (`builder.NoopScreener`), to become an
   AI agent later.
-- **One real reference builder (Go).** Python/R/Rust/TS builders are interface
-  stubs that return "unimplemented".
+- **All five language builders are real** (Go, Rust, TS/Bun, Python, R) —
+  see `BUILDERS_IMPLEMENTATION_PLAN.md`. Compiled languages package a single
+  binary + `blocks/*.yaml`; Python ships a relocatable non-editable `.venv`;
+  R ships an artifact-local library (pak from `DESCRIPTION`/`pkg.lock`, or the
+  `setup.R` fallback). Two
+  cross-component follow-ups remain (not builder work): Python collections must
+  reference `spade` as a published package rather than a monorepo path source to
+  be publishable standalone, and the worker's `core/executor.go` must put a
+  registry-built R artifact's shipped library on R's search path.
 
 ```
 publish ─▶ registryd ─▶ build queue ─▶ dispatcher ─▶ docker run builder-<lang>
@@ -166,6 +173,8 @@ rebuildable).
 
 ## Out of scope (per registry.md §12)
 
-Real screening pipeline (AI agent); real Python/R/Rust/TS builders; KMS-backed
-keys; the scheduler/queue fleet-flush that pairs with recall; the local block
-index schema; the CLI command surface.
+Real screening pipeline (AI agent); KMS-backed keys; the scheduler/queue
+fleet-flush that pairs with recall; the local block index schema; the CLI
+command surface. Two builder-adjacent follow-ups are tracked in
+`BUILDERS_IMPLEMENTATION_PLAN.md` (Python published-package publishing contract;
+worker R library-path change).

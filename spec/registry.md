@@ -109,7 +109,7 @@ Build outputs by language:
 
 - **Rust / Go / TypeScript (Bun):** a single binary plus the `blocks/*.yaml` manifests, packaged as a `.tar.gz`.
 - **Python:** the source tree, the `uv` lockfile, and a populated dependency cache for the lockfile, packaged as a `.tar.gz`.  The worker unpacks and runs; no further `uv sync` is required.
-- **R:** the source tree, the `renv.lock` file, and a populated `renv` library, packaged as a `.tar.gz`.
+- **R:** the source tree, the pak dependency manifest (`DESCRIPTION`/`pkg.lock`), and a populated library, packaged as a `.tar.gz`.
 
 For each supported platform/architecture pair, a separate artifact is produced.  The current target is Debian Linux on `amd64`.  The artifact key is:
 

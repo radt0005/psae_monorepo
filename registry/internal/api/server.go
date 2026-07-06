@@ -84,6 +84,9 @@ func (s *Server) Routes() *echo.Echo {
 	// Worker fetch (service token). The final segment is "<arch>",
 	// "<arch>.tar.gz", or "<arch>.sig"; the handler routes on the suffix.
 	e.GET("/artifacts/:name/:version/:platform/:artifact", s.fetchArtifact, s.requireWorker)
+	// Worker-facing artifact metadata (content hash + state) for install-time
+	// verification and recall re-checks.
+	e.GET("/artifacts/:name/:version/:platform/:arch/meta", s.artifactMeta, s.requireWorker)
 
 	// Developer endpoints (session token).
 	e.POST("/publish", s.publish, s.requireDeveloper)

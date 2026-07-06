@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -128,6 +129,16 @@ func (r *BlockRegistry) ListBlocks() ([]BlockRegistryEntry, error) {
 func (r *BlockRegistry) DeleteCollection(name string, version string) error {
 	result := r.db.Where("collection_name = ? AND collection_version = ?", name, version).
 		Delete(&BlockRegistryEntry{})
+	return result.Error
+}
+
+// TouchCollection updates the recall bookkeeping (RegistryState, LastVerifiedAt)
+// for every block of a collection version, recording the outcome of a worker's
+// registry freshness re-check (worker.md §Recall).
+func (r *BlockRegistry) TouchCollection(name, version, state string, at time.Time) error {
+	result := r.db.Model(&BlockRegistryEntry{}).
+		Where("collection_name = ? AND collection_version = ?", name, version).
+		Updates(map[string]any{"registry_state": state, "last_verified_at": at})
 	return result.Error
 }
 

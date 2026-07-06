@@ -1,8 +1,11 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"core"
 )
 
 // TestGetenvFallsBack verifies the env-var helper returns the default
@@ -26,6 +29,41 @@ func TestNewLoggerLevels(t *testing.T) {
 		if got := newLogger(lvl); got == nil {
 			t.Errorf("newLogger(%q) returned nil", lvl)
 		}
+	}
+}
+
+func TestWorkerOptionsRegistryToggle(t *testing.T) {
+	reg, err := core.OpenRegistry(filepath.Join(t.TempDir(), "index.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reg.Close()
+	logger := newLogger("error")
+
+	// No registry URL → legacy path: no installer, no pubkey cache.
+	_, pubkeys := workerOptions(config{}, reg, logger)
+	if pubkeys != nil {
+		t.Error("without RegistryURL the pubkey cache (and installer) must be absent")
+	}
+
+	// Registry URL set → fetch installer is constructed with a pubkey cache.
+	_, pubkeys = workerOptions(config{RegistryURL: "https://registry.example", WorkerToken: "t", FreshnessSec: 3600}, reg, logger)
+	if pubkeys == nil {
+		t.Error("with RegistryURL the installer + pubkey cache must be constructed")
+	}
+}
+
+func TestEnvIntFallback(t *testing.T) {
+	if got := envInt("SPADE_MISSING_INT", 42); got != 42 {
+		t.Errorf("unset env should fall back to 42, got %d", got)
+	}
+	t.Setenv("SPADE_SOME_INT", "notanint")
+	if got := envInt("SPADE_SOME_INT", 7); got != 7 {
+		t.Errorf("unparseable env should fall back to 7, got %d", got)
+	}
+	t.Setenv("SPADE_SOME_INT", "15")
+	if got := envInt("SPADE_SOME_INT", 7); got != 15 {
+		t.Errorf("valid env should parse to 15, got %d", got)
 	}
 }
 

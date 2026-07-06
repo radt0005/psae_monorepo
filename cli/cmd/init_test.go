@@ -98,7 +98,7 @@ func TestScaffoldR(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assertFileExists(t, "renv.lock")
+	assertFileExists(t, "DESCRIPTION")
 	assertDirExists(t, "R")
 	assertDirExists(t, "blocks")
 }

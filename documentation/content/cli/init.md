@@ -21,7 +21,7 @@ The `--language` (or `-l`) flag is required. Supported values are:
 | `go` | `go.mod` |
 | `python` | `pyproject.toml` |
 | `typescript` | `package.json` |
-| `r` | `renv.lock` |
+| `r` | `DESCRIPTION` |
 
 The collection name is derived from the current directory name.
 
@@ -127,7 +127,7 @@ spade init -l r
 
 ```
 my-collection/
-  renv.lock          # renv lockfile for dependency management
+  DESCRIPTION        # pak dependency manifest (list deps under Imports:)
   R/                 # R scripts for block handlers
   blocks/            # Block manifest YAML files
 ```

@@ -65,6 +65,8 @@ There should be a way to browse results, view results that are small enough, and
 
 Some notable ommissions from the interface.  There should be a way to upload (potentially large) files and use the custom data in pipelines.  There should also be a way to share this data as well without re-uploading the data (especially since geospatial files can be large). 
 
+This is now specified in `uploads.md`: uploads become catalogued assets referenced from pipelines, surfaced in the editor as a single "Upload" node with a type dropdown (auto-detected from the file extension, overridable), and sharing without re-upload falls out of content addressing.  See `uploads.md` §8 for the UI surface.
+
 
 ## Look and Feel
 

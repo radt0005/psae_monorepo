@@ -29,6 +29,7 @@ Decisions deferred:
 | Scheduler | App Platform (containerised) | Restart-tolerant; state in Postgres + RabbitMQ |
 | Web UI | App Platform (containerised) | Frontend + API for the flowchart editor and results browser |
 | Registry control plane | App Platform (containerised) | `POST /publish`, state transitions, audit log, metadata mirror writes |
+| KMS (secrets) | App Platform (containerised) | Envelope crypto and authorization; holds the key-encryption key; smallest tier (see `secrets.md`) |
 | Homepage | App Platform static site | Free tier (3 static sites included) |
 | Documentation site | App Platform static site | Free tier |
 | Worker fleet | Droplets from a custom snapshot | Must run `isolate`; requires kernel-level access not available on App Platform |
@@ -86,7 +87,7 @@ A custom DO snapshot is the worker base image.  It contains:
 
 - Ubuntu LTS base
 - `isolate` built from source and installed setuid (see `install_isolate.sh` in the repo root)
-- Language runtimes: `python3` + `uv`, `R` + `renv`, GDAL system library, Bun
+- Language runtimes: `python3` + `uv`, `R` + `pak`, GDAL system library, Bun
 - The worker user account and `subuid`/`subgid` configuration
 - No build toolchains (`cargo`, `go`, `gcc`, language-dev headers) -- those live in the bundler snapshot (§5)
 
@@ -158,6 +159,8 @@ A single Managed PostgreSQL cluster holds:
 - The registry metadata mirror (see `registry.md` §10)
 - The scheduler's pipeline DAG and invocation state (see §3.2)
 - The registry's submitted-build queue (see §5.2)
+- The KMS's envelope-encrypted secret ciphertext (see `secrets.md` §5.1) -- ciphertext only; the key-encryption key never touches the database
+- The user-data catalog: metadata for uploaded assets (see `uploads.md` §3) -- the bytes live in Spaces (§6.2)
 
 Starting tier: 1 GB RAM / 10 GB storage ($15/month).  This is small but sufficient for early stage; upgrading tiers is a non-disruptive operation on DO Managed Postgres.
 
@@ -169,7 +172,7 @@ Spaces is the single object-storage backend for everything that isn't relational
 
 - Signed collection artifact tarballs (and their `.sig` files) -- the registry's output
 - Intermediate pipeline I/O between blocks (the "object storage instead of shared FS" decision)
-- Persistent user uploads (custom data referenced from pipelines)
+- Persistent user uploads (custom data referenced from pipelines; catalogued in Postgres and served to blocks via pre-signed URLs -- see `uploads.md`)
 - Signed worker-binary releases consumed by cloud-init (§4.3)
 - The registry's public-key set (`/pubkeys` endpoint contents, served via App Platform but stored here)
 
@@ -257,6 +260,7 @@ Approximate monthly cost for the launch deployment.  Numbers are illustrative ba
 | App Platform: scheduler (Pro-XS) | ~$29 |
 | App Platform: web UI (Basic-S) | ~$12 |
 | App Platform: registry control plane (Basic-S) | ~$12 |
+| App Platform: KMS / secrets (Basic-XS) | ~$12 |
 | App Platform: static sites (homepage + docs) | $0 (within free tier) |
 | DO Container Registry (starter) | $5 |
 | Worker Droplet × 1 (4 vCPU / 8 GB / 80 GB NVMe) | $48 |
@@ -265,10 +269,10 @@ Approximate monthly cost for the launch deployment.  Numbers are illustrative ba
 | Spaces | $5 + usage |
 | CloudAMQP ("Tough Tiger") | $19 |
 | Worker snapshot storage | ~$2 |
-| **Baseline total** | **~$171/month** |
-| With a second worker | ~$219/month |
+| **Baseline total** | **~$183/month** |
+| With a second worker | ~$231/month |
 
-At the project's $10,000 budget, the baseline supports ~4.8 years of runway and the two-worker configuration supports ~3.8 years.  Adding workers scales linearly with Droplet cost; everything else holds steady until usage drives the storage or database tiers up.
+At the project's $10,000 budget, the baseline supports ~4.5 years of runway and the two-worker configuration supports ~3.6 years.  Adding workers scales linearly with Droplet cost; everything else holds steady until usage drives the storage or database tiers up.
 
 ---
 

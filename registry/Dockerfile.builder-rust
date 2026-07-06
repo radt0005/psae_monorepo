@@ -1,0 +1,28 @@
+# Per-language build container for Rust collections (the "bundler image" of
+# registry.md §5: worker base + the Rust toolchain). The dispatcher launches this
+# image per build; the builder binary clones the source, screens it, runs
+# `cargo build --release`, packages the artifact, and uploads it to S3 staging.
+#
+# Build context is the monorepo root (`replace core => ../core`).
+
+FROM golang:1.26-bookworm AS build
+WORKDIR /src
+COPY core ./core
+COPY registry ./registry
+WORKDIR /src/registry
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" -o /out/builder ./cmd/builder
+
+# Runtime: Rust toolchain (to compile cloned collections) + git (to clone) +
+# the GDAL/PROJ development headers that geospatial collections (base, data)
+# link against. These dev headers match the runtime libraries in the worker base
+# image, so dynamically-linked binaries resolve correctly at execution time.
+FROM rust:1-bookworm
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git ca-certificates \
+        libgdal-dev libproj-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /out/builder /usr/local/bin/builder
+ENTRYPOINT ["/usr/local/bin/builder"]

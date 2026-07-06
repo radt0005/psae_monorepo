@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
@@ -133,8 +134,13 @@ func LoadBlockManifest(path string) (BlockManifest, error) {
 
 // PipelineBlock represents a block invocation within a pipeline definition.
 type PipelineBlock struct {
-	Id      uuid.UUID      `yaml:"id"`
-	Name    string         `yaml:"name"`
+	Id   uuid.UUID `yaml:"id"`
+	Name string    `yaml:"name"`
+	// Version pins the collection artifact version this block resolves to
+	// (Option A, INSTALLER_IMPLEMENTATION_PLAN §Phase 3). The web editor sets it
+	// from the metadata mirror at authoring time. Empty ⇒ legacy lookup (latest
+	// installed, no registry fetch).
+	Version string         `yaml:"version,omitempty"`
 	Inputs  []InputRef     `yaml:"inputs"`
 	Outputs []string       `yaml:"outputs,omitempty"`
 	Args    map[string]any `yaml:"args"`
@@ -310,7 +316,22 @@ type BlockRegistryEntry struct {
 	Kind              string
 	Network           bool
 	ManifestJSON      string // serialized block manifest
+
+	// Install provenance and recall bookkeeping (worker.md §Block Index). These
+	// are empty for locally-built (seed-blocks / `spade install`) rows, which
+	// leaves Source="" (treated as local): the registry freshness/recall path
+	// engages only for Source=InstallSourceRegistry entries.
+	Source         string    // InstallSourceRegistry | InstallSourceLocal
+	Signature      string    // base64 ed25519 signature over the artifact (registry installs)
+	RegistryState  string    // last-seen registry state: available|deprecated|yanked|recalled
+	LastVerifiedAt time.Time // when RegistryState was last confirmed with the registry
 }
+
+// Install sources recorded in BlockRegistryEntry.Source.
+const (
+	InstallSourceRegistry = "registry"
+	InstallSourceLocal    = "local"
+)
 
 // blockNameFromID returns the short block name from a fully-qualified
 // manifest ID.  Block IDs follow the convention "<collection>.<block>"
@@ -319,6 +340,16 @@ type BlockRegistryEntry struct {
 func blockNameFromID(id string) string {
 	if i := strings.LastIndex(id, "."); i >= 0 {
 		return id[i+1:]
+	}
+	return id
+}
+
+// CollectionNameFromBlockID returns the collection segment of a block ID
+// ("<collection>.<block>" → "<collection>"). The worker uses it with the pinned
+// CollectionVersion to form the registry fetch key.
+func CollectionNameFromBlockID(id string) string {
+	if i := strings.Index(id, "."); i >= 0 {
+		return id[:i]
 	}
 	return id
 }
@@ -338,12 +369,17 @@ const (
 
 // WorkerAssignment represents a block execution assignment sent from scheduler to worker.
 type WorkerAssignment struct {
-	InvocationID string         `json:"invocation_id"`
-	BlockName    string         `json:"block_name"`
-	PipelineID   uuid.UUID      `json:"pipeline_id"`
-	WorkDir      string         `json:"work_dir"`
-	Args         map[string]any `json:"args"`
-	Inputs       []InputRef     `json:"inputs"`
+	InvocationID string `json:"invocation_id"`
+	BlockName    string `json:"block_name"`
+	// CollectionVersion pins the collection artifact version the worker must have
+	// installed to run this block (Option A). It carries the pin from
+	// PipelineBlock.Version to the worker's registry-fetch key. Empty ⇒ legacy
+	// behavior (LookupBlock latest, no fetch), preserving seed-blocks + old tests.
+	CollectionVersion string         `json:"collection_version,omitempty"`
+	PipelineID        uuid.UUID      `json:"pipeline_id"`
+	WorkDir           string         `json:"work_dir"`
+	Args              map[string]any `json:"args"`
+	Inputs            []InputRef     `json:"inputs"`
 }
 
 // WorkerResult represents the completion response from worker to scheduler.

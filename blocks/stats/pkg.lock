@@ -1,0 +1,65 @@
+{
+  "lockfile_version": 1,
+  "os": "Ubuntu 22.04.5 LTS",
+  "r_version": "R version 4.6.0 (2026-04-24)",
+  "platform": "x86_64-pc-linux-gnu",
+  "packages": [
+    {
+      "ref": "deps::.",
+      "package": "stats.collection-deps",
+      "version": "0.1.0",
+      "type": "deps",
+      "direct": true,
+      "binary": false,
+      "dependencies": ["jsonlite"],
+      "vignettes": false,
+      "metadata": {
+        "RemotePkgRef": "deps::.",
+        "RemoteType": "deps"
+      },
+      "sources": [],
+      "target": "src/contrib/stats.collection-deps_0.1.0.tar.gz",
+      "platform": "source",
+      "rversion": "*",
+      "directpkg": true,
+      "dep_types": ["Depends", "Imports", "LinkingTo"],
+      "params": [],
+      "install_args": "",
+      "sysreqs": "",
+      "sysreqs_packages": {}
+    },
+    {
+      "ref": "jsonlite",
+      "package": "jsonlite",
+      "version": "2.0.0",
+      "type": "standard",
+      "direct": false,
+      "binary": false,
+      "dependencies": [],
+      "vignettes": false,
+      "needscompilation": true,
+      "metadata": {
+        "RemoteType": "standard",
+        "RemotePkgRef": "jsonlite",
+        "RemoteRef": "jsonlite",
+        "RemoteRepos": "https://cloud.r-project.org",
+        "RemotePkgPlatform": "source",
+        "RemoteSha": "2.0.0"
+      },
+      "sources": ["https://cloud.r-project.org/src/contrib/jsonlite_2.0.0.tar.gz", "https://cloud.r-project.org/src/contrib/Archive/jsonlite/jsonlite_2.0.0.tar.gz"],
+      "target": "src/contrib/jsonlite_2.0.0.tar.gz",
+      "platform": "source",
+      "rversion": "*",
+      "directpkg": false,
+      "license": "MIT + file LICENSE",
+      "sha256": "75eb910c82b350ec33f094779da0f87bff154c232e4ae39c9896a9b89f3ac82d",
+      "filesize": 1055849,
+      "dep_types": ["Depends", "Imports", "LinkingTo"],
+      "params": [],
+      "install_args": "",
+      "repotype": "cran",
+      "sysreqs": "",
+      "sysreqs_packages": {}
+    }
+  ]
+}

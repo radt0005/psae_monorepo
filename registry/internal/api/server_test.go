@@ -241,6 +241,41 @@ func TestFetchArtifactRecalledAndYankedRefused(t *testing.T) {
 	}
 }
 
+func TestArtifactMeta(t *testing.T) {
+	h := newHarness(t)
+	tok := h.seedArtifact(t, store.StateAvailable)
+
+	w := h.do(t, http.MethodGet, "/artifacts/gdal/1.0.0/linux/amd64/meta", tok, nil)
+	require.Equal(t, http.StatusOK, w.Code)
+	var meta wire.ArtifactMeta
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &meta))
+	require.Equal(t, "1.0.0", meta.Version)
+	require.Equal(t, "linux", meta.Platform)
+	require.Equal(t, "amd64", meta.Arch)
+	require.Equal(t, "h", meta.ContentHash)
+	require.Equal(t, "available", meta.State)
+
+	// Unknown artifact → 404.
+	w = h.do(t, http.MethodGet, "/artifacts/gdal/9.9.9/linux/amd64/meta", tok, nil)
+	require.Equal(t, http.StatusNotFound, w.Code)
+
+	// Requires a worker token.
+	w = h.do(t, http.MethodGet, "/artifacts/gdal/1.0.0/linux/amd64/meta", "", nil)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestArtifactMetaReportsRecalledState(t *testing.T) {
+	// Unlike fetchArtifact (410 on recall), meta returns the state so the worker
+	// can drive its recall-freshness re-check.
+	h := newHarness(t)
+	tok := h.seedArtifact(t, store.StateRecalled)
+	w := h.do(t, http.MethodGet, "/artifacts/gdal/1.0.0/linux/amd64/meta", tok, nil)
+	require.Equal(t, http.StatusOK, w.Code)
+	var meta wire.ArtifactMeta
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &meta))
+	require.Equal(t, "recalled", meta.State)
+}
+
 func TestPubkeys(t *testing.T) {
 	h := newHarness(t)
 	w := h.do(t, http.MethodGet, "/pubkeys", "", nil)

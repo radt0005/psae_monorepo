@@ -11,6 +11,7 @@ import (
 
 	"spade_registry/internal/auth"
 	"spade_registry/internal/store"
+	"spade_registry/internal/wire"
 )
 
 // fetchArtifact handles GET /artifacts/:name/:version/:platform/:artifact for
@@ -69,4 +70,31 @@ func (s *Server) fetchArtifact(c *echo.Context) error {
 	c.Response().WriteHeader(http.StatusOK)
 	_, err = io.Copy(c.Response(), rc)
 	return err
+}
+
+// artifactMeta handles GET /artifacts/:name/:version/:platform/:arch/meta. The
+// worker installer reads the content_hash to verify the downloaded tarball and
+// the state to decide whether to install (and, during recall-freshness re-checks,
+// whether to evict). Unlike fetchArtifact this returns the state for every state,
+// including yanked/recalled, rather than 410.
+func (s *Server) artifactMeta(c *echo.Context) error {
+	name := c.Param("name")
+	version := c.Param("version")
+	platform := c.Param("platform")
+	arch := c.Param("arch")
+
+	art, v, err := s.store.GetArtifact(name, version, platform, arch)
+	if errors.Is(err, store.ErrNotFound) {
+		return errJSON(c, http.StatusNotFound, "artifact not found")
+	}
+	if err != nil {
+		return errJSON(c, http.StatusInternalServerError, "loading artifact")
+	}
+	return c.JSON(http.StatusOK, wire.ArtifactMeta{
+		Version:     v.Version,
+		Platform:    art.Platform,
+		Arch:        art.Arch,
+		ContentHash: art.ContentHash,
+		State:       string(v.State),
+	})
 }

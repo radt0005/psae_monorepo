@@ -185,14 +185,16 @@ func scaffoldTypeScript(name string) error {
 }
 
 func scaffoldR(name string) error {
-	renvLock := `{
-  "R": {
-    "Version": "4.3.0"
-  },
-  "Packages": {}
-}
-`
-	if err := os.WriteFile("renv.lock", []byte(renvLock), 0644); err != nil {
+	// pak reads dependencies from a DESCRIPTION (Imports:). The pak lockfile
+	// (pkg.lock) is generated from it at build/install time — like uv.lock for
+	// Python — so it is not scaffolded here.
+	description := fmt.Sprintf(`Package: %s
+Title: Spade %s block collection
+Version: 0.1.0
+Imports:
+Encoding: UTF-8
+`, name, name)
+	if err := os.WriteFile("DESCRIPTION", []byte(description), 0644); err != nil {
 		return err
 	}
 	if err := os.MkdirAll("R", 0755); err != nil {
@@ -202,7 +204,7 @@ func scaffoldR(name string) error {
 		return err
 	}
 	fmt.Println("Created R collection:")
-	fmt.Println("  renv.lock")
+	fmt.Println("  DESCRIPTION")
 	fmt.Println("  R/")
 	fmt.Println("  blocks/")
 	return nil

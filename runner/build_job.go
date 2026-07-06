@@ -45,6 +45,15 @@ func BuildJobForInvocation(inv core.BlockInvocation, pipeline core.Pipeline, man
 		Args:         inv.Arguments,
 		Inputs:       inv.Inputs,
 	}
+	// Carry the pinned collection version (Option A) from the owning pipeline
+	// block (matched by Id; mapped invocations share the base block Id). Empty
+	// when unset, which keeps legacy latest-installed lookup.
+	for _, pb := range pipeline.Blocks {
+		if pb.Id == inv.Id {
+			assignment.CollectionVersion = pb.Version
+			break
+		}
+	}
 	// Ensure manifests include every direct dependency, looked up
 	// through the pipeline.  Callers can pre-fill manifests; this
 	// helper only fills in what's missing if the caller passed a

@@ -450,6 +450,18 @@ func languageSandboxBinds(entry BlockRegistryEntry) []string {
 		}
 	case CollectionLanguageR:
 		bindTool("Rscript")
+		// Registry-installed R collections ship their dependencies in a populated
+		// library inside the artifact at <InstalledPath>/renv/library (registry
+		// RBuilder). InstalledPath is already bound into the sandbox (see the
+		// isolate args in Execute), so putting that library on R's search path via
+		// R_LIBS is what makes library(<dep>) resolve; without it the sandbox sees
+		// only base R plus the host user library (notes.md §C2).
+		if entry.InstalledPath != "" {
+			artifactLib := filepath.Join(entry.InstalledPath, "renv", "library")
+			if fi, err := os.Stat(artifactLib); err == nil && fi.IsDir() {
+				binds = append(binds, "--env=R_LIBS="+artifactLib)
+			}
+		}
 		// R's startup wrapper (<RHOME>/bin/R) sources its ldpaths file to set
 		// LD_LIBRARY_PATH before loading libR.so / libblas.so.3.  On
 		// Debian/Ubuntu that file is a symlink into /etc (<RHOME>/etc/ldpaths

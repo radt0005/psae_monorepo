@@ -220,6 +220,46 @@ services:
     entrypoint: ["true"]
     restart: "no"
 
+  # One-shot: builds + tags the spade-builder-rust image (cargo + GDAL/PROJ dev
+  # headers) so the dispatcher can `docker run` it for Rust collections.
+  builder-rust-image:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.builder-rust
+    image: spade-builder-rust:latest
+    entrypoint: ["true"]
+    restart: "no"
+
+  # One-shot: builds + tags the spade-builder-ts image (Bun) for TypeScript
+  # collections.
+  builder-ts-image:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.builder-ts
+    image: spade-builder-ts:latest
+    entrypoint: ["true"]
+    restart: "no"
+
+  # One-shot: builds + tags the spade-builder-python image (system python3 + uv +
+  # GDAL/PROJ dev headers) for Python collections.
+  builder-python-image:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.builder-python
+    image: spade-builder-python:latest
+    entrypoint: ["true"]
+    restart: "no"
+
+  # One-shot: builds + tags the spade-builder-r image (R + build toolchain +
+  # renv) for R collections.
+  builder-r-image:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile.builder-r
+    image: spade-builder-r:latest
+    entrypoint: ["true"]
+    restart: "no"
+
   registry:
     build:
       context: .
@@ -242,7 +282,7 @@ services:
       S3_USE_PATH_STYLE: "true"
       REGISTRY_INTERNAL_URL: http://registry:8080
       REGISTRY_PUBLIC_URL: http://localhost:8090
-      BUILDER_IMAGES: go=spade-builder-go:latest
+      BUILDER_IMAGES: go=spade-builder-go:latest,rust=spade-builder-rust:latest,typescript=spade-builder-ts:latest,python=spade-builder-python:latest,r=spade-builder-r:latest
       BUILDER_DOCKER_ARGS: "--network=psae_monorepo_default"
       MIRROR_ENABLED: "true"
       # Operator (recall / token admin) allowlist — set to your Better Auth
@@ -277,9 +317,19 @@ services:
       # `spade install` uses $SPADE_DIR/registry.db (= /var/spade/registry.db).
       SPADE_REGISTRY: /var/spade/registry.db
       SPADE_CACHE_DIR: /var/spade/cache
-      # Cloud Plugin Registry for fetching signed artifacts (spec/registry.md).
-      # The seed-blocks shim remains as a fallback for the in-repo collections.
+      # Cloud Plugin Registry for the fetch installer: on a lookup miss for a
+      # block whose assignment pins a collection version, the worker fetches the
+      # signed artifact, verifies its ed25519 signature + content hash, unpacks,
+      # and indexes it (runner/installer; worker.md §Worker Installer). The
+      # seed-blocks shim remains the fallback for the in-repo collections, so an
+      # unset SPADE_WORKER_TOKEN just means the fetch path is unused.
       REGISTRY_URL: http://registry:8080
+      # Worker service token for registry auth; provision one in the registry and
+      # inject it here (e.g. via an env/secret). Empty leaves the fetch path
+      # dormant behind seed-blocks.
+      SPADE_WORKER_TOKEN: ${SPADE_WORKER_TOKEN:-}
+      # Seconds before a registry-installed block is re-checked for recall.
+      SPADE_FRESHNESS_SEC: "3600"
       SPADE_LOG_LEVEL: info
       # Python (gdal) blocks: the uv-managed Python the seed built lives on the
       # shared volume; the worker's sandbox binds + passes this so a venv built

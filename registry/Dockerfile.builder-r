@@ -1,0 +1,52 @@
+# Per-language build container for R collections (the "bundler image" of
+# registry.md §5: worker base + the R toolchain). The dispatcher launches this
+# image per build; the builder binary clones the source, screens it, populates
+# an artifact-local R library (via pak from a DESCRIPTION/pkg.lock, else the
+# collection's setup.R, else legacy renv.lock), packages the artifact, and
+# uploads it to S3 staging.
+#
+# Build context is the monorepo root (`replace core => ../core`).
+
+FROM golang:1.26-bookworm AS build
+WORKDIR /src
+COPY core ./core
+COPY registry ./registry
+WORKDIR /src/registry
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" -o /out/builder ./cmd/builder
+
+# Runtime: the worker base image (ubuntu:24.04) plus the R toolchain, so the
+# bundler matches the worker's glibc, system libs, and R minor (registry.md §5,
+# A3). R is installed the same way the worker installs it (`apt-get install
+# r-base` from the noble archive), so the compiled packages baked into the shipped
+# library load on the worker. build-essential + dev headers stay for packages that
+# still compile from source (GDAL/sf); binary-available packages come from P3M.
+#
+# pak is the primary install engine; renv is kept for the legacy rollback path.
+FROM ubuntu:24.04 AS runtime
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git ca-certificates build-essential \
+        r-base \
+        libgdal-dev libproj-dev libcurl4-openssl-dev libssl-dev libxml2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Point R (and thus pak) at the P3M binary repo for the image's distro codename.
+# noble matches this base and the worker; P3M serves codename-tagged binaries, so
+# the ABI matches the worker's R (Phase-0 result). Written to Rprofile.site so the
+# Go builder inherits it without setting repos itself. Override PPM_CODENAME=""
+# to fall back to source CRAN.
+ARG PPM_CODENAME=noble
+RUN if [ -n "$PPM_CODENAME" ]; then \
+        REPO="https://packagemanager.posit.co/cran/__linux__/${PPM_CODENAME}/latest"; \
+    else \
+        REPO="https://cloud.r-project.org"; \
+    fi; \
+    printf 'options(repos = c(PPM = "%s"), HTTPUserAgent = sprintf("R/%%s R (%%s)", getRversion(), paste(getRversion(), R.version$platform, R.version$arch, R.version$os)))\n' "$REPO" \
+        >> "$(Rscript -e 'cat(R.home("etc"))')/Rprofile.site"
+
+RUN Rscript -e 'install.packages(c("pak", "renv"))'
+COPY --from=build /out/builder /usr/local/bin/builder
+ENTRYPOINT ["/usr/local/bin/builder"]

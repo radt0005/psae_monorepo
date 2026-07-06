@@ -70,6 +70,7 @@ Each entry in `blocks` represents a single invocation of a block type.
 | `name`   | string             | Yes      | Block type identifier (e.g. `raster.reproject`). Used to look up the block's `block.yaml` manifest and executable. |
 | `inputs` | InputRef[]         | Yes      | Dependencies on other blocks in this pipeline. Empty list (`[]`) for source blocks with no dependencies. |
 | `args`   | map<string, any>   | Yes      | Key-value parameters written to the block's `params.yaml` at invocation time. Empty object (`{}`) if no parameters. |
+| `secrets`| map<string, string>| No       | Binds the logical secret names the block requests (via `get_secret`) to the user's stored secret names. Values are secret **names**, never secret values. Absent means the block declares no secrets. See `secrets.md`. |
 
 ---
 

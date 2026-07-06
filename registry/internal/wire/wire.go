@@ -107,6 +107,19 @@ type ArtifactInfo struct {
 	ContentHash string `json:"content_hash"`
 }
 
+// ArtifactMeta is the body of GET /artifacts/:name/:version/:platform/:arch/meta,
+// the worker-facing endpoint the installer reads to verify the artifact content
+// hash and to observe the current version state (available/yanked/recalled). It
+// returns the state unconditionally (unlike the artifact fetch, which 410s on
+// non-servable states) so the recall-freshness re-check can read it.
+type ArtifactMeta struct {
+	Version     string `json:"version"`
+	Platform    string `json:"platform"`
+	Arch        string `json:"arch"`
+	ContentHash string `json:"content_hash"`
+	State       string `json:"state"`
+}
+
 // ScreeningInfo is one screening result in a version status response.
 type ScreeningInfo struct {
 	ScreenerName    string `json:"screener_name"`

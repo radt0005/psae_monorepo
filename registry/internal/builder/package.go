@@ -28,6 +28,9 @@ func PackageTarGz(dir string, w io.Writer) (string, error) {
 	gz := gzip.NewWriter(mw)
 	tw := tar.NewWriter(gz)
 
+	// filepath.Walk uses Lstat, so symlinks (including symlinks to directories)
+	// surface as non-dir entries and are not descended into. Collect every
+	// regular file and symlink; skip real directories (implied by their entries).
 	var files []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -45,7 +48,11 @@ func PackageTarGz(dir string, w io.Writer) (string, error) {
 	sort.Strings(files)
 
 	for _, path := range files {
-		info, err := os.Stat(path)
+		// Lstat (not Stat) so a symlink is reported as a symlink rather than its
+		// target: dereferencing bloats file symlinks into byte copies and makes
+		// directory symlinks (e.g. a venv's lib64 -> lib, renv cache links) fail
+		// with "is a directory". The worker's Unpack recreates these links.
+		info, err := os.Lstat(path)
 		if err != nil {
 			return "", err
 		}
@@ -55,16 +62,38 @@ func PackageTarGz(dir string, w io.Writer) (string, error) {
 		}
 		rel = filepath.ToSlash(rel)
 
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return "", err
+			}
+			// Keep the link target verbatim (relative or absolute); absolute
+			// targets resolve on the worker because the bundler is the worker
+			// base image plus toolchains.
+			hdr := &tar.Header{
+				Typeflag: tar.TypeSymlink,
+				Name:     rel,
+				Linkname: target,
+				Mode:     0o777,
+				ModTime:  zeroTime, // determinism
+			}
+			if err := tw.WriteHeader(hdr); err != nil {
+				return "", err
+			}
+			continue
+		}
+
 		// Normalize modes to 0644, preserving the executable bit for binaries.
 		mode := int64(0o644)
 		if info.Mode().Perm()&0o111 != 0 {
 			mode = 0o755
 		}
 		hdr := &tar.Header{
-			Name:    rel,
-			Mode:    mode,
-			Size:    info.Size(),
-			ModTime: zeroTime, // determinism
+			Typeflag: tar.TypeReg,
+			Name:     rel,
+			Mode:     mode,
+			Size:     info.Size(),
+			ModTime:  zeroTime, // determinism
 		}
 		if err := tw.WriteHeader(hdr); err != nil {
 			return "", err

@@ -5,10 +5,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"core"
 	spade "spade_runner"
+	"spade_runner/installer"
 
 	"github.com/google/uuid"
 )
@@ -351,6 +354,225 @@ func TestRun_ContextAlreadyCancelledIsInfra(t *testing.T) {
 	_, err := w.Run(ctx, job)
 	if err == nil {
 		t.Fatal("expected error from cancelled context")
+	}
+}
+
+// fakeInstaller stands in for the registry-fetch installer. It counts calls and,
+// on success, invokes onInstall so a test can register the "fetched" block.
+type fakeInstaller struct {
+	calls        int
+	err          error
+	onInstall    func(collection, version string)
+	recheckCalls int
+	recheckErr   error
+}
+
+func (f *fakeInstaller) Install(ctx context.Context, collection, version string) error {
+	f.calls++
+	if f.err != nil {
+		return f.err
+	}
+	if f.onInstall != nil {
+		f.onInstall(collection, version)
+	}
+	return nil
+}
+
+func (f *fakeInstaller) Recheck(ctx context.Context, collection, version string) error {
+	f.recheckCalls++
+	return f.recheckErr
+}
+
+// installRegistryBlock registers a block as if it were installed from the
+// registry, with a controllable last-verified time for freshness tests.
+func installRegistryBlock(t *testing.T, reg *core.BlockRegistry, root string, manifest core.BlockManifest, blockName string, lastVerified time.Time) {
+	t.Helper()
+	entry := installFakeBlock(t, reg, root, manifest, blockName)
+	entry.Source = core.InstallSourceRegistry
+	entry.RegistryState = "available"
+	entry.LastVerifiedAt = lastVerified
+	if err := reg.RegisterBlock(entry); err != nil {
+		t.Fatalf("re-register with provenance: %v", err)
+	}
+}
+
+func TestRun_StaleRegistryEntryTriggersRecheck(t *testing.T) {
+	reg, root := setupRegistry(t)
+	installed := filepath.Join(root, "install")
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "1.0.0", Kind: core.BlockKindStandard}
+	installRegistryBlock(t, reg, installed, manifest, "hello", time.Now().Add(-2*time.Hour))
+
+	inst := &fakeInstaller{} // Recheck returns nil (still available)
+	fake := &fakeExecutor{result: core.BlockInvocationResult{Status: core.ExecutionStatusComplete}}
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst), WithFreshness(time.Minute))
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("unexpected infra error: %v", err)
+	}
+	if inst.recheckCalls != 1 {
+		t.Errorf("stale registry entry should trigger 1 recheck, got %d", inst.recheckCalls)
+	}
+	if res.Status != core.ExecutionStatusComplete {
+		t.Errorf("still-available block should run, got %s", res.Status)
+	}
+}
+
+func TestRun_RecalledOnRecheckRefuses(t *testing.T) {
+	reg, root := setupRegistry(t)
+	installed := filepath.Join(root, "install")
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "1.0.0", Kind: core.BlockKindStandard}
+	installRegistryBlock(t, reg, installed, manifest, "hello", time.Now().Add(-2*time.Hour))
+
+	inst := &fakeInstaller{recheckErr: &installer.Rejected{Reason: "recalled"}}
+	fake := &fakeExecutor{}
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst), WithFreshness(time.Minute))
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("recall must be a block failure, got infra error: %v", err)
+	}
+	if res.Status != core.ExecutionStatusError {
+		t.Fatalf("recalled block must not run, got %s", res.Status)
+	}
+	if !strings.Contains(res.Error, "recalled") {
+		t.Errorf("error should mention recall: %q", res.Error)
+	}
+	if fake.called {
+		t.Error("recalled block must not execute")
+	}
+}
+
+func TestRun_FreshRegistryEntrySkipsRecheck(t *testing.T) {
+	reg, root := setupRegistry(t)
+	installed := filepath.Join(root, "install")
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "1.0.0", Kind: core.BlockKindStandard}
+	installRegistryBlock(t, reg, installed, manifest, "hello", time.Now()) // just verified
+
+	inst := &fakeInstaller{}
+	fake := &fakeExecutor{result: core.BlockInvocationResult{Status: core.ExecutionStatusComplete}}
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst), WithFreshness(time.Hour))
+	if _, err := w.Run(context.Background(), job); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if inst.recheckCalls != 0 {
+		t.Errorf("fresh entry must skip the network re-check, got %d rechecks", inst.recheckCalls)
+	}
+}
+
+
+func TestRun_InstallOnMiss(t *testing.T) {
+	reg, root := setupRegistry(t)
+	installed := filepath.Join(root, "install")
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "2.0.0", Kind: core.BlockKindStandard}
+
+	inst := &fakeInstaller{onInstall: func(collection, version string) {
+		// Simulate a successful fetch+unpack by registering the block.
+		installFakeBlock(t, reg, installed, manifest, "hello")
+	}}
+	fake := &fakeExecutor{result: core.BlockInvocationResult{Status: core.ExecutionStatusComplete}}
+
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.CollectionVersion = "2.0.0" // Option A pin
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst))
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("unexpected infra error: %v", err)
+	}
+	if res.Status != core.ExecutionStatusComplete {
+		t.Fatalf("expected Complete after install, got %s: %s", res.Status, res.Error)
+	}
+	if inst.calls != 1 {
+		t.Errorf("expected 1 install, got %d", inst.calls)
+	}
+	if !fake.called {
+		t.Error("executor should run the freshly installed block")
+	}
+}
+
+func TestRun_InstallRejectedIsBlockFailureAndPoisons(t *testing.T) {
+	reg, root := setupRegistry(t)
+	manifest := core.BlockManifest{ID: "pkg.evil", Version: "1.0.0"}
+	inst := &fakeInstaller{err: &installer.Rejected{Reason: "signature verification failed"}}
+	fake := &fakeExecutor{}
+
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.CollectionVersion = "1.0.0"
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst))
+
+	// A permanent rejection is a block failure (nil err), not an infra error.
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("rejection must be a block failure, got infra error: %v", err)
+	}
+	if res.Status != core.ExecutionStatusError {
+		t.Fatalf("expected Error status, got %s", res.Status)
+	}
+	if fake.called {
+		t.Error("executor must not run when install is rejected")
+	}
+
+	// The second attempt is short-circuited by the poison marker: no re-fetch.
+	res2, err2 := w.Run(context.Background(), job)
+	if err2 != nil || res2.Status != core.ExecutionStatusError {
+		t.Fatalf("poisoned re-run should be a block failure, got %v / %s", err2, res2.Status)
+	}
+	if inst.calls != 1 {
+		t.Errorf("poisoned pair must not be re-fetched; installer called %d times", inst.calls)
+	}
+}
+
+func TestRun_InstallTransientIsInfraFailure(t *testing.T) {
+	reg, root := setupRegistry(t)
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "1.0.0"}
+	inst := &fakeInstaller{err: errors.New("registry unreachable")}
+	fake := &fakeExecutor{}
+
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.CollectionVersion = "1.0.0"
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(fake), WithInstaller(inst))
+	res, err := w.Run(context.Background(), job)
+	if err == nil {
+		t.Fatal("transient install failure must be an infra error (non-nil), so the job is nacked")
+	}
+	if res.Status != "" {
+		t.Errorf("infra failure must return a zero-value result, got status %s", res.Status)
+	}
+	// A transient failure does NOT poison — a retry may succeed.
+	_, _ = w.Run(context.Background(), job)
+	if inst.calls != 2 {
+		t.Errorf("transient failure must be retryable; expected 2 install attempts, got %d", inst.calls)
+	}
+}
+
+func TestRun_PinnedVersionMissWithoutInstallerIsBlockFailure(t *testing.T) {
+	reg, root := setupRegistry(t)
+	manifest := core.BlockManifest{ID: "pkg.hello", Version: "1.0.0"}
+	job, _ := newStandardJob(manifest, nil)
+	job.Assignment.CollectionVersion = "1.0.0"
+	job.Assignment.WorkDir = filepath.Join(root, "work")
+
+	// No installer configured → legacy behavior: a miss is a terminal block failure.
+	w := New(reg, filepath.Join(root, "work"), WithExecutor(&fakeExecutor{}))
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("expected block failure, got infra error: %v", err)
+	}
+	if res.Status != core.ExecutionStatusError {
+		t.Fatalf("expected Error status, got %s", res.Status)
 	}
 }
 

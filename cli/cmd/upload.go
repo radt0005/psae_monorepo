@@ -88,10 +88,21 @@ func createArchive(archiveName string, dir string, lang core.CollectionLanguage)
 		core.CollectionLanguagePython:     "pyproject.toml",
 		core.CollectionLanguageGo:         "go.mod",
 		core.CollectionLanguageTypeScript: "package.json",
-		core.CollectionLanguageR:          "renv.lock",
+		core.CollectionLanguageR:          "DESCRIPTION",
 	}
 	if manifestFile, ok := langManifests[lang]; ok {
 		addFileToTar(tarWriter, filepath.Join(dir, manifestFile), dir)
+	}
+
+	// Include optional R dependency files when present: the committed pak
+	// lockfile (pkg.lock) and, for collections still on the fallback path, setup.R.
+	if lang == core.CollectionLanguageR {
+		for _, optional := range []string{"pkg.lock", "setup.R"} {
+			p := filepath.Join(dir, optional)
+			if _, err := os.Stat(p); err == nil {
+				addFileToTar(tarWriter, p, dir)
+			}
+		}
 	}
 
 	// Include source files

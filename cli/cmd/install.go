@@ -243,6 +243,33 @@ func installFromSource(srcDir string, cleanupSrc bool) error {
 	return nil
 }
 
+// rPakInstallScript installs an R collection's dependencies for the local
+// `spade install` flow, into the per-user library the isolate sandbox binds
+// (R_LIBS_USER, else the first .libPaths entry). It installs from a committed
+// pkg.lock when present, otherwise resolves the DESCRIPTION's deps into a fresh
+// lock first (mirroring the registry RBuilder). It then installs the local spade
+// runtime library from SPADE_R_LIB_SRC, defaulting to the monorepo layout
+// (../../libs/R), until spade is published. Run with CWD = collection dir.
+const rPakInstallScript = `lib <- Sys.getenv("R_LIBS_USER")
+if (!nzchar(lib) || lib == "NULL") lib <- .libPaths()[1]
+dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+.libPaths(c(lib, .libPaths()))
+if (file.exists("pkg.lock")) {
+  pak::lockfile_install("pkg.lock", lib = lib)
+} else {
+  pak::lockfile_create("deps::.", lockfile = "pkg.lock", lib = lib)
+  pak::lockfile_install("pkg.lock", lib = lib)
+}
+src <- Sys.getenv("SPADE_R_LIB_SRC")
+if (!nzchar(src)) src <- normalizePath(file.path("..", "..", "libs", "R"), mustWork = FALSE)
+if (dir.exists(src)) pak::local_install(src, lib = lib, upgrade = FALSE, ask = FALSE)
+`
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func runBuild(dir string, lang core.CollectionLanguage, name string) error {
 	var cmd *exec.Cmd
 
@@ -256,10 +283,16 @@ func runBuild(dir string, lang core.CollectionLanguage, name string) error {
 	case core.CollectionLanguageTypeScript:
 		cmd = exec.Command("bun", "build", ".")
 	case core.CollectionLanguageR:
-		if _, err := os.Stat(filepath.Join(dir, "setup.R")); err == nil {
+		switch {
+		case fileExists(filepath.Join(dir, "DESCRIPTION")), fileExists(filepath.Join(dir, "pkg.lock")):
+			// pak path: install the manifest's deps (and the local spade lib) into
+			// the user library the sandbox binds. Mirrors registry RBuilder.
+			cmd = exec.Command("Rscript", "-e", rPakInstallScript)
+		case fileExists(filepath.Join(dir, "setup.R")):
+			// Fallback for collections that declare deps imperatively.
 			cmd = exec.Command("Rscript", "setup.R")
-		} else {
-			// No build step needed for R
+		default:
+			// No build step needed for R.
 			return nil
 		}
 	default:

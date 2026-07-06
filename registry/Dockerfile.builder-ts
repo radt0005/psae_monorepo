@@ -1,0 +1,26 @@
+# Per-language build container for TypeScript (Bun) collections (the "bundler
+# image" of registry.md §5: worker base + the Bun toolchain). The dispatcher
+# launches this image per build; the builder binary clones the source, screens
+# it, runs `bun install` + `bun build --compile`, packages the resulting
+# self-contained executable, and uploads it to S3 staging.
+#
+# Build context is the monorepo root (`replace core => ../core`).
+
+FROM golang:1.26-bookworm AS build
+WORKDIR /src
+COPY core ./core
+COPY registry ./registry
+WORKDIR /src/registry
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" -o /out/builder ./cmd/builder
+
+# Runtime: Bun toolchain (to install deps + compile cloned collections) + git.
+# `bun build --compile` embeds the Bun runtime into the produced binary, so the
+# worker needs no Bun/Node at execution time.
+FROM oven/bun:1-debian
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /out/builder /usr/local/bin/builder
+ENTRYPOINT ["/usr/local/bin/builder"]

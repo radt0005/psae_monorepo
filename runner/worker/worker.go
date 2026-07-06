@@ -26,9 +26,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"core"
 	spade "spade_runner"
+	"spade_runner/installer"
 )
 
 // Option configures a Worker at construction time.
@@ -78,6 +81,33 @@ func WithExecutor(e Executor) Option {
 	}
 }
 
+// Installer fetches, verifies, and installs a collection artifact from the
+// registry on a lookup miss, and re-checks an installed version's registry state
+// for recalls (see spade_runner/installer). A nil installer keeps the legacy
+// behavior: a miss is a terminal block failure with no fetch and no re-check.
+type Installer interface {
+	Install(ctx context.Context, collection, version string) error
+	Recheck(ctx context.Context, collection, version string) error
+}
+
+// WithInstaller enables the registry-fetch install path. When set, a lookup miss
+// for a block whose assignment pins a CollectionVersion triggers an install +
+// re-lookup instead of failing immediately.
+func WithInstaller(in Installer) Option {
+	return func(w *Worker) {
+		w.installer = in
+	}
+}
+
+// WithFreshness sets how long a registry-installed block's last verification is
+// trusted before the worker re-checks its state (for recalls) on the next run.
+// Zero (the default) disables re-checking.
+func WithFreshness(d time.Duration) Option {
+	return func(w *Worker) {
+		w.freshness = d
+	}
+}
+
 // Worker orchestrates a single block invocation end-to-end.
 //
 // A Worker is safe to reuse across many jobs; it holds only configuration
@@ -86,9 +116,18 @@ type Worker struct {
 	Registry *core.BlockRegistry
 	WorkRoot string
 
-	cacheDir string
-	useCache bool
-	executor Executor
+	cacheDir  string
+	useCache  bool
+	executor  Executor
+	installer Installer
+	freshness time.Duration
+
+	// poisoned records <collection>/<version> pairs whose install was
+	// permanently rejected (bad signature, hash mismatch, recalled). The worker
+	// refuses to re-hit the registry for a poisoned pair until it restarts / an
+	// operator investigates (worker.md §Worker Installer).
+	poisonMu sync.Mutex
+	poisoned map[string]bool
 }
 
 // New constructs a Worker.  registry and workRoot are required; options
@@ -98,6 +137,7 @@ func New(registry *core.BlockRegistry, workRoot string, opts ...Option) *Worker 
 		Registry: registry,
 		WorkRoot: workRoot,
 		executor: coreExecutor{},
+		poisoned: make(map[string]bool),
 	}
 	for _, o := range opts {
 		o(w)
@@ -128,12 +168,54 @@ func (w *Worker) Run(ctx context.Context, job spade.Job) (core.WorkerResult, err
 		ExitCode:     -1,
 	}
 
-	// 1. Registry lookup by block name.  Miss → block failure, not infra.
-	entry, err := w.Registry.LookupBlock(job.Assignment.BlockName, "")
+	// 1. Registry lookup by block name (and pinned collection version, if any).
+	// A miss becomes a registry fetch when an installer is configured and the
+	// assignment pins a version (Option A); otherwise it is a terminal block
+	// failure. Fetch outcomes split by the installer's failure taxonomy:
+	//   - permanent rejection (bad signature / hash / recalled) → block failure
+	//     plus a sticky poison marker so we do not re-hit the registry;
+	//   - transient (registry unreachable / 5xx) → infrastructure failure (nack →
+	//     redeliver) so a registry blip does not mass-fail pipelines.
+	version := job.Assignment.CollectionVersion
+	entry, err := w.Registry.LookupBlock(job.Assignment.BlockName, version)
+	if err != nil && w.installer != nil && version != "" {
+		collection := core.CollectionNameFromBlockID(job.Assignment.BlockName)
+		if w.isPoisoned(collection, version) {
+			result.Status = core.ExecutionStatusError
+			result.Error = fmt.Sprintf("block %s: artifact %s/%s previously rejected (poisoned)", job.Assignment.BlockName, collection, version)
+			return result, nil
+		}
+		if ierr := w.installer.Install(ctx, collection, version); ierr != nil {
+			if installer.IsRejected(ierr) {
+				w.poison(collection, version)
+				result.Status = core.ExecutionStatusError
+				result.Error = fmt.Sprintf("installing %s/%s: %v", collection, version, ierr)
+				return result, nil
+			}
+			// Transient / infrastructure failure — do not publish a result.
+			return core.WorkerResult{}, fmt.Errorf("installing %s/%s: %w", collection, version, ierr)
+		}
+		entry, err = w.Registry.LookupBlock(job.Assignment.BlockName, version)
+	}
 	if err != nil {
 		result.Status = core.ExecutionStatusError
 		result.Error = fmt.Sprintf("block not installed: %s: %v", job.Assignment.BlockName, err)
 		return result, nil
+	}
+
+	// 1b. Recall / freshness re-check on a hit for a registry-installed block
+	// whose last verification is stale (worker.md §Recall). A recalled version
+	// refuses to run (block failure with a recalled reason; the installer evicts
+	// it). A transient re-check failure is non-fatal: we proceed best-effort with
+	// the already-installed, previously-verified block rather than stall pipelines
+	// on a registry blip.
+	if w.installer != nil && w.freshness > 0 && entry.Source == core.InstallSourceRegistry &&
+		time.Since(entry.LastVerifiedAt) > w.freshness {
+		if rerr := w.installer.Recheck(ctx, entry.CollectionName, entry.CollectionVersion); rerr != nil && installer.IsRejected(rerr) {
+			result.Status = core.ExecutionStatusError
+			result.Error = fmt.Sprintf("block %s recalled: %v", job.Assignment.BlockName, rerr)
+			return result, nil
+		}
 	}
 
 	// 2. Load the manifest from the registered install path.  This is the
@@ -261,6 +343,20 @@ func (w *Worker) Run(ctx context.Context, job spade.Job) (core.WorkerResult, err
 	}
 
 	return result, nil
+}
+
+// poison marks a collection/version as permanently rejected.
+func (w *Worker) poison(collection, version string) {
+	w.poisonMu.Lock()
+	defer w.poisonMu.Unlock()
+	w.poisoned[collection+"/"+version] = true
+}
+
+// isPoisoned reports whether a collection/version was previously rejected.
+func (w *Worker) isPoisoned(collection, version string) bool {
+	w.poisonMu.Lock()
+	defer w.poisonMu.Unlock()
+	return w.poisoned[collection+"/"+version]
 }
 
 // findPipelineBlock returns the PipelineBlock matching the given UUID.

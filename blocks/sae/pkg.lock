@@ -1,0 +1,65 @@
+{
+  "lockfile_version": 1,
+  "os": "Ubuntu 22.04.5 LTS",
+  "r_version": "R version 4.6.0 (2026-04-24)",
+  "platform": "x86_64-pc-linux-gnu",
+  "packages": [
+    {
+      "ref": "deps::.",
+      "package": "sae.collection-deps",
+      "version": "0.1.0",
+      "type": "deps",
+      "direct": true,
+      "binary": false,
+      "dependencies": ["yaml"],
+      "vignettes": false,
+      "metadata": {
+        "RemotePkgRef": "deps::.",
+        "RemoteType": "deps"
+      },
+      "sources": [],
+      "target": "src/contrib/sae.collection-deps_0.1.0.tar.gz",
+      "platform": "source",
+      "rversion": "*",
+      "directpkg": true,
+      "dep_types": ["Depends", "Imports", "LinkingTo"],
+      "params": [],
+      "install_args": "",
+      "sysreqs": "",
+      "sysreqs_packages": {}
+    },
+    {
+      "ref": "yaml",
+      "package": "yaml",
+      "version": "2.3.12",
+      "type": "standard",
+      "direct": false,
+      "binary": false,
+      "dependencies": [],
+      "vignettes": false,
+      "needscompilation": true,
+      "metadata": {
+        "RemoteType": "standard",
+        "RemotePkgRef": "yaml",
+        "RemoteRef": "yaml",
+        "RemoteRepos": "https://cloud.r-project.org",
+        "RemotePkgPlatform": "source",
+        "RemoteSha": "2.3.12"
+      },
+      "sources": ["https://cloud.r-project.org/src/contrib/yaml_2.3.12.tar.gz", "https://cloud.r-project.org/src/contrib/Archive/yaml/yaml_2.3.12.tar.gz"],
+      "target": "src/contrib/yaml_2.3.12.tar.gz",
+      "platform": "source",
+      "rversion": "*",
+      "directpkg": false,
+      "license": "BSD_3_clause + file LICENSE",
+      "sha256": "80ccf3dde851133ef3e333b818a817c296c6ccdacfc4709cd466995289cd556c",
+      "filesize": 108975,
+      "dep_types": ["Depends", "Imports", "LinkingTo"],
+      "params": [],
+      "install_args": "",
+      "repotype": "cran",
+      "sysreqs": "",
+      "sysreqs_packages": {}
+    }
+  ]
+}

@@ -34,26 +34,26 @@ serializes its result to disk itself with `jsonlite::write_json(..., na = "null"
 
 ## Setup and install
 
-`setup.R` is the collection's build step. `spade install` runs it
-(`Rscript setup.R`) to install the runtime dependencies (`jsonlite`, `yaml`) and
-the local `spade` R package into the per-user R library (`R_LIBS_USER`) — the
-library the worker's isolate sandbox binds onto R's search path. Without this
-step `library(spade)` cannot resolve inside the sandbox.
+Dependencies are declared in `DESCRIPTION` (`Imports: jsonlite`) and pinned in the
+committed `pkg.lock`. `spade install` uses `pak` to install them — plus the local
+`spade` R package — into the per-user R library (`R_LIBS_USER`), the library the
+worker's isolate sandbox binds onto R's search path. Without this step
+`library(spade)` cannot resolve inside the sandbox.
 
 ```bash
 cd blocks/stats
 spade check          # validate all manifests
-spade install .      # runs setup.R, then registers the blocks
+spade install .      # pak-installs deps + spade, then registers the blocks
 ```
 
-`setup.R` locates the `spade` source at `../../libs/R` by default; override with
-the `SPADE_R_LIB_SRC` environment variable when installing from a checkout whose
-layout differs.
+The local `spade` source defaults to `../../libs/R`; override with the
+`SPADE_R_LIB_SRC` environment variable when installing from a checkout whose
+layout differs. (`spade` is installed locally until it is published.)
 
 ## Environment notes
 
-- R 4.x (`renv.lock` pins the R version; package installs go through `setup.R`).
-- `jsonlite` and `yaml` are installed by `setup.R` if not already present.
+- R 4.x. Dependencies are resolved by `pak` from `DESCRIPTION`/`pkg.lock`.
+- `jsonlite` is a direct dependency; `yaml` comes in transitively with `spade`.
 - Handlers rely only on base R plus the `stats` package for the statistics
   themselves, so the dependency surface is intentionally small.
 

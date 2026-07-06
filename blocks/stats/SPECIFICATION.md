@@ -74,12 +74,13 @@ Handlers use the `spade` R authoring library (`../../libs/R`): typed inputs via
 `spade_types()`, and `run(handler)` to load `params.yaml`, scan `inputs/`, and
 write the returned `JsonFile` into `outputs/result/`.
 
-`setup.R` is the collection's build step, run by `spade install`. It installs
-the runtime dependencies (`jsonlite`, `yaml`) and the local `spade` package into
-the per-user R library (`R_LIBS_USER`) — the library the worker's isolate
-sandbox binds onto R's search path. Without this step `library(spade)` cannot
-resolve at block-execution time. The `spade` source defaults to `../../libs/R`,
-overridable via the `SPADE_R_LIB_SRC` environment variable.
+Dependencies are declared in `DESCRIPTION` (`Imports:`) and pinned in the
+committed `pkg.lock`. `spade install` uses `pak` to install them and the local
+`spade` package into the per-user R library (`R_LIBS_USER`) — the library the
+worker's isolate sandbox binds onto R's search path. Without this step
+`library(spade)` cannot resolve at block-execution time. The `spade` source
+defaults to `../../libs/R`, overridable via the `SPADE_R_LIB_SRC` environment
+variable (until `spade` is published).
 
 Dependencies are intentionally minimal: base R plus the `stats` package for the
 statistics themselves, `jsonlite` for output, and `yaml` (a `spade` dependency).
