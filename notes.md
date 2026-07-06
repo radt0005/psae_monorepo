@@ -67,17 +67,22 @@ with uv (the interpreter links are not trivially copyable), so prefer fixing the
 packager. **Note:** the current builder unit tests relocate with `os.Rename`
 (symlink-preserving) and so do **not** exercise this; add a tar→untar→run test.
 
-### A3. Pin bundler and worker to the same base image / runtime versions — R done; Python pending
+### A3. Pin bundler and worker to the same base image / runtime versions — ✅ DONE
 `registry.md` §5: the bundler image must be "the worker base image plus
 toolchains" so glibc, system libs, and the **interpreter minor version** match.
 Status:
 - **R — done.** `registry/Dockerfile.builder-r` rebased on `ubuntu:24.04` + apt
   `r-base` (= the worker's R **4.3.3** on noble) with `PPM_CODENAME=noble` serving
   matching binaries. Verified by a real image build.
-- **Python — pending.** `registry/Dockerfile.builder-python` is still
-  `debian:bookworm-slim` → Python **3.11** vs the worker's **3.12**; rebase it on
-  `ubuntu:24.04` the same way.
-- Worker (`runner/worker/Dockerfile`) = `ubuntu:24.04` → Python **3.12**, R **4.3.3**.
+- **Python — done.** `registry/Dockerfile.builder-python` rebased on `ubuntu:24.04`
+  → system Python **3.12.3** at `/usr/bin/python3` (= the worker), `uv` +
+  `UV_PYTHON_PREFERENCE=only-system` unchanged. Verified by a real image build. So
+  a shipped venv's base-interpreter links and `cp312` wheel tags resolve after
+  relocation.
+- Worker (`runner/worker/Dockerfile`) = `ubuntu:24.04` → Python **3.12.3**, R **4.3.3**.
+- Remaining (C4-style): confirm any system libs wheels/R packages link against
+  (GDAL/PROJ) match between bundler and worker; same base image makes this likely
+  but it is not yet explicitly verified per-package.
 
 A venv/library built against one interpreter minor will not resolve against a
 different one after relocation (`pyvenv.cfg home=/usr/bin` points at the wrong

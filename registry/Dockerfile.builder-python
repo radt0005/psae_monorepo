@@ -15,11 +15,15 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -ldflags="-s -w" -o /out/builder ./cmd/builder
 
-# Runtime: the system python3 (the interpreter the shipped venv is built
-# against — it must match the worker image's python at the same path so the
-# relocated venv resolves), uv, git, and the GDAL/PROJ dev headers geospatial
+# Runtime: the worker base image (ubuntu:24.04) so the system python3 the shipped
+# venv is built against matches the worker's python at the same path and minor
+# version — a venv's pyvenv.cfg/base-interpreter links and cpXYZ wheel tags only
+# resolve after relocation when the interpreter minor is identical (registry.md §5,
+# A3). Debian bookworm shipped Python 3.11 vs the worker's 3.12; ubuntu:24.04
+# ships 3.12 to match. Plus uv, git, and the GDAL/PROJ dev headers geospatial
 # Python collections build native wheels against.
-FROM debian:bookworm-slim
+FROM ubuntu:24.04 AS runtime
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         python3 python3-dev git ca-certificates \
