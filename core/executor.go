@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -46,7 +47,13 @@ func releaseIsolateBoxID(id int) {
 
 // Execute runs a block invocation through the full lifecycle:
 // verify, set up directory, write params, set up inputs, run subprocess, collect outputs.
-func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, registryEntry BlockRegistryEntry, registry *BlockRegistry) (BlockInvocationResult, error) {
+//
+// secrets maps the block's logical secret names to their resolved plaintext
+// values (see spec/secrets.md). The caller resolves them — the worker from the
+// KMS in the cloud, the CLI from the OS keychain locally — and they are injected
+// into the sandbox as the SPADE_SECRETS environment blob, never written to disk.
+// Pass nil when the block declares no secrets.
+func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, registryEntry BlockRegistryEntry, registry *BlockRegistry, secrets map[string]string) (BlockInvocationResult, error) {
 	result := BlockInvocationResult{
 		Id:         block.Id,
 		PipelineId: block.PipelineId,
@@ -112,7 +119,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 	argBinds = append(argBinds, pipelineDir)
 
 	// Run the subprocess with isolate
-	exitCode, err := RunBlockSubprocess(execPath, args, workDir, manifest, registryEntry, argBinds)
+	exitCode, err := RunBlockSubprocess(execPath, args, workDir, manifest, registryEntry, argBinds, secrets)
 	if err != nil {
 		result.Status = ExecutionStatusError
 		result.Error = fmt.Sprintf("subprocess execution failed: %v", err)
@@ -179,7 +186,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 // and `--cleanup` to remove it after; this function handles that lifecycle
 // around each invocation using a process-unique box ID to avoid
 // collisions across concurrent calls.
-func RunBlockSubprocess(execPath string, args []string, workDir string, manifest BlockManifest, entry BlockRegistryEntry, extraBinds []string) (int, error) {
+func RunBlockSubprocess(execPath string, args []string, workDir string, manifest BlockManifest, entry BlockRegistryEntry, extraBinds []string, secrets map[string]string) (int, error) {
 	boxID := allocateIsolateBoxID()
 	defer releaseIsolateBoxID(boxID)
 
@@ -250,6 +257,20 @@ func RunBlockSubprocess(execPath string, args []string, workDir string, manifest
 	manifestPath := filepath.Join(entry.InstalledPath, "blocks", entry.BlockName+".yaml")
 	if _, err := os.Stat(manifestPath); err == nil {
 		isolateArgs = append(isolateArgs, "--env=SPADE_BLOCK_MANIFEST="+manifestPath)
+	}
+
+	// Inject resolved secrets as the SPADE_SECRETS env blob (see
+	// spec/secrets.md §4). The value is set directly into the sandbox
+	// environment via --env=NAME=VALUE and is never written to disk. The arg
+	// is passed to isolate through exec.Command (not a shell), so the JSON
+	// quoting needs no further escaping. The spade runtime library reads this
+	// variable, serves get_secret(), and scrubs it before the handler runs.
+	if len(secrets) > 0 {
+		blob, err := json.Marshal(secrets)
+		if err != nil {
+			return -1, fmt.Errorf("marshaling secrets: %w", err)
+		}
+		isolateArgs = append(isolateArgs, "--env=SPADE_SECRETS="+string(blob))
 	}
 
 	// Isolate's default is no network; opt-in for blocks that declared it.

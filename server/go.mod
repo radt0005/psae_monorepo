@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	captoken v0.0.0
 	github.com/Azure/go-amqp v1.6.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -43,3 +44,5 @@ require (
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )
+
+replace captoken => ../captoken

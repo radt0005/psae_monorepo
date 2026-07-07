@@ -12,6 +12,7 @@ from spade.types import (
 )
 from spade.run import run
 from spade.build import build
+from spade.secrets import get_secret
 
 __all__ = [
     "File",
@@ -26,4 +27,5 @@ __all__ = [
     "TabularFileCollection",
     "run",
     "build",
+    "get_secret",
 ]

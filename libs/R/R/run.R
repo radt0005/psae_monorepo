@@ -8,6 +8,10 @@
 #' @return Invisible NULL.
 #' @export
 run <- function(fn) {
+  # 0. Scrub SPADE_SECRETS from the environment early (before the handler runs),
+  #    even if the block never calls get_secret. Idempotent.
+  .load_secrets()
+
   # 1. Build complete arguments from params.yaml + inputs/ directory
   args <- build_function_args(fn)
 

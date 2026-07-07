@@ -23,6 +23,10 @@ pub enum SpadeError {
     #[error("parameter not found: '{name}'")]
     ParamNotFound { name: String },
 
+    /// A requested secret was not provided to the block.
+    #[error("secret not found: '{name}'; declare it in the pipeline's secrets mapping")]
+    SecretNotFound { name: String },
+
     /// An input subdirectory exists but contains no files.
     #[error("input directory '{name}' is empty")]
     EmptyInputDir { name: String },

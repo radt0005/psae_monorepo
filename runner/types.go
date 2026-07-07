@@ -42,6 +42,12 @@ type Job struct {
 	// at minimum the current block and every direct dependency.
 	// Populated by the scheduler at dispatch time.
 	Manifests map[string]core.BlockManifest `json:"manifests"`
+
+	// CapabilityToken is a short-lived, scheduler-signed token scoping secret
+	// access to exactly the secrets this invocation's block declared (see
+	// spec/secrets.md §6). The worker relays it to the KMS /resolve endpoint.
+	// Empty when the block declares no secrets.
+	CapabilityToken string `json:"capability_token,omitempty"`
 }
 
 // ParseInvocationID splits an invocation ID of the form "<uuid>" or

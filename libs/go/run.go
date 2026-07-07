@@ -8,6 +8,7 @@ import (
 // Run executes a handler function as a Spade block. It loads inputs and params,
 // calls the handler, and writes outputs. On any error it prints to stderr and exits.
 func Run[O IntoOutput](handler func(*Args) (O, error)) {
+	loadSecrets() // scrub SPADE_SECRETS from the environment early
 	if err := RunAt(".", handler); err != nil {
 		fmt.Fprintf(os.Stderr, "spade: %s\n", err)
 		os.Exit(1)
@@ -36,6 +37,7 @@ func RunAt[O IntoOutput](base string, handler func(*Args) (O, error)) error {
 
 // RunNoOutput executes a handler that produces no output.
 func RunNoOutput(handler func(*Args) error) {
+	loadSecrets() // scrub SPADE_SECRETS from the environment early
 	if err := RunNoOutputAt(".", handler); err != nil {
 		fmt.Fprintf(os.Stderr, "spade: %s\n", err)
 		os.Exit(1)
