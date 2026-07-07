@@ -186,6 +186,12 @@ services:
       SPADE_UI_DB_URL: postgres://spade:spade@postgres:5432/spade
       SPADE_HTTP_ADDR: :1323
       SPADE_LOG_LEVEL: info
+      # Capability-token signing for secrets (spec/secrets.md §6). The scheduler
+      # mints a scoped, short-lived ed25519 token per invocation whose block
+      # declares secrets; the KMS trusts the matching public key (KMS_TOKEN_PUBKEYS).
+      # DEV KEY — regenerate for production and keep the private key secret.
+      SCHEDULER_TOKEN_PRIVKEY: zq1HZ5eJxEE+SAjaLbn7dFlZ7zryDdv7YYVbpHGsECrZGhf2Fc6sLiyX67ILRxLwZDe5SKuaBLx52GGiON+ipw==
+      SCHEDULER_TOKEN_TTL: 10m
     depends_on:
       postgres:
         condition: service_healthy
@@ -193,6 +199,34 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+
+  # --------------------------------------------------------------------------
+  # Key-Management Service (spec/secrets.md §5) — stores envelope-encrypted user
+  # secrets and resolves capability-token-scoped secrets for the worker.  The
+  # key-encryption key lives only in this service; only ciphertext is in Postgres.
+  # Build context is the monorepo root (replace directive → ../captoken).
+  # --------------------------------------------------------------------------
+  kms:
+    build:
+      context: .
+      dockerfile: kms/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      KMS_ADDR: :8081
+      KMS_DATABASE_DSN: postgres://spade:spade@postgres:5432/spade
+      # Envelope-encryption key set "id:base64,...", with the active id used to
+      # wrap new secrets. DEV KEY — regenerate for production; rotating adds a new
+      # id and re-wraps (spec/secrets.md §9).
+      KMS_KEKS: "v1:bKbnBASdVM2MJQOJhc/SjuTUi+Aj0GkwyQCqVvRkdIk="
+      KMS_ACTIVE_KEK: v1
+      # Trusted scheduler public key(s) for capability-token verification (a
+      # comma-separated list to allow rotation). Must match SCHEDULER_TOKEN_PRIVKEY.
+      KMS_TOKEN_PUBKEYS: "2RoX9hXOrC4sl+uyC0cS8GQ3uUirmgS8edhhojjfoqc="
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # --------------------------------------------------------------------------
   # Plugin Registry (spec/registry.md) — the real cloud registry service.
@@ -324,6 +358,10 @@ services:
       # seed-blocks shim remains the fallback for the in-repo collections, so an
       # unset SPADE_WORKER_TOKEN just means the fetch path is unused.
       REGISTRY_URL: http://registry:8080
+      # Key-management service for secret resolution (spec/secrets.md §6). On an
+      # invocation whose block declares secrets, the worker exchanges the job's
+      # capability token here for the values, then injects them into the sandbox.
+      KMS_URL: http://kms:8081
       # Worker service token for registry auth; provision one in the registry and
       # inject it here (e.g. via an env/secret). Empty leaves the fetch path
       # dormant behind seed-blocks.
@@ -352,6 +390,10 @@ services:
       # consumes jobs, or every invocation fails "block not installed".
       seed-blocks:
         condition: service_completed_successfully
+      # Secret resolution target; a job whose block declares secrets fails
+      # (and redelivers) if the KMS is unreachable.
+      kms:
+        condition: service_started
 
 volumes:
   postgres-data:
