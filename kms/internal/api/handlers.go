@@ -143,6 +143,13 @@ func (s *Server) handleResolve(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "decryption failed")
 		}
 		out[name] = string(val)
+
+		// Lazy KEK rotation (spec/secrets.md §9): if this secret is wrapped
+		// under a non-active KEK, re-wrap it under the active one so the old
+		// KEK can eventually be retired. Best-effort — never fail the resolve.
+		if sec.KEKID != s.keys.ActiveID() {
+			s.rewrap(c, claims.UserID, name, val)
+		}
 	}
 
 	s.audit(c, store.AuditRecord{
@@ -153,6 +160,27 @@ func (s *Server) handleResolve(c echo.Context) error {
 		Action:       "resolve",
 	})
 	return c.JSON(http.StatusOK, out)
+}
+
+// rewrap re-seals a secret under the active KEK and stores it. Best-effort: any
+// failure is logged, not surfaced — the resolve already succeeded.
+func (s *Server) rewrap(c echo.Context, owner, name string, value []byte) {
+	sealed, err := s.keys.Seal(value)
+	if err != nil {
+		s.logger.Error("re-wrapping secret", "err", err, "name", name)
+		return
+	}
+	if err := s.store.Upsert(c.Request().Context(), store.Secret{
+		OwnerID:    owner,
+		Name:       name,
+		Ciphertext: sealed.Ciphertext,
+		ValueNonce: sealed.ValueNonce,
+		WrappedDEK: sealed.WrappedDEK,
+		DEKNonce:   sealed.DEKNonce,
+		KEKID:      sealed.KEKID,
+	}); err != nil {
+		s.logger.Error("storing re-wrapped secret", "err", err, "name", name)
+	}
 }
 
 // audit writes an audit record, logging (but not failing the request) on error.

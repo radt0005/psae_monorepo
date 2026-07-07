@@ -43,6 +43,10 @@ func NewKeySet(keys map[string][]byte, activeID string) (*KeySet, error) {
 	return &KeySet{keys: keys, activeID: activeID}, nil
 }
 
+// ActiveID returns the id of the KEK used to wrap new secrets. A stored secret
+// whose KEKID differs is a candidate for re-wrapping during rotation.
+func (ks *KeySet) ActiveID() string { return ks.activeID }
+
 // Sealed is the stored ciphertext form of a secret value.
 type Sealed struct {
 	Ciphertext []byte // value encrypted under the DEK

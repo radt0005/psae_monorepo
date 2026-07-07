@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
@@ -165,6 +166,54 @@ func TestResolveWithRealEd25519Token(t *testing.T) {
 	rec = do(t, s, http.MethodPost, "/resolve", "", map[string]any{"token": bobTok, "names": []string{"prod-dsn"}})
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("bob resolving alice's secret should 404, got %d %s", rec.Code, rec.Body)
+	}
+}
+
+// TestResolveLazilyRewrapsUnderActiveKEK verifies KEK rotation (spec/secrets.md
+// §9): a secret wrapped under an old KEK is transparently re-wrapped under the
+// active KEK when it is resolved, so the old KEK can eventually be retired.
+func TestResolveLazilyRewrapsUnderActiveKEK(t *testing.T) {
+	st, err := store.NewSQLiteStore(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	k1 := make([]byte, 32)
+	rand.Read(k1)
+	k2 := make([]byte, 32)
+	rand.Read(k2)
+
+	// A secret sealed under the old active key v1 and stored directly.
+	oldKeys, _ := envelope.NewKeySet(map[string][]byte{"v1": k1}, "v1")
+	sealed, _ := oldKeys.Seal([]byte("postgres://x"))
+	if err := st.Upsert(context.Background(), store.Secret{
+		OwnerID: "alice", Name: "db",
+		Ciphertext: sealed.Ciphertext, ValueNonce: sealed.ValueNonce,
+		WrappedDEK: sealed.WrappedDEK, DEKNonce: sealed.DEKNonce, KEKID: sealed.KEKID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The server now runs with v2 active (v1 still trusted for unwrapping).
+	newKeys, _ := envelope.NewKeySet(map[string][]byte{"v1": k1, "v2": k2}, "v2")
+	s := New(st, newKeys, validVerifier("db"), nil)
+
+	rec := do(t, s, http.MethodPost, "/resolve", "", map[string]any{"token": "t", "names": []string{"db"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("resolve: %d %s", rec.Code, rec.Body)
+	}
+	var vals map[string]string
+	json.Unmarshal(rec.Body.Bytes(), &vals)
+	if vals["db"] != "postgres://x" {
+		t.Fatalf("value = %v", vals)
+	}
+
+	// The stored secret is now re-wrapped under the active KEK v2.
+	got, err := st.Get(context.Background(), "alice", "db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.KEKID != "v2" {
+		t.Fatalf("secret should be re-wrapped under v2, got KEKID=%q", got.KEKID)
 	}
 }
 

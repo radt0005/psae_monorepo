@@ -226,10 +226,15 @@ Local and cloud namespaces are independent (§3.3).  There is no automatic sync 
 
 ## 9. Key Rotation
 
-Two independent keys rotate on their own schedules, both using the list-of-trusted-keys pattern from `registry.md` §6.1 to avoid flag-day cutovers:
+Two independent keys rotate on their own schedules, both using the list-of-trusted-keys pattern from `registry.md` §6.1 to avoid flag-day cutovers.
 
-- **KEK rotation** re-wraps DEKs under a new master key.  Old and new KEKs are both accepted during the window; the KMS re-wraps lazily or in a background pass, then retires the old KEK.
-- **Scheduler signing-key rotation** adds the new public key to the KMS's trusted set before the scheduler switches to signing with the new key; the old key is retired after outstanding tokens have expired.
+- **KEK rotation** re-wraps DEKs under a new master key.  The KMS holds a *set* of KEKs (`KMS_KEKS`, `id:base64,...`) with an active id (`KMS_ACTIVE_KEK`); each stored secret records the `kek_id` that wrapped it.  New secrets are wrapped under the active KEK, and old KEKs stay in the set to unwrap existing secrets.  Migration is **lazy re-wrap on resolve**: when a resolved secret is found under a non-active KEK, the KMS re-seals it under the active one (best-effort, never failing the resolve).  Once every live secret has been resolved at least once after the rotation, the old KEK can be removed from the set.
+
+  *Runbook:* (1) add the new KEK to `KMS_KEKS`, redeploy; (2) set `KMS_ACTIVE_KEK` to the new id, redeploy — new and re-wrapped secrets now use it while old ones still unwrap; (3) after the migration window, drop the old KEK from `KMS_KEKS` and redeploy.
+
+- **Scheduler signing-key rotation** adds the new public key to the KMS's trusted set (`KMS_TOKEN_PUBKEYS`, a comma-separated list) *before* the scheduler switches `SCHEDULER_TOKEN_PRIVKEY` to the new key; the old public key is retired from the list after outstanding tokens have expired (a few token TTLs).
+
+  *Runbook:* (1) add the new public key to `KMS_TOKEN_PUBKEYS`, redeploy the KMS; (2) switch `SCHEDULER_TOKEN_PRIVKEY` to the new private key, redeploy the scheduler; (3) after `SCHEDULER_TOKEN_TTL` has elapsed, drop the old public key from `KMS_TOKEN_PUBKEYS` and redeploy the KMS.
 
 ---
 
