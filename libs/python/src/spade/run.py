@@ -3,6 +3,7 @@ from typing import Callable
 
 from spade._output import read_block_manifest, write_outputs
 from spade._scanning import build_function_args
+from spade.secrets import _load_secrets
 
 
 def run(fn: Callable) -> None:
@@ -18,6 +19,10 @@ def run(fn: Callable) -> None:
         fn: The handler function to execute. Its type hints determine
             how inputs are loaded and outputs are written.
     """
+    # Scrub SPADE_SECRETS from the environment early (before the handler runs),
+    # even if the block never calls get_secret. Idempotent.
+    _load_secrets()
+
     args = build_function_args(fn)
 
     sig = inspect.signature(fn)

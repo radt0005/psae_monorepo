@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 
+	"captoken"
 	"core"
 	"github.com/google/uuid"
 
@@ -120,6 +121,25 @@ func Run(argv []string) error {
 	var resultConsumer broker.ResultConsumer
 
 	eng := engine.New(st, pub, mp, logger)
+
+	// Enable capability-token minting for secrets when a signing key is set
+	// (spec/secrets.md §6). Without it, blocks that declare secrets cannot
+	// resolve them in the cloud. SCHEDULER_TOKEN_PRIVKEY is a base64 ed25519
+	// private key; its public key(s) go to the KMS as KMS_TOKEN_PUBKEYS.
+	if keyB64 := os.Getenv("SCHEDULER_TOKEN_PRIVKEY"); keyB64 != "" {
+		priv, err := captoken.ParsePrivateKey(keyB64)
+		if err != nil {
+			return fmt.Errorf("parsing SCHEDULER_TOKEN_PRIVKEY: %w", err)
+		}
+		ttl := 10 * time.Minute
+		if v := os.Getenv("SCHEDULER_TOKEN_TTL"); v != "" {
+			if d, perr := time.ParseDuration(v); perr == nil {
+				ttl = d
+			}
+		}
+		eng.SetTokenSigner(captoken.NewSigner(priv), ttl)
+		logger.Info("capability-token minting enabled", "ttl", ttl)
+	}
 
 	// Wire the web UI callback if configured.
 	if cfg.UIBaseURL != "" && cfg.UICallbackSecret != "" {

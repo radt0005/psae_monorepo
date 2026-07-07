@@ -35,6 +35,7 @@ func (f *fakeExecutor) Execute(
 	manifest core.BlockManifest,
 	entry core.BlockRegistryEntry,
 	reg *core.BlockRegistry,
+	secrets map[string]string,
 ) (core.BlockInvocationResult, error) {
 	f.called = true
 	f.gotInv = block

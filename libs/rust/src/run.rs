@@ -34,6 +34,10 @@ where
     F: FnOnce(Args) -> std::result::Result<O, Box<dyn std::error::Error + Send + Sync>>,
     O: IntoOutput + SpadeType + 'static,
 {
+    // Scrub SPADE_SECRETS from the environment early (before the handler runs),
+    // even if the block never calls get_secret. Idempotent.
+    crate::secrets::load_secrets();
+
     if let Err(e) = run_at(Path::new("."), handler) {
         eprintln!("spade: {e}");
         std::process::exit(1);

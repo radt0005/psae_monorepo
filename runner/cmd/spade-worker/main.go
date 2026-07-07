@@ -22,6 +22,7 @@ import (
 	"core"
 	"spade_runner/broker"
 	"spade_runner/installer"
+	"spade_runner/kmsclient"
 	"spade_runner/worker"
 )
 
@@ -43,6 +44,11 @@ type config struct {
 	PubKeyCachePath  string
 	FreshnessSec     int
 	PubKeyRefreshSec int
+
+	// KMSURL is the base URL of the key-management service. Empty disables
+	// secret resolution; a block that declares secrets then fails as a
+	// worker-side error (spec/secrets.md §6).
+	KMSURL string
 }
 
 func main() {
@@ -141,6 +147,10 @@ func workerOptions(cfg config, reg *core.BlockRegistry, logger *slog.Logger) ([]
 	if cfg.CacheDir != "" {
 		opts = append(opts, worker.WithCache(cfg.CacheDir))
 	}
+	if cfg.KMSURL != "" {
+		opts = append(opts, worker.WithSecretResolver(kmsclient.New(cfg.KMSURL)))
+		logger.Info("secret resolution enabled", "kms_url", cfg.KMSURL)
+	}
 	if cfg.RegistryURL == "" {
 		logger.Info("registry-fetch installer disabled (no --registry-url); using local/seed blocks only")
 		return opts, nil
@@ -166,6 +176,7 @@ func parseFlags() config {
 	flag.StringVar(&cfg.LogLevel, "log-level", getenv("SPADE_LOG_LEVEL", "info"), "Log level: debug|info|warn|error")
 	flag.BoolVar(&cfg.SkipIsolateCheck, "skip-isolate-check", os.Getenv("SPADE_SKIP_ISOLATE_CHECK") == "1", "Skip the isolate-available probe (dev only)")
 	flag.StringVar(&cfg.RegistryURL, "registry-url", getenv("REGISTRY_URL", ""), "Plugin Registry base URL for the fetch installer (empty disables it)")
+	flag.StringVar(&cfg.KMSURL, "kms-url", getenv("KMS_URL", ""), "Key-management service base URL for secret resolution (empty disables it)")
 	flag.StringVar(&cfg.WorkerToken, "worker-token", getenv("SPADE_WORKER_TOKEN", ""), "Worker service token for registry auth")
 	flag.StringVar(&cfg.PubKeyCachePath, "pubkey-cache", getenv("SPADE_PUBKEY_CACHE", defaultPubKeyCachePath()), "Path to persist the trusted public key set")
 	flag.IntVar(&cfg.FreshnessSec, "freshness-sec", envInt("SPADE_FRESHNESS_SEC", 3600), "Seconds before a registry-installed block is re-checked for recall (0 disables)")

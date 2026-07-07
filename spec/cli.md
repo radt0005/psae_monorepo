@@ -17,6 +17,7 @@ Commands
 - `add`  Adds a new block to the current collection
 - `setup` Set up the Spade system on the local machine
 - `login` Authenticate to the cloud registry
+- `secret` Manage local secrets (connection strings, API keys) for pipeline runs
 
 
 ## `spade init`
@@ -136,6 +137,17 @@ Workers do not use `spade login`; they authenticate to the registry with a rotat
 ## `spade setup`
 
 Sets up the Spade system on the local machine, including creating the `~/.spade/` directory structure and any required configuration.
+
+
+## `spade secret`
+
+Manages **local** secrets used by `spade run`.  A pipeline block references a secret by name in its `secrets` mapping; the value is read from the OS keychain and injected into the block at run time, so it never appears in the pipeline file (see `secrets.md`).
+
+- `spade secret set <name>` -- stores a secret value.  The value is read from the terminal without echoing, or from standard input when piped (e.g. `echo "$DSN" | spade secret set db`).
+- `spade secret list` -- lists stored secret names (never values).
+- `spade secret rm <name>` -- removes a stored secret.
+
+Secrets are stored in the operating-system keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service).  Local secrets are an independent namespace from cloud secrets, which live in the KMS (`secrets.md` §8); the same pipeline can resolve a name to different values locally and in the cloud.
 
 
 ## Technology

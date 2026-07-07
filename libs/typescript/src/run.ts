@@ -1,8 +1,10 @@
 import { getMetadata } from "./metadata.ts";
 import { buildFunctionArgs } from "./scanning.ts";
 import { readBlockManifest, writeOutputs } from "./output.ts";
+import { loadSecrets } from "./secrets.ts";
 
 export function run(fn: Function): void {
+  loadSecrets(); // scrub SPADE_SECRETS from the environment early
   const metadata = getMetadata(fn);
   const args = buildFunctionArgs(metadata);
 

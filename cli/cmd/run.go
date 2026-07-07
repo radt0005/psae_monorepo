@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"spade/internal/secretstore"
+
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
@@ -232,9 +234,15 @@ func runPipeline(pipelinePath string) error {
 			}
 		}
 
+		// Resolve any secrets the block declared from the local OS keychain.
+		secrets, secErr := resolveBlockSecrets(pipelineBlock)
+		if secErr != nil {
+			return fmt.Errorf("resolving secrets for block %s: %w", blockLabel, secErr)
+		}
+
 		// Execute
 		fmt.Printf("  [%d/%d] %s running...\n", completedCount+1, totalBlocks, blockLabel)
-		result, err := core.Execute(invocation, pipelineDir, manifest, regEntry, registry)
+		result, err := core.Execute(invocation, pipelineDir, manifest, regEntry, registry, secrets)
 		if err != nil {
 			return fmt.Errorf("executing block %s: %w", blockLabel, err)
 		}
@@ -272,6 +280,30 @@ func runPipeline(pipelinePath string) error {
 	}
 	fmt.Printf(" in %s\n", elapsed.Round(time.Millisecond))
 	return nil
+}
+
+// resolveBlockSecrets reads the values for a block's declared secrets from the
+// local OS keychain, returning a map of the block's logical names to values for
+// injection into the sandbox (see spec/secrets.md). Returns nil when the block
+// declares no secrets. A referenced secret missing from the keychain is a
+// clear, actionable error.
+func resolveBlockSecrets(pb core.PipelineBlock) (map[string]string, error) {
+	if len(pb.Secrets) == 0 {
+		return nil, nil
+	}
+	resolved := make(map[string]string, len(pb.Secrets))
+	for logical, storedName := range pb.Secrets {
+		val, err := secretstore.Get(storedName)
+		if err != nil {
+			if errors.Is(err, secretstore.ErrNotFound) {
+				return nil, fmt.Errorf("secret %q (bound to %q) is not in the local keychain; "+
+					"set it with `spade secret set %s`", storedName, logical, storedName)
+			}
+			return nil, fmt.Errorf("reading secret %q: %w", storedName, err)
+		}
+		resolved[logical] = val
+	}
+	return resolved, nil
 }
 
 func buildInputHashes(invocation core.BlockInvocation, outputHashes map[string]map[string]string, _ map[uuid.UUID]core.PipelineBlock) map[string]string {
