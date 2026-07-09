@@ -2,6 +2,7 @@ package core
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -81,6 +82,117 @@ echo "processed" > outputs/result/data.txt
 		p := filepath.Join(workDir, sub)
 		if _, err := os.Stat(p); err != nil {
 			t.Errorf("expected %s directory: %v", sub, err)
+		}
+	}
+}
+
+// isolateFriendlyWorkArea creates a world-traversable temp directory tree so
+// the isolate sandbox uid (typically remapped to 100000) can enter it. Mirrors
+// runner/testutil.IsolateFriendlyTempDir, which core cannot import (cycle).
+func isolateFriendlyWorkArea(t *testing.T) string {
+	t.Helper()
+	root := os.Getenv("SPADE_TEST_ROOT")
+	if root == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			t.Fatalf("UserHomeDir: %v", err)
+		}
+		root = filepath.Join(home, ".spade-integration-tests")
+	}
+	if err := os.MkdirAll(root, 0777); err != nil {
+		t.Fatalf("MkdirAll root: %v", err)
+	}
+	dir, err := os.MkdirTemp(root, t.Name()+"-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	if err := os.Chmod(dir, 0777); err != nil {
+		t.Fatalf("Chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	return dir
+}
+
+// TestRunBlockSubprocessInjectsSecrets verifies the Phase 1 delivery contract
+// (spec/secrets.md §4): resolved secrets reach the sandboxed block via the
+// SPADE_SECRETS env blob, and the framework never writes the values to disk.
+func TestRunBlockSubprocessInjectsSecrets(t *testing.T) {
+	if _, err := exec.LookPath("isolate"); err != nil {
+		t.Skip("isolate binary not installed, skipping sandbox test")
+	}
+
+	area := isolateFriendlyWorkArea(t)
+	workDir := filepath.Join(area, "inv")
+	for _, sub := range []string{"logs", "outputs"} {
+		p := filepath.Join(workDir, sub)
+		if err := os.MkdirAll(p, 0777); err != nil {
+			t.Fatalf("mkdir %s: %v", sub, err)
+		}
+		// MkdirAll honours umask; chmod so the sandbox uid (100000) can write.
+		if err := os.Chmod(p, 0777); err != nil {
+			t.Fatalf("chmod %s: %v", sub, err)
+		}
+	}
+	_ = os.Chmod(workDir, 0777)
+	// A representative params.yaml written by the framework — it must not
+	// contain any secret value.
+	if err := WriteParamsYAML(map[string]any{"region": "maine"}, workDir); err != nil {
+		t.Fatalf("WriteParamsYAML: %v", err)
+	}
+
+	// The block writes its SPADE_SECRETS env to an output file so the test can
+	// observe what crossed the sandbox boundary. CWD is the workDir.
+	script := filepath.Join(workDir, "block.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf '%s' \"$SPADE_SECRETS\" > \"$PWD/outputs/got.txt\"\n"), 0755); err != nil {
+		t.Fatalf("write script: %v", err)
+	}
+
+	installed := filepath.Join(area, "installed")
+	if err := os.MkdirAll(installed, 0777); err != nil {
+		t.Fatalf("mkdir installed: %v", err)
+	}
+
+	const secretValue = "s3cr3t-connection-string"
+	secrets := map[string]string{"db": secretValue}
+
+	exitCode, err := RunBlockSubprocess(
+		script, nil, workDir,
+		BlockManifest{ID: "test.block", Kind: BlockKindStandard},
+		BlockRegistryEntry{InstalledPath: installed, BlockName: "test.block"},
+		nil, secrets,
+	)
+	if err != nil {
+		t.Fatalf("RunBlockSubprocess: %v", err)
+	}
+	if exitCode != 0 {
+		stderr, _ := os.ReadFile(filepath.Join(workDir, "logs", "stderr.log"))
+		t.Fatalf("block exited %d: %s", exitCode, stderr)
+	}
+
+	// The block saw the injected blob.
+	got, err := os.ReadFile(filepath.Join(workDir, "outputs", "got.txt"))
+	if err != nil {
+		t.Fatalf("reading block output: %v", err)
+	}
+	if string(got) != `{"db":"`+secretValue+`"}` {
+		t.Errorf("block saw SPADE_SECRETS=%q, want the db value injected", got)
+	}
+
+	// The framework wrote the value nowhere on disk. Scan every file the
+	// framework produced (params.yaml, logs) for the secret value; only the
+	// block's own output may contain it.
+	frameworkFiles := []string{
+		filepath.Join(workDir, "params.yaml"),
+		filepath.Join(workDir, "logs", "stdout.log"),
+		filepath.Join(workDir, "logs", "stderr.log"),
+	}
+	for _, f := range frameworkFiles {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			continue // not all files necessarily exist
+		}
+		if strings.Contains(string(data), secretValue) {
+			t.Errorf("secret value leaked into framework-written file %s", f)
 		}
 	}
 }

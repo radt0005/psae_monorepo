@@ -5,7 +5,7 @@
 #
 # The build context must be the *monorepo root* (`docker build -f
 # server/Dockerfile .`) because go.mod uses `replace` directives that
-# point at sibling modules `../core` and `../runner`.
+# point at sibling modules `../core`, `../runner`, and `../captoken`.
 
 FROM golang:1.25-bookworm AS build
 WORKDIR /src
@@ -13,6 +13,7 @@ WORKDIR /src
 # Copy sibling modules so `replace` resolves at build time.
 COPY core ./core
 COPY runner ./runner
+COPY captoken ./captoken
 COPY server ./server
 
 WORKDIR /src/server

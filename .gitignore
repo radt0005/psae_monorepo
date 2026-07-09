@@ -11,3 +11,7 @@ blocks/sae/R/fay_herriot_mse.R
 blocks/sae/R/mseFH.R
 
 SAE_WORKFLOW_IMPLEMENTATION_PLAN.md
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo

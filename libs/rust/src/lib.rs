@@ -45,6 +45,7 @@ pub mod scanning;
 pub mod output;
 pub mod run;
 pub mod build;
+pub mod secrets;
 
 // Re-export public API
 pub use error::{SpadeError, Result};
@@ -57,3 +58,4 @@ pub use scanning::Args;
 pub use output::Outputs;
 pub use run::run;
 pub use build::{build, ManifestBuilder};
+pub use secrets::get_secret;

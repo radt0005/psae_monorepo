@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -57,6 +58,7 @@ type Executor interface {
 		manifest core.BlockManifest,
 		entry core.BlockRegistryEntry,
 		reg *core.BlockRegistry,
+		secrets map[string]string,
 	) (core.BlockInvocationResult, error)
 }
 
@@ -69,8 +71,9 @@ func (coreExecutor) Execute(
 	manifest core.BlockManifest,
 	entry core.BlockRegistryEntry,
 	reg *core.BlockRegistry,
+	secrets map[string]string,
 ) (core.BlockInvocationResult, error) {
-	return core.Execute(block, pipelineDir, manifest, entry, reg)
+	return core.Execute(block, pipelineDir, manifest, entry, reg, secrets)
 }
 
 // WithExecutor overrides the default core.Execute-backed executor.
@@ -108,6 +111,23 @@ func WithFreshness(d time.Duration) Option {
 	}
 }
 
+// SecretResolver exchanges a job's capability token for the values of the
+// stored secrets an invocation's block declared (spec/secrets.md §6). It is
+// satisfied by spade_runner/kmsclient in production and a fake in tests.
+type SecretResolver interface {
+	Resolve(ctx context.Context, token string, names []string) (map[string]string, error)
+}
+
+// WithSecretResolver enables secret resolution. When set, an invocation whose
+// block declares secrets has them fetched from the KMS and injected into the
+// sandbox. A nil resolver (the default) means a block that declares secrets
+// fails as a worker-side error.
+func WithSecretResolver(r SecretResolver) Option {
+	return func(w *Worker) {
+		w.secretResolver = r
+	}
+}
+
 // Worker orchestrates a single block invocation end-to-end.
 //
 // A Worker is safe to reuse across many jobs; it holds only configuration
@@ -116,11 +136,12 @@ type Worker struct {
 	Registry *core.BlockRegistry
 	WorkRoot string
 
-	cacheDir  string
-	useCache  bool
-	executor  Executor
-	installer Installer
-	freshness time.Duration
+	cacheDir       string
+	useCache       bool
+	executor       Executor
+	installer      Installer
+	freshness      time.Duration
+	secretResolver SecretResolver
 
 	// poisoned records <collection>/<version> pairs whose install was
 	// permanently rejected (bad signature, hash mismatch, recalled). The worker
@@ -311,8 +332,15 @@ func (w *Worker) Run(ctx context.Context, job spade.Job) (core.WorkerResult, err
 		return result, nil
 	}
 
-	// 8. Dispatch execution.
-	execResult, err := w.executor.Execute(inv, pipelineDir, manifest, *entry, w.Registry)
+	// 8. Resolve the block's declared secrets from the KMS (authorized by the
+	// job's capability token), then dispatch execution. A resolve failure is a
+	// worker-side failure: return an error so the caller does not ack and the
+	// broker redelivers (spec/worker.md §Error Handling). Values are never logged.
+	secrets, err := w.resolveSecrets(ctx, job, pipelineBlock)
+	if err != nil {
+		return core.WorkerResult{}, err
+	}
+	execResult, err := w.executor.Execute(inv, pipelineDir, manifest, *entry, w.Registry, secrets)
 	if err != nil {
 		// core.Execute treats subprocess exec errors as both err and
 		// Status=Error.  We classify any such non-nil err as a block
@@ -360,6 +388,47 @@ func (w *Worker) isPoisoned(collection, version string) bool {
 	w.poisonMu.Lock()
 	defer w.poisonMu.Unlock()
 	return w.poisoned[collection+"/"+version]
+}
+
+// resolveSecrets resolves the secrets the block declared into a map of the
+// block's logical names to values, for injection into the sandbox. Returns nil
+// when the block declares no secrets. Any failure is a worker-side error (the
+// caller does not ack; the job redelivers). Secret values are never logged.
+func (w *Worker) resolveSecrets(ctx context.Context, job spade.Job, pb core.PipelineBlock) (map[string]string, error) {
+	if len(pb.Secrets) == 0 {
+		return nil, nil
+	}
+	if w.secretResolver == nil {
+		return nil, fmt.Errorf("block %s declares secrets but no KMS resolver is configured", pb.Name)
+	}
+
+	// The stored-secret names are the values of the block's secrets map. Dedupe
+	// and sort so the resolve request is deterministic.
+	seen := map[string]bool{}
+	stored := make([]string, 0, len(pb.Secrets))
+	for _, storedName := range pb.Secrets {
+		if !seen[storedName] {
+			seen[storedName] = true
+			stored = append(stored, storedName)
+		}
+	}
+	sort.Strings(stored)
+
+	resolved, err := w.secretResolver.Resolve(ctx, job.CapabilityToken, stored)
+	if err != nil {
+		return nil, fmt.Errorf("resolving secrets from KMS: %w", err)
+	}
+
+	// Re-key from stored names to the block's logical names (what get_secret uses).
+	out := make(map[string]string, len(pb.Secrets))
+	for logical, storedName := range pb.Secrets {
+		v, ok := resolved[storedName]
+		if !ok {
+			return nil, fmt.Errorf("KMS did not return declared secret %q", storedName)
+		}
+		out[logical] = v
+	}
+	return out, nil
 }
 
 // findPipelineBlock returns the PipelineBlock matching the given UUID.

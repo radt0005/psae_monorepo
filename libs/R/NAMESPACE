@@ -1,5 +1,6 @@
 import(methods)
 importFrom(yaml, read_yaml)
+importFrom(yaml, yaml.load)
 
 # Types
 exportClasses(File, Directory, RasterFile, VectorFile, TabularFile, JsonFile,
@@ -11,3 +12,4 @@ export(File, Directory, RasterFile, VectorFile, TabularFile, JsonFile,
 
 # Core functions
 export(run, build, spade_types, "spade_types<-")
+export(get_secret)

@@ -1,6 +1,7 @@
 import { getMetadata } from "./metadata.ts";
 import { buildFunctionArgs } from "./scanning.ts";
 import { readBlockManifest, writeOutputs } from "./output.ts";
+import { loadSecrets } from "./secrets.ts";
 
 // Runs a block handler and writes its outputs. Synchronous handlers are handled
 // synchronously (the returned value is undefined) so existing callers and tests
@@ -8,6 +9,7 @@ import { readBlockManifest, writeOutputs } from "./output.ts";
 // async, I/O-bound work — are awaited before outputs are written, and `run`
 // returns a Promise the caller should await.
 export function run(fn: Function): void | Promise<void> {
+  loadSecrets(); // scrub SPADE_SECRETS from the environment early
   const metadata = getMetadata(fn);
   const args = buildFunctionArgs(metadata);
 

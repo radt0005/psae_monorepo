@@ -21,6 +21,7 @@ Collate:
     'build.R'
     'output.R'
     'run.R'
+    'secrets.R'
     'scanning.R'
     'spade_types.R'
     'zzz.R'

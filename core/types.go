@@ -145,6 +145,11 @@ type PipelineBlock struct {
 	Inputs  []InputRef     `yaml:"inputs"`
 	Outputs []string       `yaml:"outputs,omitempty"`
 	Args    map[string]any `yaml:"args"`
+	// Secrets maps a block's logical secret name (the get_secret argument) to
+	// the user's stored secret name. Values are names, never secret values —
+	// the values are resolved at dispatch (cloud) or from the local keychain
+	// (local) and injected into the sandbox. See spec/secrets.md §3.2.
+	Secrets map[string]string `yaml:"secrets,omitempty"`
 }
 
 // Pipeline represents a complete pipeline definition.

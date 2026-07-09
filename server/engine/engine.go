@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
 	"sync"
 	"time"
 
+	"captoken"
 	"core"
 	spade "spade_runner"
 
@@ -47,6 +49,14 @@ type Engine struct {
 	mu    sync.Mutex
 	sched *core.MultiTenantScheduler
 
+	// Capability-token minting for secrets (spec/secrets.md §6). signer is
+	// nil unless configured via SetTokenSigner, in which case invocations
+	// whose block declares secrets carry a scoped token. ownerByPipeline
+	// caches the pipeline submitter (the token's user_id); it is guarded by mu.
+	signer          *captoken.Signer
+	tokenTTL        time.Duration
+	ownerByPipeline map[uuid.UUID]string
+
 	// ready is signaled whenever blocks may have become executable.
 	// Capacity 1 so a flurry of signals coalesces into a single
 	// dispatch sweep.
@@ -71,7 +81,8 @@ func New(s store.Store, pub broker.JobPublisher, mp ManifestProvider, logger *sl
 			Workers:           map[uuid.UUID]core.Worker{},
 			CurrentExecutions: map[uuid.UUID]core.BlockInvocation{},
 		},
-		ready: make(chan struct{}, 1),
+		ownerByPipeline: map[uuid.UUID]string{},
+		ready:           make(chan struct{}, 1),
 	}
 }
 
@@ -79,6 +90,81 @@ func New(s store.Store, pub broker.JobPublisher, mp ManifestProvider, logger *sl
 // Call before starting the engine; it is not goroutine-safe after Run begins.
 func (e *Engine) SetCallback(fn PipelineCallbackFn) {
 	e.callbackFn = fn
+}
+
+// SetTokenSigner enables capability-token minting for secrets (spec/secrets.md
+// §6). When set, invocations whose block declares secrets carry a short-lived
+// token scoped to those secrets. Call before starting the engine.
+func (e *Engine) SetTokenSigner(signer *captoken.Signer, ttl time.Duration) {
+	e.signer = signer
+	e.tokenTTL = ttl
+}
+
+// ownerFor returns the pipeline's submitter (the token's user_id), consulting
+// an in-memory cache and falling back to the store (which also covers state
+// rebuilt by Recover). Returns "" if unknown.
+func (e *Engine) ownerFor(ctx context.Context, pipelineID uuid.UUID) string {
+	e.mu.Lock()
+	owner, ok := e.ownerByPipeline[pipelineID]
+	e.mu.Unlock()
+	if ok {
+		return owner
+	}
+	rec, err := e.store.LoadPipeline(ctx, pipelineID)
+	if err != nil {
+		return ""
+	}
+	e.mu.Lock()
+	e.ownerByPipeline[pipelineID] = rec.SubmitterUserID
+	e.mu.Unlock()
+	return rec.SubmitterUserID
+}
+
+// mintCapabilityToken returns a signed token scoped to the secrets the given
+// invocation's block declares, or "" when minting is disabled or the block
+// declares no secrets. The scoped names are the stored-secret names (the values
+// of the block's secrets map); the KMS resolves those and the worker re-keys to
+// the logical names.
+func (e *Engine) mintCapabilityToken(ctx context.Context, pipeline core.Pipeline, inv core.BlockInvocation) string {
+	if e.signer == nil {
+		return ""
+	}
+	var pb core.PipelineBlock
+	found := false
+	for _, b := range pipeline.Blocks {
+		if b.Id == inv.Id {
+			pb, found = b, true
+			break
+		}
+	}
+	if !found || len(pb.Secrets) == 0 {
+		return ""
+	}
+
+	names := make([]string, 0, len(pb.Secrets))
+	for _, storedName := range pb.Secrets {
+		names = append(names, storedName)
+	}
+	sort.Strings(names)
+
+	owner := e.ownerFor(ctx, inv.PipelineId)
+	if owner == "" {
+		e.logger.Warn("cannot mint capability token: unknown pipeline owner",
+			"pipeline", inv.PipelineId, "invocation", inv.InvocationID())
+		return ""
+	}
+
+	tok, err := e.signer.Sign(captoken.Claims{
+		UserID:       owner,
+		InvocationID: inv.InvocationID(),
+		SecretNames:  names,
+		Expiry:       time.Now().Add(e.tokenTTL),
+	})
+	if err != nil {
+		e.logger.Error("signing capability token", "err", err, "invocation", inv.InvocationID())
+		return ""
+	}
+	return tok
 }
 
 // fireCallback invokes the registered callback if one is set.  It loads
@@ -475,6 +561,7 @@ func (e *Engine) dispatchSweep(ctx context.Context) error {
 		}
 
 		job := spade.BuildJobForInvocation(inv, ps.Pipeline, blockManifests, "")
+		job.CapabilityToken = e.mintCapabilityToken(ctx, ps.Pipeline, inv)
 		if err := e.publisher.Publish(ctx, job); err != nil {
 			// Put the invocation back so it tries again on the next
 			// reconnect/sweep.  Re-enqueue at the head of executable
