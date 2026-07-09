@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -31,8 +32,12 @@ type BlockSnapshot struct {
 	BlockID        uuid.UUID
 	Name           string
 	Status         BlockSnapshotStatus
-	MapIndex       *int
-	MapInvocations []string // invocation IDs of the N fan-outs, if this is a map block
+	MapIndices     []int
+	MapInvocations []string // invocation IDs of the fan-outs across all instances, if this is a map block
+	// InstanceCounts maps each expanded instance of this map block
+	// (keyed by index prefix, "" for a top-level map) to its item count.
+	// Lets the UI render ragged nested fan-out as aggregates.
+	InstanceCounts map[string]int
 	Expansion      *ExpansionManifest
 	ExitCode       int
 	ErrorMessage   string
@@ -73,8 +78,11 @@ func (s *SinglePipelineScheduler) Snapshot() PipelineSnapshot {
 			BlockID: pb.Id,
 			Name:    pb.Name,
 		}
-		// Did this block already complete or error?
-		if res, ok := s.CompletedBlocks[pb.Id]; ok {
+		// Did this block already complete or error?  Top-level blocks
+		// complete under their bare UUID; nested map/reduce instances
+		// complete under per-instance IDs and are surfaced via
+		// MapInvocations on the enclosing map block instead.
+		if res, ok := s.CompletedBlocks[pb.Id.String()]; ok {
 			switch res.Status {
 			case ExecutionStatusComplete:
 				bs.Status = BlockSnapshotComplete
@@ -92,7 +100,7 @@ func (s *SinglePipelineScheduler) Snapshot() PipelineSnapshot {
 			bs.Expansion = res.Expansion
 		} else if _, ok := executable[pb.Id.String()]; ok {
 			bs.Status = BlockSnapshotExecutable
-		} else if _, ok := s.PendingBlocks[pb.Id]; ok {
+		} else if _, ok := s.PendingBlocks[pb.Id.String()]; ok {
 			bs.Status = BlockSnapshotPending
 		} else {
 			// Possibly the block has been expanded into N mapped
@@ -101,14 +109,26 @@ func (s *SinglePipelineScheduler) Snapshot() PipelineSnapshot {
 		}
 
 		// If this is a map block with a known context, attach the
-		// resolved invocation IDs so the API can show fan-out progress.
+		// resolved invocation IDs (across all instances of the context)
+		// so the API can show fan-out progress.
 		if ctx, ok := s.MapContexts[pb.Id]; ok && ctx != nil {
-			for blockID := range ctx.MappedBlockIDs {
-				_ = blockID
+			prefixes := make([]string, 0, len(ctx.Expansions))
+			for p := range ctx.Expansions {
+				prefixes = append(prefixes, p)
 			}
-			for i := range ctx.ExpansionItems {
-				inv := BlockInvocation{Id: pb.Id, MapIndex: intPtr(i)}
-				bs.MapInvocations = append(bs.MapInvocations, inv.InvocationID())
+			sort.Strings(prefixes)
+			if len(prefixes) > 0 {
+				bs.InstanceCounts = make(map[string]int, len(prefixes))
+			}
+			for _, p := range prefixes {
+				bs.InstanceCounts[p] = len(ctx.Expansions[p])
+				base := pb.Id.String()
+				if p != "" {
+					base += "." + p
+				}
+				for i := range ctx.Expansions[p] {
+					bs.MapInvocations = append(bs.MapInvocations, fmt.Sprintf("%s.%d", base, i))
+				}
 			}
 		}
 
@@ -132,10 +152,6 @@ func (s *SinglePipelineScheduler) Snapshot() PipelineSnapshot {
 
 	return snap
 }
-
-// intPtr returns a pointer to the supplied int.  Inlined here to avoid
-// pulling in another helper file just for one tiny utility.
-func intPtr(i int) *int { return &i }
 
 // --- MultiTenantScheduler helpers ---
 
@@ -180,66 +196,19 @@ func (s *MultiTenantScheduler) Snapshot(id uuid.UUID) (PipelineSnapshot, bool) {
 // scheduler-side consumers to drop duplicate results before mutating
 // state, per worker.md §Result reporting ("first result wins").
 //
-// invocationID is the canonical string form: <UUID> for non-mapped
-// blocks and <UUID>.<index> for mapped blocks.
+// invocationID is the canonical string form: the block UUID plus one
+// ".<index>" component per enclosing map context — exactly the key used
+// by CompletedBlocks.
 func (s *MultiTenantScheduler) IsAlreadyProcessed(invocationID string) bool {
-	parsed, mapIdx, err := parseInvocationIDForScheduler(invocationID)
-	if err != nil {
-		return false
-	}
 	for _, ps := range s.Schedulers {
 		if ps == nil {
 			continue
 		}
-		if res, ok := ps.CompletedBlocks[parsed]; ok {
-			if mapIdx == nil {
-				return true
-			}
-			// For mapped invocations, the per-index completion is
-			// stored under a SHA1-derived key; reconstruct that here.
-			_ = res
-			mappedKey := uuid.NewSHA1(parsed, []byte(fmt.Sprintf("%d", *mapIdx)))
-			if _, mok := ps.CompletedBlocks[mappedKey]; mok {
-				return true
-			}
-		} else if mapIdx != nil {
-			mappedKey := uuid.NewSHA1(parsed, []byte(fmt.Sprintf("%d", *mapIdx)))
-			if _, mok := ps.CompletedBlocks[mappedKey]; mok {
-				return true
-			}
+		if _, ok := ps.CompletedBlocks[invocationID]; ok {
+			return true
 		}
 	}
 	return false
-}
-
-// parseInvocationIDForScheduler is a tiny local re-implementation of the
-// runner's ParseInvocationID, kept here so this package has no upward
-// dependency on spade_runner.  Returns the UUID part and an optional
-// map-index suffix.
-func parseInvocationIDForScheduler(id string) (uuid.UUID, *int, error) {
-	raw := id
-	var mi *int
-	for i := len(id) - 1; i >= 0; i-- {
-		if id[i] == '.' {
-			suffix := id[i+1:]
-			n := 0
-			ok := len(suffix) > 0
-			for _, c := range suffix {
-				if c < '0' || c > '9' {
-					ok = false
-					break
-				}
-				n = n*10 + int(c-'0')
-			}
-			if ok {
-				raw = id[:i]
-				mi = &n
-			}
-			break
-		}
-	}
-	u, err := uuid.Parse(raw)
-	return u, mi, err
 }
 
 // Rehydrate registers the pipeline with the multi-tenant scheduler and
@@ -262,12 +231,15 @@ func (s *MultiTenantScheduler) Rehydrate(p Pipeline, completedResults []BlockInv
 	// already finished.
 	for _, r := range completedResults {
 		if err := ps.Update(r); err != nil {
-			return fmt.Errorf("replaying result %s: %w", r.Id, err)
+			return fmt.Errorf("replaying result %s: %w", r.InvocationID(), err)
 		}
 		if r.Status == ExecutionStatusComplete || r.Status == ExecutionStatusError {
+			// Prune by full invocation ID so replaying one mapped
+			// sibling's result does not drop the others.
+			doneID := r.InvocationID()
 			filtered := ps.ExecutableBlocks[:0]
 			for _, inv := range ps.ExecutableBlocks {
-				if inv.Id == r.Id {
+				if inv.InvocationID() == doneID {
 					continue
 				}
 				filtered = append(filtered, inv)
@@ -284,10 +256,11 @@ func (s *MultiTenantScheduler) Rehydrate(p Pipeline, completedResults []BlockInv
 //
 // Implementation notes per Phase 3.8 of the scheduling server's plan.
 func WorkerResultToInvocationResult(r WorkerResult) BlockInvocationResult {
-	parsed, _, _ := parseInvocationIDForScheduler(r.InvocationID)
+	parsed, indices, _ := ParseInvocationID(r.InvocationID)
 	return BlockInvocationResult{
 		Id:         parsed,
 		PipelineId: r.PipelineID,
+		MapIndices: indices,
 		Status:     r.Status,
 		Expansion:  r.Expansion,
 		Error:      r.Error,

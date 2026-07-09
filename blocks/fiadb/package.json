@@ -1,0 +1,12 @@
+{
+  "name": "fiadb",
+  "version": "0.1.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "dependencies": {
+    "spade": "file:../../libs/typescript"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

@@ -160,16 +160,22 @@ func TestWorkerResultToInvocationResult(t *testing.T) {
 	}
 }
 
-func TestParseInvocationIDForScheduler(t *testing.T) {
+func TestWorkerResultToInvocationResultMapped(t *testing.T) {
 	id := uuid.Must(uuid.NewV7())
-	// Plain UUID.
-	u, mi, err := parseInvocationIDForScheduler(id.String())
-	if err != nil || u != id || mi != nil {
-		t.Fatalf("plain: got %v %v %v", u, mi, err)
+	pid := uuid.Must(uuid.NewV7())
+	wr := WorkerResult{
+		InvocationID: id.String() + ".2.5",
+		PipelineID:   pid,
+		Status:       ExecutionStatusComplete,
 	}
-	// With map index.
-	u, mi, err = parseInvocationIDForScheduler(id.String() + ".7")
-	if err != nil || u != id || mi == nil || *mi != 7 {
-		t.Fatalf("indexed: got %v %v %v", u, mi, err)
+	r := WorkerResultToInvocationResult(wr)
+	if r.Id != id {
+		t.Fatalf("Id: got %s want %s", r.Id, id)
+	}
+	if len(r.MapIndices) != 2 || r.MapIndices[0] != 2 || r.MapIndices[1] != 5 {
+		t.Fatalf("MapIndices: got %v want [2 5]", r.MapIndices)
+	}
+	if r.InvocationID() != wr.InvocationID {
+		t.Fatalf("InvocationID round-trip: got %s want %s", r.InvocationID(), wr.InvocationID)
 	}
 }

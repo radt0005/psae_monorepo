@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_tile_index (019ee008-ab56-714f-8044-82537886fbb8)
+Loaded pipeline: gdal_tile_index (019f47d8-0835-758e-804b-13baad3f7ac9)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] gdal.tile_index running...
   [2/2] gdal.tile_index complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.413s
+Pipeline complete: 2 block(s) executed (1 cached) in 988ms

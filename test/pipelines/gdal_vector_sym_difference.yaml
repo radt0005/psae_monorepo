@@ -1,27 +1,27 @@
-id: 019ee02c-c75e-79dc-80af-13866e68f83d
+id: 019f47d8-0844-7234-80b6-cc57e943ff6e
 name: gdal_vector_sym_difference
 version: "1.0"
 description: Symmetric difference of two layers
 blocks:
-- id: 019ee02c-c75e-7081-80ac-cb6ce93a517c
+- id: 019f47d8-0844-7db0-80b3-3ba5f3ed9e68
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019ee02c-c75e-7651-80ad-8614c21f837c
+- id: 019f47d8-0844-7988-80b4-8abcd69af713
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors2.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019ee02c-c75e-760b-80ae-a0f79f80c03e
+- id: 019f47d8-0844-7708-80b5-e3ecabb26fca
   name: gdal.vector_sym_difference
   inputs:
-  - block: 019ee02c-c75e-7081-80ac-cb6ce93a517c
+  - block: 019f47d8-0844-7db0-80b3-3ba5f3ed9e68
     output: file
     as: a
-  - block: 019ee02c-c75e-7651-80ad-8614c21f837c
+  - block: 019f47d8-0844-7988-80b4-8abcd69af713
     output: file
     as: b
   args: {}

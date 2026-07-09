@@ -422,7 +422,11 @@ func TestValidateMapWithoutReduce(t *testing.T) {
 	}
 }
 
-func TestValidateNestedMaps(t *testing.T) {
+// TestValidateNestedMapUnclosedOuter: an inner map/reduce pair whose outer
+// map context is never closed by a reduce must be rejected.  (Nested maps
+// themselves are legal when every context is closed — see
+// TestValidateNestedMapsWellFormed.)
+func TestValidateNestedMapUnclosedOuter(t *testing.T) {
 	idA, _ := uuid.Parse("019cf4bc-1111-7000-0000-000000000000")
 	idB, _ := uuid.Parse("019cf4bc-2222-7000-0000-000000000000")
 	idC, _ := uuid.Parse("019cf4bc-3333-7000-0000-000000000000")
@@ -464,7 +468,72 @@ func TestValidateNestedMaps(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("expected validation error for nested maps")
+		t.Fatal("expected validation error: outer map context has no closing reduce")
+	}
+}
+
+// TestValidateNestedMapsWellFormed: a depth-2 map/reduce chain where both
+// contexts are closed must validate cleanly.
+func TestValidateNestedMapsWellFormed(t *testing.T) {
+	idSrc, _ := uuid.Parse("019cf4bc-0000-7000-0000-000000000000")
+	idM1, _ := uuid.Parse("019cf4bc-1111-7000-0000-000000000000")
+	idM2, _ := uuid.Parse("019cf4bc-2222-7000-0000-000000000000")
+	idX, _ := uuid.Parse("019cf4bc-3333-7000-0000-000000000000")
+	idR2, _ := uuid.Parse("019cf4bc-4444-7000-0000-000000000000")
+	idR1, _ := uuid.Parse("019cf4bc-5555-7000-0000-000000000000")
+
+	p := Pipeline{
+		Id:      uuid.New(),
+		Name:    "nested-map-well-formed",
+		Version: "1.0",
+		Blocks: []PipelineBlock{
+			{Id: idSrc, Name: "data.tiles", Inputs: []InputRef{}, Args: map[string]any{}},
+			{Id: idM1, Name: "core.map.files", Inputs: []InputRef{{ID: idSrc}}, Args: map[string]any{}},
+			{Id: idM2, Name: "core.map.files2", Inputs: []InputRef{{ID: idM1}}, Args: map[string]any{}},
+			{Id: idX, Name: "raster.process", Inputs: []InputRef{{ID: idM2}}, Args: map[string]any{}},
+			{Id: idR2, Name: "core.reduce", Inputs: []InputRef{{ID: idX}}, Args: map[string]any{}},
+			{Id: idR1, Name: "core.reduce2", Inputs: []InputRef{{ID: idR2}}, Args: map[string]any{}},
+		},
+	}
+
+	manifests := map[string]BlockManifest{
+		"data.tiles": {
+			ID: "data.tiles", Kind: BlockKindStandard,
+			Inputs:  map[string]InputDeclaration{},
+			Outputs: map[string]OutputDeclaration{"tiles": {Type: "collection"}},
+		},
+		"core.map.files": {
+			ID: "core.map.files", Kind: BlockKindMap,
+			Inputs:  map[string]InputDeclaration{"source": {Type: "collection"}},
+			Outputs: map[string]OutputDeclaration{"manifest": {Type: "expansion"}},
+		},
+		"core.map.files2": {
+			ID: "core.map.files2", Kind: BlockKindMap,
+			Inputs:  map[string]InputDeclaration{"source": {Type: "collection"}},
+			Outputs: map[string]OutputDeclaration{"manifest": {Type: "expansion"}},
+		},
+		"raster.process": {
+			ID: "raster.process", Kind: BlockKindStandard,
+			Inputs:  map[string]InputDeclaration{"data": {Type: "file"}},
+			Outputs: map[string]OutputDeclaration{"result": {Type: "file"}},
+		},
+		"core.reduce": {
+			ID: "core.reduce", Kind: BlockKindReduce,
+			Inputs:  map[string]InputDeclaration{"tiles": {Type: "collection"}},
+			Outputs: map[string]OutputDeclaration{"result": {Type: "file"}},
+		},
+		"core.reduce2": {
+			ID: "core.reduce2", Kind: BlockKindReduce,
+			Inputs:  map[string]InputDeclaration{"parts": {Type: "collection"}},
+			Outputs: map[string]OutputDeclaration{"result": {Type: "file"}},
+		},
+	}
+
+	errs := ValidatePipeline(p, manifests)
+	for _, e := range errs {
+		if e != nil {
+			t.Errorf("unexpected validation error for well-formed nested pipeline: %v", e)
+		}
 	}
 }
 

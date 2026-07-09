@@ -381,9 +381,14 @@ func (e *Engine) Recover(ctx context.Context) error {
 }
 
 func recordToResult(inv store.InvocationRecord, pid uuid.UUID, status core.ExecutionStatus) core.BlockInvocationResult {
+	// The record ID string carries the map index vector; without it a
+	// replayed mapped result would be keyed under the bare block UUID
+	// and rehydration would mis-track fan-out completion.
+	_, indices, _ := core.ParseInvocationID(inv.ID)
 	r := core.BlockInvocationResult{
 		Id:         inv.BlockID,
 		PipelineId: pid,
+		MapIndices: indices,
 		Status:     status,
 		ExitCode:   inv.ExitCode,
 		LogsPath:   inv.LogsPath,
@@ -489,7 +494,7 @@ func (e *Engine) dispatchSweep(ctx context.Context) error {
 			PipelineID:   inv.PipelineId,
 			BlockID:      inv.Id,
 			BlockName:    inv.BlockId,
-			MapIndex:     inv.MapIndex,
+			MapIndices:   core.IndexPrefix(inv.MapIndices, len(inv.MapIndices)),
 			Status:       store.InvocationDispatched,
 			DispatchedAt: &now,
 		}
@@ -540,7 +545,7 @@ func (e *Engine) resultLoop(ctx context.Context, consumer broker.ResultConsumer)
 }
 
 func (e *Engine) applyResult(ctx context.Context, wr core.WorkerResult) error {
-	uuidPart, mapIdx, _ := spade.ParseInvocationID(wr.InvocationID)
+	uuidPart, mapIndices, _ := spade.ParseInvocationID(wr.InvocationID)
 
 	e.mu.Lock()
 	if e.sched.IsAlreadyProcessed(wr.InvocationID) {
@@ -571,7 +576,7 @@ func (e *Engine) applyResult(ctx context.Context, wr core.WorkerResult) error {
 		PipelineID:   wr.PipelineID,
 		BlockID:      result.Id,
 		BlockName:    "",
-		MapIndex:     mapIdx,
+		MapIndices:   core.IndexPrefix(mapIndices, len(mapIndices)),
 		Status:       statusFromWorker(wr.Status),
 		CompletedAt:  &now,
 		ExitCode:     wr.ExitCode,
@@ -677,7 +682,7 @@ func (e *Engine) collectPendingRowsLocked(pid uuid.UUID, status core.ExecutionSt
 	}
 	var out []store.InvocationRecord
 	for _, inv := range ps.ExecutableBlocks {
-		if inv.MapIndex == nil {
+		if len(inv.MapIndices) == 0 {
 			continue
 		}
 		out = append(out, store.InvocationRecord{
@@ -685,12 +690,12 @@ func (e *Engine) collectPendingRowsLocked(pid uuid.UUID, status core.ExecutionSt
 			PipelineID: inv.PipelineId,
 			BlockID:    inv.Id,
 			BlockName:  inv.BlockId,
-			MapIndex:   inv.MapIndex,
+			MapIndices: core.IndexPrefix(inv.MapIndices, len(inv.MapIndices)),
 			Status:     store.InvocationReady,
 		})
 	}
 	for _, inv := range ps.PendingBlocks {
-		if inv.MapIndex == nil {
+		if len(inv.MapIndices) == 0 {
 			continue
 		}
 		out = append(out, store.InvocationRecord{
@@ -698,7 +703,7 @@ func (e *Engine) collectPendingRowsLocked(pid uuid.UUID, status core.ExecutionSt
 			PipelineID: inv.PipelineId,
 			BlockID:    inv.Id,
 			BlockName:  inv.BlockId,
-			MapIndex:   inv.MapIndex,
+			MapIndices: core.IndexPrefix(inv.MapIndices, len(inv.MapIndices)),
 			Status:     store.InvocationPending,
 		})
 	}

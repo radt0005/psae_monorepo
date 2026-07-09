@@ -136,7 +136,7 @@ func TestSinglePipelineSchedulerDiamond(t *testing.T) {
 	s.Update(BlockInvocationResult{Id: invB.Id, PipelineId: p.Id, Status: ExecutionStatusComplete})
 
 	// D should still be pending (waiting for C)
-	if _, exists := s.PendingBlocks[idD]; !exists {
+	if _, exists := s.PendingBlocks[idD.String()]; !exists {
 		// Check if D is in executable (which would be wrong unless C also completed)
 		for _, eb := range s.ExecutableBlocks {
 			if eb.Id == idD {
@@ -247,7 +247,7 @@ func TestHandleMapCreatesInvocations(t *testing.T) {
 	// They could be in ExecutableBlocks or PendingBlocks
 	totalMapped := len(s.ExecutableBlocks)
 	for _, pending := range s.PendingBlocks {
-		if pending.MapIndex != nil {
+		if len(pending.MapIndices) > 0 {
 			totalMapped++
 		}
 	}
@@ -257,10 +257,10 @@ func TestHandleMapCreatesInvocations(t *testing.T) {
 			totalMapped, len(s.ExecutableBlocks), totalMapped-len(s.ExecutableBlocks))
 	}
 
-	// Check that invocations have MapIndex set
+	// Check that invocations have MapIndices set
 	for _, eb := range s.ExecutableBlocks {
-		if eb.MapIndex == nil {
-			t.Error("executable mapped block should have MapIndex set")
+		if len(eb.MapIndices) == 0 {
+			t.Error("executable mapped block should have MapIndices set")
 		}
 	}
 }
@@ -479,7 +479,7 @@ func TestMapContextPropagation(t *testing.T) {
 	if !ctx.MappedBlockIDs[idC] {
 		t.Error("expected block C in map context")
 	}
-	if ctx.ReduceBlockID != idReduce {
-		t.Errorf("expected reduce block %s, got %s", idReduce, ctx.ReduceBlockID)
+	if len(ctx.ReduceBlockIDs) != 1 || ctx.ReduceBlockIDs[0] != idReduce {
+		t.Errorf("expected reduce blocks [%s], got %v", idReduce, ctx.ReduceBlockIDs)
 	}
 }

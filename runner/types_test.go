@@ -17,7 +17,7 @@ func TestParseInvocationID_PlainUUID(t *testing.T) {
 		t.Errorf("uuid mismatch: want %s got %s", u, got)
 	}
 	if idx != nil {
-		t.Errorf("expected nil map index, got %v", *idx)
+		t.Errorf("expected nil map index vector, got %v", idx)
 	}
 }
 
@@ -30,8 +30,22 @@ func TestParseInvocationID_Mapped(t *testing.T) {
 	if got != u {
 		t.Errorf("uuid mismatch")
 	}
-	if idx == nil || *idx != 7 {
-		t.Fatalf("expected map index 7, got %v", idx)
+	if len(idx) != 1 || idx[0] != 7 {
+		t.Fatalf("expected map index vector [7], got %v", idx)
+	}
+}
+
+func TestParseInvocationID_Nested(t *testing.T) {
+	u := uuid.New()
+	got, idx, err := ParseInvocationID(u.String() + ".7.0.12")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != u {
+		t.Errorf("uuid mismatch")
+	}
+	if len(idx) != 3 || idx[0] != 7 || idx[1] != 0 || idx[2] != 12 {
+		t.Fatalf("expected map index vector [7 0 12], got %v", idx)
 	}
 }
 
@@ -75,8 +89,8 @@ func TestInvocationFromJob_Standard(t *testing.T) {
 	if inv.Id != blockID || inv.BlockId != "hello" || inv.PipelineId != pipeID {
 		t.Errorf("invocation fields mismatch: %+v", inv)
 	}
-	if inv.MapIndex != nil {
-		t.Errorf("expected no map index")
+	if len(inv.MapIndices) != 0 {
+		t.Errorf("expected no map indices")
 	}
 	if v := inv.Arguments["x"]; v != 1 {
 		t.Errorf("args not propagated: %v", inv.Arguments)
@@ -103,8 +117,8 @@ func TestInvocationFromJob_Mapped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if inv.MapIndex == nil || *inv.MapIndex != 3 {
-		t.Errorf("expected map index 3, got %v", inv.MapIndex)
+	if len(inv.MapIndices) != 1 || inv.MapIndices[0] != 3 {
+		t.Errorf("expected map indices [3], got %v", inv.MapIndices)
 	}
 }
 

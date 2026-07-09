@@ -1,19 +1,19 @@
-id: 019f18ed-0ff0-71ea-811d-e0462942cd14
+id: 019f47d8-0858-7b82-8124-7ea8db71192e
 name: stats_anova
 version: "1.0"
 description: One-way analysis of variance (ANOVA) of a numeric response across the
   levels of a grouping column.
 blocks:
-- id: 019f18ed-0ff0-7243-811b-10ec437562bb
+- id: 019f47d8-0857-73de-8122-b3448974327b
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
     format: CSV
-- id: 019f18ed-0ff0-7015-811c-42fdbe5842a3
+- id: 019f47d8-0857-7cbf-8123-eeaec0ba260e
   name: stats.anova
   inputs:
-  - 019f18ed-0ff0-7243-811b-10ec437562bb
+  - 019f47d8-0857-73de-8122-b3448974327b
   args:
     value_column: x
     group_column: group

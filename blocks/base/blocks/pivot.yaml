@@ -1,0 +1,45 @@
+id: base.pivot
+version: 0.1.0
+kind: standard
+network: false
+description: >-
+  Reshape a table between long and wide form. In "wider" mode the distinct
+  values of names_from become new columns, filled from values_from (one value
+  per id/name cell). In "longer" mode the values_from columns are gathered into
+  a "variable"/"value" pair keyed by id_columns.
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  direction:
+    type: string
+    description: '"wider" (default) or "longer".'
+  id_columns:
+    type: string
+    description: >-
+      Comma-separated columns that identify a row and are preserved on both
+      sides of the reshape.
+  names_from:
+    type: string
+    description: >-
+      wider: the column whose distinct values become new column names.
+      longer: unused.
+  values_from:
+    type: string
+    description: >-
+      wider: the column whose values fill the new columns.
+      longer: comma-separated columns to gather (empty = all non-id columns).
+  fill:
+    type: string
+    description: >-
+      wider only: numeric value to substitute for empty cells (e.g. "0" to
+      match the reference workflow's NA-to-zero on height bins). Empty (default)
+      leaves them null.
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: The reshaped table.

@@ -157,6 +157,15 @@ BLOCK_DEFAULTS: dict[str, dict[str, object]] = {
                                 "conf_level": 0.95},
     "stats.anova":             {"value_column": "", "group_column": ""},
     "stats.chisq_test":        {"column": "", "by": "", "correct": True},
+    # ---- fiadb ----
+    "fiadb.fullreport":        {"wc": "", "snum": "", "sdenom": "", "rselected": "",
+                                "cselected": "", "pselected": "", "rtime": "", "ctime": "",
+                                "ptime": "", "strFilter": "", "FIAorRPA": "", "estOnly": ""},
+    "fiadb.parameters":        {"name": ""},
+    "fiadb.area":              {"state": "", "year": "", "group_by": "", "land_basis": "", "units": ""},
+    "fiadb.volume":            {"state": "", "year": "", "group_by": "", "land_basis": "", "units": ""},
+    "fiadb.biomass":           {"state": "", "year": "", "group_by": "", "land_basis": "", "units": ""},
+    "fiadb.carbon":            {"state": "", "year": "", "group_by": "", "land_basis": "", "units": ""},
 }
 
 
@@ -471,6 +480,7 @@ def generate_pipelines():
     generated += _gdal_pipelines()
     generated += _data_pipelines()
     generated += _stats_pipelines()
+    generated += _fiadb_pipelines()
 
     print(f"Generated {len(generated)} pipelines in {PIPELINES}")
     return generated
@@ -631,6 +641,28 @@ def _base_pipelines() -> list[str]:
         "base_map_range",
         "Fan out over numeric range 1..5 and reduce",
         [mr, red],
+    )))
+
+    # 13. Nested map/reduce (depth 2):
+    #     map_files -> map_files -> csv_to_parquet -> reduce -> reduce
+    # Each outer item is a single CSV, so every inner instance expands to
+    # exactly one item — the counts are trivial but the full nested
+    # machinery (per-instance expansions, inner reduce per outer index,
+    # outer reduce once) is exercised end-to-end.
+    read_coll = block("data.read_collection", args={
+        "uri": fixture_path("") + "test_data*.csv",
+        "format": "CSV",
+        "max_items": 10,
+    })
+    outer_map = block("base.map_files", inputs=[bare(read_coll)])
+    inner_map = block("base.map_files", inputs=[bare(outer_map)])
+    conv = block("base.csv_to_parquet", inputs=[bare(inner_map)])
+    inner_red = block("base.reduce_collection", inputs=[bare(conv)])
+    outer_red = block("base.reduce_collection", inputs=[bare(inner_red)])
+    paths.append(save(pipeline(
+        "base_map_nested",
+        "Nested map/reduce: fan out over CSVs, re-map each, convert, reduce twice",
+        [read_coll, outer_map, inner_map, conv, inner_red, outer_red],
     )))
 
     return paths
@@ -1258,6 +1290,95 @@ def _stats_pipelines() -> list[str]:
     # 6. chisq_test — independence of group and region
     paths.append(save(with_data(
         "stats.chisq_test", {"column": "group", "by": "region"})))
+
+    return paths
+
+
+# ---- fiadb collection pipelines (TypeScript / Bun) ----
+def _fiadb_pipelines() -> list[str]:
+    """FIADB-API / EVALIDator estimate pipelines. All hit the live USFS service,
+    so every pipeline is tagged [NETWORK]."""
+    paths = []
+
+    # 1. parameters — look up the snum attribute dictionary
+    params = block("fiadb.parameters", args={"name": "snum"})
+    paths.append(save(pipeline(
+        "fiadb_parameters",
+        "[NETWORK] Look up the FIADB-API snum attribute dictionary",
+        [params],
+    )))
+
+    # 2. fullreport — area of forest land by county for Delaware 2020
+    fr = block("fiadb.fullreport", args={
+        "wc": "102020",
+        "snum": "2",
+        "rselected": "County code and name",
+    })
+    paths.append(save(pipeline(
+        "fiadb_fullreport",
+        "[NETWORK] FIA forest-land area by county for Delaware 2020",
+        [fr],
+    )))
+
+    # 3. fullreport -> stats.summary chain: the estimate CSV feeds descriptive
+    #    statistics, exercising cross-collection wiring (Bun -> R).
+    fr2 = block("fiadb.fullreport", args={
+        "wc": "102020",
+        "snum": "2",
+        "rselected": "County code and name",
+    })
+    summary = block("stats.summary", inputs=[bare(fr2)], args={
+        "columns": "ESTIMATE,VARIANCE,SE,SE_PERCENT,PLOT_COUNT",
+    })
+    paths.append(save(pipeline(
+        "fiadb_fullreport_summary",
+        "[NETWORK] FIA county estimates -> stats.summary descriptive statistics",
+        [fr2, summary],
+    )))
+
+    # ---- Friendly per-attribute blocks (no snum/wc/LABEL_VAR knowledge needed) ----
+
+    # 4. biomass by county for Maine, converted to SI (auto-resolve latest eval)
+    bio = block("fiadb.biomass", args={
+        "state": "ME",
+        "group_by": "county",
+        "units": "si",
+    })
+    paths.append(save(pipeline(
+        "fiadb_biomass_county",
+        "[NETWORK] Aboveground biomass by county for Maine, SI units",
+        [bio],
+    )))
+
+    # 5. forest-land area for Rhode Island (ungrouped, imperial)
+    area = block("fiadb.area", args={"state": "RI"})
+    paths.append(save(pipeline(
+        "fiadb_area_state",
+        "[NETWORK] Forest-land area for Rhode Island",
+        [area],
+    )))
+
+    # 6. carbon by ownership for Delaware
+    carbon = block("fiadb.carbon", args={
+        "state": "DE",
+        "group_by": "ownership",
+    })
+    paths.append(save(pipeline(
+        "fiadb_carbon_ownership",
+        "[NETWORK] Aboveground carbon by ownership group for Delaware",
+        [carbon],
+    )))
+
+    # 7. friendly biomass -> stats.summary chain (auto-resolution + Bun->R)
+    bio2 = block("fiadb.biomass", args={"state": "ME", "group_by": "county"})
+    bio_summary = block("stats.summary", inputs=[bare(bio2)], args={
+        "columns": "ESTIMATE,VARIANCE,SE,SE_PERCENT,PLOT_COUNT",
+    })
+    paths.append(save(pipeline(
+        "fiadb_biomass_summary",
+        "[NETWORK] Friendly biomass block -> stats.summary descriptive statistics",
+        [bio2, bio_summary],
+    )))
 
     return paths
 

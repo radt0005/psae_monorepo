@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_merge (019ee02c-c737-7559-803b-50ed9b205a2b)
+Loaded pipeline: gdal_merge (019f47d8-0834-7f1b-8042-cecdadaf95d6)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] gdal.merge running...
   [2/2] gdal.merge complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.709s
+Pipeline complete: 2 block(s) executed (1 cached) in 954ms

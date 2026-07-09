@@ -1,18 +1,18 @@
-id: 019ee02c-c758-7f30-8099-ad0f9cca4052
+id: 019f47d8-0841-7ca3-80a0-205e183a9f10
 name: gdal_vector_translate
 version: "1.0"
 description: Reproject vector to UTM
 blocks:
-- id: 019ee02c-c758-7345-8097-21207595e0d7
+- id: 019f47d8-0841-7bd5-809e-633a8ca96ec5
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019ee02c-c758-7fb2-8098-ea699b62f358
+- id: 019f47d8-0841-7738-809f-52372e36a545
   name: gdal.vector_translate
   inputs:
-  - 019ee02c-c758-7345-8097-21207595e0d7
+  - 019f47d8-0841-7bd5-809e-633a8ca96ec5
   args:
     output_format: GeoJSON
     target_crs: EPSG:32610

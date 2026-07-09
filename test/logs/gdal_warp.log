@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_warp (019ee008-ab52-785b-8038-037ec24f9256)
+Loaded pipeline: gdal_warp (019f47d8-0834-7caa-803f-d5111a5b2a2c)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.warp running...
   [2/2] gdal.warp complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 2.76s
+Pipeline complete: 2 block(s) executed (1 cached) in 972ms

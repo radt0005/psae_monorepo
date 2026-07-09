@@ -88,7 +88,7 @@ func TestSetupInputSymlinks(t *testing.T) {
 
 	if err := SetupInputSymlinks(
 		workDir, resolved, pipelineDir,
-		BlockInvocation{}, BlockManifest{}, map[uuid.UUID]BlockManifest{},
+		BlockInvocation{}, BlockManifest{}, map[uuid.UUID]BlockManifest{}, nil,
 	); err != nil {
 		t.Fatalf("SetupInputSymlinks failed: %v", err)
 	}

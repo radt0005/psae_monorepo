@@ -1,0 +1,37 @@
+id: base.join
+version: 0.1.0
+kind: standard
+network: false
+description: >-
+  Join two tables on one or more shared key columns. The binary counterpart to
+  base.reduce_join (which gathers a map fan-in collection): use base.join to
+  merge two independently-produced tables, e.g. a table of area estimates with a
+  table of covariates. Overlapping non-key columns from the right table are
+  suffixed with "_right".
+
+inputs:
+  left:
+    type: file
+    format: Parquet
+    description: Left table (Parquet or CSV accepted). Its rows/columns lead.
+  right:
+    type: file
+    format: Parquet
+    description: >-
+      Right table (Parquet or CSV accepted). Because both inputs share the same
+      type, a pipeline must wire them with explicit references that name the
+      target input via `as` (e.g. `as: left` / `as: right`), not bare ones.
+  on:
+    type: string
+    description: >-
+      Comma-separated key column name(s) that must exist in both tables.
+  how:
+    type: string
+    description: >-
+      Join type - one of "inner" (default), "left", "right", or "outer".
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: The joined table.

@@ -67,14 +67,18 @@ type PipelineRecord struct {
 func (PipelineRecord) TableName() string { return "scheduler_pipelines" }
 
 // InvocationRecord is the persisted form of a single block invocation.
-// ID is the invocation-ID string form (`<UUID>` or `<UUID>.<index>`)
-// which is the natural idempotency key per worker.md §Result reporting.
+// ID is the invocation-ID string form (`<UUID>` plus one `.<index>`
+// component per enclosing map context, e.g. `<UUID>.3.0`) which is the
+// natural idempotency key per worker.md §Result reporting.
 type InvocationRecord struct {
-	ID               string    `gorm:"primaryKey;type:text"`
-	PipelineID       uuid.UUID `gorm:"index;type:uuid"`
-	BlockID          uuid.UUID `gorm:"index;type:uuid"`
-	BlockName        string
-	MapIndex         *int
+	ID         string    `gorm:"primaryKey;type:text"`
+	PipelineID uuid.UUID `gorm:"index;type:uuid"`
+	BlockID    uuid.UUID `gorm:"index;type:uuid"`
+	BlockName  string
+	// MapIndices is the dotted index-vector suffix of ID ("" for
+	// non-mapped, "3" for depth 1, "3.0" for depth 2).  Denormalized from
+	// ID for query convenience.
+	MapIndices       string           `gorm:"type:text"`
 	Status           InvocationStatus `gorm:"index"`
 	DispatchedAt     *time.Time
 	CompletedAt      *time.Time

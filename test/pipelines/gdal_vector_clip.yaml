@@ -1,27 +1,27 @@
-id: 019ee02c-c761-7ada-80b7-1ccb29843f43
+id: 019f47d8-0845-779c-80be-40e08c325ef3
 name: gdal_vector_clip
 version: "1.0"
 description: Clip vector A by footprint of B
 blocks:
-- id: 019ee02c-c761-7955-80b4-04af35ef4a6b
+- id: 019f47d8-0845-70f1-80bb-432000145487
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019ee02c-c761-7bfd-80b5-2b4f2a138db2
+- id: 019f47d8-0845-7a7f-80bc-a0655a0ec581
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors2.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019ee02c-c761-7f20-80b6-a90476717124
+- id: 019f47d8-0845-7521-80bd-24b6706a9163
   name: gdal.vector_clip
   inputs:
-  - block: 019ee02c-c761-7955-80b4-04af35ef4a6b
+  - block: 019f47d8-0845-70f1-80bb-432000145487
     output: file
     as: a
-  - block: 019ee02c-c761-7bfd-80b5-2b4f2a138db2
+  - block: 019f47d8-0845-7a7f-80bc-a0655a0ec581
     output: file
     as: b
   args: {}

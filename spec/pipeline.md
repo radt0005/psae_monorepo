@@ -358,10 +358,13 @@ See `scheduler.md` for the full specification of map/reduce mechanics, including
 
 `spade check` should additionally verify for pipelines with map/reduce:
 
-1. Every `kind: map` block is eventually followed by a `kind: reduce` block in the dependency graph
-2. No nested maps (a map context must be closed by a reduce before another map begins)
-3. Map blocks output the `expansion` type
-4. Reduce blocks accept a `collection` input
+1. Every `kind: map` block's context is closed by a `kind: reduce` block in the dependency graph
+2. Contexts are **well-nested**: a block may not combine the outputs of two map contexts unless at least one has been closed by its reduce first (no "merging" of sibling fan-outs), and a reduce closes exactly the innermost open context it consumes from
+3. Nesting depth does not exceed the supported maximum (currently 4); invocation counts multiply per level, so this bounds worst-case fan-out
+4. Map blocks output the `expansion` type
+5. Reduce blocks accept a `collection` input
+
+Nested map/reduce (a mapped block whose output is mapped again before the outer reduce) is supported; see `scheduler.md` §Nested Maps for the execution model.
 
 ---
 

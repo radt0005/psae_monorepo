@@ -384,14 +384,11 @@ func ValidatePipeline(pipeline Pipeline, manifests map[string]BlockManifest) []e
 }
 
 // validateMapReduce checks map/reduce-specific validation rules.
+// Nested map contexts are supported; the structural rules (well-nested
+// contexts, every context closed by a reduce, maximum depth) are enforced
+// via the context tree.
 func validateMapReduce(pipeline Pipeline, manifests map[string]BlockManifest, graph DependencyGraph) []error {
 	var errs []error
-
-	// Build lookup from ID to block for convenience
-	blockByID := make(map[uuid.UUID]PipelineBlock)
-	for _, b := range pipeline.Blocks {
-		blockByID[b.Id] = b
-	}
 
 	for _, block := range pipeline.Blocks {
 		manifest, ok := manifests[block.Name]
@@ -411,20 +408,10 @@ func validateMapReduce(pipeline Pipeline, manifests map[string]BlockManifest, gr
 			if !hasExpansion {
 				errs = append(errs, fmt.Errorf("map block %s (%s) must have an expansion output", block.Id, block.Name))
 			}
-
-			// 2. Map block must eventually be followed by a reduce block
-			if !hasDownstreamReduce(block.Id, graph, blockByID, manifests, make(map[uuid.UUID]bool)) {
-				errs = append(errs, fmt.Errorf("map block %s (%s) has no downstream reduce block", block.Id, block.Name))
-			}
-
-			// 3. No nested maps: check if any downstream map block appears before a reduce
-			if hasNestedMap(block.Id, graph, blockByID, manifests) {
-				errs = append(errs, fmt.Errorf("map block %s (%s) has a nested map before its reduce", block.Id, block.Name))
-			}
 		}
 
 		if manifest.Kind == BlockKindReduce {
-			// 4. Reduce blocks must accept a collection input
+			// 2. Reduce blocks must accept a collection input
 			hasCollection := false
 			for _, in := range manifest.Inputs {
 				if in.Type == "collection" {
@@ -438,67 +425,24 @@ func validateMapReduce(pipeline Pipeline, manifests map[string]BlockManifest, gr
 		}
 	}
 
+	// 3. Structural rules: well-nested contexts, depth limit (errors from
+	// BuildContextTree), and every map context closed by a reduce.
+	tree, err := BuildContextTree(pipeline, manifests, graph)
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+	for _, block := range pipeline.Blocks {
+		manifest, ok := manifests[block.Name]
+		if !ok || manifest.Kind != BlockKindMap {
+			continue
+		}
+		if len(tree.Reduces[block.Id]) == 0 {
+			errs = append(errs, fmt.Errorf("map block %s (%s) has no reduce block closing its context", block.Id, block.Name))
+		}
+	}
+
 	return errs
-}
-
-// hasDownstreamReduce checks if there's a reduce block reachable from the given block.
-func hasDownstreamReduce(id uuid.UUID, graph DependencyGraph, blocks map[uuid.UUID]PipelineBlock, manifests map[string]BlockManifest, visited map[uuid.UUID]bool) bool {
-	if visited[id] {
-		return false
-	}
-	visited[id] = true
-
-	for _, downstream := range graph.Forward[id] {
-		block, ok := blocks[downstream]
-		if !ok {
-			continue
-		}
-		manifest, ok := manifests[block.Name]
-		if !ok {
-			continue
-		}
-		if manifest.Kind == BlockKindReduce {
-			return true
-		}
-		if hasDownstreamReduce(downstream, graph, blocks, manifests, visited) {
-			return true
-		}
-	}
-	return false
-}
-
-// hasNestedMap checks if another map block appears between this map and its reduce.
-func hasNestedMap(mapID uuid.UUID, graph DependencyGraph, blocks map[uuid.UUID]PipelineBlock, manifests map[string]BlockManifest) bool {
-	visited := make(map[uuid.UUID]bool)
-	return checkNestedMap(mapID, mapID, graph, blocks, manifests, visited)
-}
-
-func checkNestedMap(startID, currentID uuid.UUID, graph DependencyGraph, blocks map[uuid.UUID]PipelineBlock, manifests map[string]BlockManifest, visited map[uuid.UUID]bool) bool {
-	if visited[currentID] {
-		return false
-	}
-	visited[currentID] = true
-
-	for _, downstream := range graph.Forward[currentID] {
-		block, ok := blocks[downstream]
-		if !ok {
-			continue
-		}
-		manifest, ok := manifests[block.Name]
-		if !ok {
-			continue
-		}
-		if manifest.Kind == BlockKindReduce {
-			continue // stop at reduce boundary
-		}
-		if manifest.Kind == BlockKindMap && downstream != startID {
-			return true // nested map found
-		}
-		if checkNestedMap(startID, downstream, graph, blocks, manifests, visited) {
-			return true
-		}
-	}
-	return false
 }
 
 // ValidatePipelineWithLockfile combines short-code resolution (via

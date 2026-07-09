@@ -1,7 +1,7 @@
-Loaded pipeline: data_write_collection (019ee02c-c771-7313-80e8-647143030327)
+Loaded pipeline: data_write_collection (019f47d8-084c-73fc-80ef-d4c5d106b75a)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] data.write_collection running...
-Block data.write_collection failed: block exited with code 1: spade: unauthorized: PermissionDenied (permanent) at write, context: { service: fs, path: home/krbundy/UMaine/psae_monorepo/test/output/data_write_collection_test/home_krbundy_UMaine_psae_monorepo_test_fixtures_test_data.csv } => permission denied, source: Permission denied (os error 13)
-Exited with error status 1
+  [2/2] data.write_collection complete
 
+Pipeline complete: 2 block(s) executed (1 cached) in 79ms

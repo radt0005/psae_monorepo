@@ -1,0 +1,32 @@
+id: base.mutate
+version: 0.1.0
+kind: standard
+network: false
+description: >-
+  Add or replace columns computed from SQL scalar expressions over the input
+  table. Each expression is evaluated with Polars' SQL engine and assigned to a
+  named column; a name that already exists is replaced, a new name is appended.
+  Covers unit conversions, key parsing, interaction terms, and NA-filling
+  (via COALESCE).
+
+inputs:
+  table:
+    type: file
+    format: Parquet
+    description: Source table (Parquet or CSV accepted).
+  expressions:
+    type: string
+    description: >-
+      JSON list of {"name": <column>, "expr": <SQL scalar expression>} objects,
+      applied in order, e.g.
+      [{"name":"MB5","expr":"M * B5"},
+       {"name":"value","expr":"DRYBIO_AG * 0.453592 / 1000000.0"},
+       {"name":"B5","expr":"COALESCE(B5, 0)"}].
+      Write numeric literals in plain decimal form (1000000.0), not scientific
+      notation (1e6), which the SQL expression parser does not accept.
+
+outputs:
+  result:
+    type: file
+    format: Parquet
+    description: The input table with the new or replaced columns.

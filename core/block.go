@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -47,6 +48,26 @@ func WriteParamsYAML(args map[string]any, workDir string) error {
 	return nil
 }
 
+// DependencyDepths returns the context depth (map nesting level) of every
+// block in the pipeline, for use with SetupInputSymlinks.  Returns nil if
+// the context tree cannot be built (missing manifests, malformed
+// pipeline); callers then fall back to legacy depth-1 probing.
+func DependencyDepths(p Pipeline, manifests map[string]BlockManifest) map[uuid.UUID]int {
+	g, err := BuildDependencyGraph(p)
+	if err != nil {
+		return nil
+	}
+	tree, err := BuildContextTree(p, manifests, g)
+	if err != nil {
+		return nil
+	}
+	depths := make(map[uuid.UUID]int, len(tree.Paths))
+	for id, path := range tree.Paths {
+		depths[id] = len(path)
+	}
+	return depths
+}
+
 // SetupInputSymlinks creates symlinks in <workDir>/inputs/<input_name>/ pointing to
 // the output files from dependency blocks.  The outputs of a block live under
 // <workDir>/outputs/<output_name>/, so each individual file inside that
@@ -55,16 +76,24 @@ func WriteParamsYAML(args map[string]any, workDir string) error {
 // lets the runtime scanner find the files via plain `is_file()` checks
 // without following symlinks itself.
 //
-// Map/reduce semantics:
-//   - When the source block is a map block and the current invocation has a
-//     MapIndex, the expansion manifest is read and items[MapIndex] is
-//     symlinked — not the expansion.yaml itself.
+// Map/reduce semantics (index vectors; see scheduler.md):
+//   - When the source block is a map block whose context encloses the
+//     current invocation, the expansion manifest of the correct map
+//     *instance* is read and the item selected by the next index-vector
+//     component is symlinked — not the expansion.yaml itself.
 //   - When the current block is a reduce block, outputs from every mapped
-//     sibling invocation (<sourceID>.0, .1, …) are gathered into the input
-//     directory.
-//   - When the current invocation has a MapIndex and the source block was
-//     also run in the same map context, the peer's work dir (<sourceID>.<idx>)
-//     is used; broadcast dependencies fall back to <sourceID>.
+//     sibling invocation in the *same context instance* (<sourceID>.<own
+//     indices>.<j>) are gathered into the input directory, in numeric
+//     item order.
+//   - Otherwise the dependency's outputs are taken from the instance
+//     selected by the first depth(dep) components of the current index
+//     vector: depth 0 is a plain/broadcast dependency, equal depth is a
+//     peer in the same instance, intermediate depth is a broadcast from
+//     an enclosing context instance.
+//
+// depDepths maps each dependency block to its context depth (see
+// DependencyDepths).  When nil, depth-1 behavior is preserved by probing
+// the filesystem (legacy path used by SetupBroadcastInputs).
 func SetupInputSymlinks(
 	workDir string,
 	resolvedInputs map[string]ResolvedInput,
@@ -72,7 +101,9 @@ func SetupInputSymlinks(
 	currentInvocation BlockInvocation,
 	currentManifest BlockManifest,
 	depManifests map[uuid.UUID]BlockManifest,
+	depDepths map[uuid.UUID]int,
 ) error {
+	curIndices := currentInvocation.MapIndices
 	for inputName, ri := range resolvedInputs {
 		linkDir := filepath.Join(workDir, "inputs", inputName)
 		if err := os.MkdirAll(linkDir, 0777); err != nil {
@@ -81,17 +112,31 @@ func SetupInputSymlinks(
 		_ = os.Chmod(linkDir, 0777)
 
 		depManifest := depManifests[ri.SourceBlockID]
-		srcUUID := ri.SourceBlockID.String()
 
-		// Case 1: source is a map block → this mapped invocation consumes
-		// one item from the expansion.
-		if depManifest.Kind == BlockKindMap && currentInvocation.MapIndex != nil {
-			expPath := filepath.Join(pipelineDir, srcUUID, "outputs", ri.SourceOutputName, "expansion.yaml")
+		// depDepth is how many leading components of the current index
+		// vector select the dependency's instance.  Without a context
+		// tree, 0 (legacy: probing handles the depth-1 peer case).
+		depDepth := 0
+		if depDepths != nil {
+			depDepth = depDepths[ri.SourceBlockID]
+		}
+		if depDepth > len(curIndices) {
+			// Deeper than the current invocation: only legal for a
+			// reduce gathering a fan-out dimension (case 2 below).
+			depDepth = len(curIndices)
+		}
+
+		// Case 1: source is a map block whose context encloses this
+		// invocation → consume one item from the correct instance's
+		// expansion.
+		if depManifest.Kind == BlockKindMap && len(curIndices) > depDepth {
+			instanceID := FormatInvocationID(ri.SourceBlockID, curIndices[:depDepth])
+			expPath := filepath.Join(pipelineDir, instanceID, "outputs", ri.SourceOutputName, "expansion.yaml")
 			exp, err := LoadExpansionManifest(expPath)
 			if err != nil {
 				return fmt.Errorf("reading expansion for mapped input %q: %w", inputName, err)
 			}
-			idx := *currentInvocation.MapIndex
+			idx := curIndices[depDepth]
 			if idx < 0 || idx >= len(exp.Items) {
 				return fmt.Errorf("map index %d out of range for %s (%d items)", idx, inputName, len(exp.Items))
 			}
@@ -100,7 +145,7 @@ func SetupInputSymlinks(
 			if !filepath.IsAbs(target) {
 				// Expansion paths are written relative to the map block's
 				// work directory.
-				target = filepath.Join(pipelineDir, srcUUID, target)
+				target = filepath.Join(pipelineDir, instanceID, target)
 			}
 			base := filepath.Base(target)
 			link := filepath.Join(linkDir, base)
@@ -110,25 +155,20 @@ func SetupInputSymlinks(
 			continue
 		}
 
-		// Case 2: current block is a reduce block → gather every mapped
-		// sibling's output under inputs/<inputName>/.  Each file is prefixed
-		// by the sibling's map index to avoid name collisions.
+		// Case 2: current block is a reduce block → gather the outputs of
+		// every sibling invocation in this context instance:
+		// <srcUUID>.<curIndices>.<j>.  Each file is prefixed by the
+		// sibling's item index to avoid name collisions.
 		if currentManifest.Kind == BlockKindReduce {
-			siblingDirs, _ := filepath.Glob(filepath.Join(pipelineDir, srcUUID+".*"))
-			sort.Strings(siblingDirs)
-			if len(siblingDirs) > 0 {
-				for _, sibling := range siblingDirs {
-					outDir := filepath.Join(sibling, "outputs", ri.SourceOutputName)
+			siblings := gatherSiblingDirs(pipelineDir, ri.SourceBlockID, curIndices)
+			if len(siblings) > 0 {
+				for _, sibling := range siblings {
+					outDir := filepath.Join(sibling.dir, "outputs", ri.SourceOutputName)
 					entries, err := os.ReadDir(outDir)
 					if err != nil {
 						continue
 					}
-					// Extract the ".N" suffix to prefix filenames with.
-					suffix := filepath.Base(sibling)
-					idxTag := suffix
-					if dot := strings.LastIndex(suffix, "."); dot >= 0 {
-						idxTag = suffix[dot+1:]
-					}
+					idxTag := strconv.Itoa(sibling.item)
 					for _, entry := range entries {
 						target := filepath.Join(outDir, entry.Name())
 						// Prefix with "<idx>_" so collisions across siblings
@@ -144,12 +184,15 @@ func SetupInputSymlinks(
 			// Fall through to the default case if no mapped siblings exist.
 		}
 
-		// Case 3 / 4: default lookup.  If the current invocation is mapped
-		// and a peer work dir exists at <srcUUID>.<idx>, use it; otherwise
-		// use <srcUUID> (non-mapped or broadcast).
-		sourceDir := filepath.Join(pipelineDir, srcUUID, "outputs", ri.SourceOutputName)
-		if currentInvocation.MapIndex != nil {
-			peer := filepath.Join(pipelineDir, fmt.Sprintf("%s.%d", srcUUID, *currentInvocation.MapIndex))
+		// Case 3 / 4: default lookup — the dependency instance selected by
+		// the first depDepth components of the current index vector.
+		// depth 0 ⇒ bare <srcUUID> (plain or broadcast), equal depth ⇒
+		// peer, intermediate ⇒ broadcast from the enclosing instance.
+		sourceDir := filepath.Join(pipelineDir, FormatInvocationID(ri.SourceBlockID, curIndices[:depDepth]), "outputs", ri.SourceOutputName)
+		if depDepths == nil && len(curIndices) > 0 {
+			// Legacy probing (no context tree): prefer a peer work dir at
+			// the full index vector when it exists.
+			peer := filepath.Join(pipelineDir, FormatInvocationID(ri.SourceBlockID, curIndices))
 			if info, err := os.Stat(peer); err == nil && info.IsDir() {
 				sourceDir = filepath.Join(peer, "outputs", ri.SourceOutputName)
 			}
@@ -169,6 +212,49 @@ func SetupInputSymlinks(
 	return nil
 }
 
+// siblingDir is one mapped sibling work directory plus its item index
+// (the last component of its index vector).
+type siblingDir struct {
+	dir  string
+	item int
+}
+
+// gatherSiblingDirs returns the work directories of every invocation of
+// blockID whose index vector is exactly prefix + one more component,
+// sorted numerically by that final component.  Numeric sorting matters:
+// a lexicographic sort would order ".10" before ".2", breaking the
+// stable-ordering guarantee for reduce inputs past nine items.
+func gatherSiblingDirs(pipelineDir string, blockID uuid.UUID, prefix []int) []siblingDir {
+	pattern := filepath.Join(pipelineDir, blockID.String()+".*")
+	matches, _ := filepath.Glob(pattern)
+	var out []siblingDir
+	for _, m := range matches {
+		u, indices, err := ParseInvocationID(filepath.Base(m))
+		if err != nil || u != blockID {
+			continue
+		}
+		if len(indices) != len(prefix)+1 {
+			continue
+		}
+		matched := true
+		for i := range prefix {
+			if indices[i] != prefix[i] {
+				matched = false
+				break
+			}
+		}
+		if !matched {
+			continue
+		}
+		if info, err := os.Stat(m); err != nil || !info.IsDir() {
+			continue
+		}
+		out = append(out, siblingDir{dir: m, item: indices[len(indices)-1]})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].item < out[j].item })
+	return out
+}
+
 // SetupBroadcastInputs symlinks non-mapped dependency outputs into every mapped
 // invocation's inputs/ directory for map context broadcast.  It delegates to
 // SetupInputSymlinks with empty block/manifest context (treated as case 4).
@@ -180,6 +266,7 @@ func SetupBroadcastInputs(workDir string, nonMappedInputs map[string]ResolvedInp
 		BlockInvocation{},
 		BlockManifest{},
 		map[uuid.UUID]BlockManifest{},
+		nil,
 	)
 }
 

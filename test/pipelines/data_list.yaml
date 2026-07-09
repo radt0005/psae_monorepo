@@ -1,11 +1,11 @@
-id: 019ee02c-c772-7ba2-80ea-ae6ff6f72cf7
+id: 019f47d8-084d-7e7d-80f1-c6b6f762cb98
 name: data_list
 version: "1.0"
 description: List files in fixtures directory
 blocks:
-- id: 019ee02c-c772-719d-80e9-0095264499f5
+- id: 019f47d8-084d-7f74-80f0-408392ebd1ad
   name: data.list
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/
     recursive: false

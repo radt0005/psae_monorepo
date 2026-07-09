@@ -162,11 +162,55 @@ func TestInvocationID(t *testing.T) {
 	}
 
 	// Mapped block
-	idx := 7
-	inv.MapIndex = &idx
+	inv.MapIndices = []int{7}
 	expected := id.String() + ".7"
 	if inv.InvocationID() != expected {
 		t.Errorf("expected %s, got %s", expected, inv.InvocationID())
+	}
+
+	// Nested mapped block
+	inv.MapIndices = []int{7, 0, 12}
+	expected = id.String() + ".7.0.12"
+	if inv.InvocationID() != expected {
+		t.Errorf("expected %s, got %s", expected, inv.InvocationID())
+	}
+}
+
+func TestParseInvocationID(t *testing.T) {
+	id := uuid.New()
+	cases := []struct {
+		in      string
+		indices []int
+	}{
+		{id.String(), nil},
+		{id.String() + ".0", []int{0}},
+		{id.String() + ".7.3", []int{7, 3}},
+		{id.String() + ".1.0.12", []int{1, 0, 12}},
+	}
+	for _, c := range cases {
+		u, indices, err := ParseInvocationID(c.in)
+		if err != nil {
+			t.Fatalf("ParseInvocationID(%q): %v", c.in, err)
+		}
+		if u != id {
+			t.Errorf("ParseInvocationID(%q): uuid = %s, want %s", c.in, u, id)
+		}
+		if len(indices) != len(c.indices) {
+			t.Fatalf("ParseInvocationID(%q): indices = %v, want %v", c.in, indices, c.indices)
+		}
+		for i := range indices {
+			if indices[i] != c.indices[i] {
+				t.Errorf("ParseInvocationID(%q): indices = %v, want %v", c.in, indices, c.indices)
+			}
+		}
+		// Round trip
+		if got := FormatInvocationID(u, indices); got != c.in {
+			t.Errorf("FormatInvocationID round-trip: got %q, want %q", got, c.in)
+		}
+	}
+
+	if _, _, err := ParseInvocationID("not-a-uuid.3"); err == nil {
+		t.Error("expected error for malformed invocation ID")
 	}
 }
 

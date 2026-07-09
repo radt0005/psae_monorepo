@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_compare (019ee02c-c757-733a-8096-90f0d1b4e5dc)
+Loaded pipeline: gdal_compare (019f47d8-0840-7bc6-809d-bc8a8d7dbdbb)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.compare running...
   [3/3] gdal.compare complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 2.489s
+Pipeline complete: 3 block(s) executed (2 cached) in 945ms

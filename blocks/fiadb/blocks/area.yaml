@@ -1,0 +1,38 @@
+id: fiadb.area
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Area of forest (or timberland) land for a state — a design-based FIA
+  population estimate with its sampling error — optionally grouped, in imperial
+  or SI units. A friendly wrapper over the FIADB-API: no attribute or evaluation
+  codes required.
+
+inputs:
+  state:
+    type: string
+    description: Two-letter state/territory code (e.g. ME) or numeric FIPS.
+  year:
+    type: string
+    description: >-
+      Inventory year. Leave blank to use the most recent evaluation for the
+      state; the resolved evaluation is written to the logs.
+  group_by:
+    type: string
+    description: >-
+      Grouping dimension: none (default), county, state, ownership, or
+      forest_type.
+  land_basis:
+    type: string
+    description: "Land basis: forest (default) or timberland."
+  units:
+    type: string
+    description: "Units: imperial (acres, default) or si (hectares)."
+
+outputs:
+  estimates:
+    type: file
+    format: CSV
+    description: >-
+      Tidy CSV: optional group column followed by ESTIMATE, VARIANCE, SE,
+      SE_PERCENT, PLOT_COUNT.

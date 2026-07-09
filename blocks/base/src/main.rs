@@ -1,6 +1,6 @@
 use base::{
-    aggregate, csv_to_parquet, filter_rows, group_by, map_files, map_list, map_range,
-    parquet_to_csv, reduce_collection, reduce_join, reduce_stack, select_columns,
+    aggregate, csv_to_parquet, filter_rows, group_by, join, map_files, map_list, map_range, mutate,
+    parquet_to_csv, pivot, reduce_collection, reduce_join, reduce_stack, select_columns,
 };
 
 fn main() {
@@ -19,10 +19,13 @@ fn main() {
         "csv_to_parquet" => csv_to_parquet::entry(),
         "filter_rows" => filter_rows::entry(),
         "group_by" => group_by::entry(),
+        "join" => join::entry(),
         "map_files" => map_files::entry(),
         "map_list" => map_list::entry(),
         "map_range" => map_range::entry(),
+        "mutate" => mutate::entry(),
         "parquet_to_csv" => parquet_to_csv::entry(),
+        "pivot" => pivot::entry(),
         "reduce_collection" => reduce_collection::entry(),
         "reduce_join" => reduce_join::entry(),
         "reduce_stack" => reduce_stack::entry(),
@@ -43,10 +46,13 @@ fn usage() -> String {
         "  csv_to_parquet",
         "  filter_rows",
         "  group_by",
+        "  join",
         "  map_files",
         "  map_list",
         "  map_range",
+        "  mutate",
         "  parquet_to_csv",
+        "  pivot",
         "  reduce_collection",
         "  reduce_join",
         "  reduce_stack",

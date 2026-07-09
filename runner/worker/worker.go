@@ -302,7 +302,10 @@ func (w *Worker) Run(ctx context.Context, job spade.Job) (core.WorkerResult, err
 		return core.WorkerResult{}, fmt.Errorf("creating block directory: %w", err)
 	}
 	invWorkDir := filepath.Join(pipelineDir, inv.InvocationID())
-	if err := core.SetupInputSymlinks(invWorkDir, resolved, pipelineDir, inv, manifest, depManifests); err != nil {
+	// Context depths let symlink setup pick the right instance directory
+	// for nested map/reduce dependencies (nil ⇒ legacy depth-1 probing).
+	depDepths := core.DependencyDepths(job.Pipeline, job.Manifests)
+	if err := core.SetupInputSymlinks(invWorkDir, resolved, pipelineDir, inv, manifest, depManifests, depDepths); err != nil {
 		result.Status = core.ExecutionStatusError
 		result.Error = fmt.Sprintf("setting up input symlinks: %v", err)
 		return result, nil

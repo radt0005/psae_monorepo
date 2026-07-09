@@ -155,6 +155,7 @@ name = "base"
 version = "0.1.0"
 dependencies = [
  "polars",
+ "polars-ops",
  "polars-sql",
  "serde",
  "serde_json",

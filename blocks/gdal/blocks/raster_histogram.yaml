@@ -1,0 +1,52 @@
+id: gdal.raster_histogram
+version: 0.1.0
+kind: standard
+network: false
+description: >-
+  Bin the valid pixel values of a single-band raster into classes and tabulate
+  pixel count and ground area per class. Bins are right-closed (lower, upper],
+  matching R's cut(). Ground area is derived from the pixel size in the
+  geotransform (count x |px_w x px_h|), so results are correct in any projected
+  CRS. Nodata, NaN, and values outside [min_valid, max_valid] are excluded.
+entrypoint: raster_histogram
+
+inputs:
+  source:
+    type: file
+    format: GeoTIFF
+    description: Single-band raster to tabulate (e.g. a county canopy height model).
+  breaks:
+    type: string
+    description: >-
+      Comma-separated ascending bin edges, e.g. "0,5,10,15,20,25,30,35". N
+      edges define N-1 right-closed bins; a value equal to the lowest edge or
+      above the highest edge falls outside all bins and is excluded.
+  labels:
+    type: string
+    description: >-
+      Optional comma-separated labels, one per bin (i.e. one fewer than
+      breaks). Empty (default) labels each bin by its upper edge, matching the
+      reference workflow's 5-m height classes (5, 10, ..., 35).
+  min_valid:
+    type: number
+    description: >-
+      Values strictly below this are treated as nodata. Leave unset to skip
+      (the reference workflow drops CHM values below 0).
+  max_valid:
+    type: number
+    description: >-
+      Values strictly above this are treated as nodata. Leave unset to skip
+      (the reference workflow drops CHM values above 100 as bad pixels).
+  area_scale:
+    type: number
+    description: >-
+      Multiplier applied to the per-pixel ground area, e.g. 1e-6 to convert
+      square metres to square kilometres. Default 1 (area in CRS units squared).
+
+outputs:
+  table:
+    type: file
+    format: CSV
+    description: >-
+      One row per bin in ascending order, with columns label, lower, upper,
+      count (pixels), and area (count x pixel area x area_scale).

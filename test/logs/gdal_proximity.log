@@ -1,4 +1,7 @@
-Loaded pipeline: gdal_proximity (019ee02c-c747-7e95-8064-5fed56384aa3)
+Loaded pipeline: gdal_proximity (019f47d8-083a-728d-806b-f66c543bc378)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.proximity running...
+  [2/2] gdal.proximity complete
+
+Pipeline complete: 2 block(s) executed (1 cached) in 982ms

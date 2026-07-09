@@ -13,8 +13,6 @@ package spade_runner
 import (
 	"core"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -44,27 +42,11 @@ type Job struct {
 	Manifests map[string]core.BlockManifest `json:"manifests"`
 }
 
-// ParseInvocationID splits an invocation ID of the form "<uuid>" or
-// "<uuid>.<index>" into its components.  Returns the UUID portion and,
-// for mapped invocations, a non-nil *int with the index.  Returns an
-// error if the UUID portion cannot be parsed or the index is not a
-// non-negative integer.
-func ParseInvocationID(id string) (uuid.UUID, *int, error) {
-	raw := id
-	var mapIdx *int
-	if dot := strings.LastIndex(id, "."); dot >= 0 {
-		// Must be of the form "<uuid>.<int>".
-		idxStr := id[dot+1:]
-		if n, err := strconv.Atoi(idxStr); err == nil && n >= 0 {
-			raw = id[:dot]
-			mapIdx = &n
-		}
-	}
-	u, err := uuid.Parse(raw)
-	if err != nil {
-		return uuid.Nil, nil, fmt.Errorf("parsing invocation id %q: %w", id, err)
-	}
-	return u, mapIdx, nil
+// ParseInvocationID splits an invocation ID of the form
+// "<uuid>[.<i>[.<j>…]]" into the block UUID and its map index vector
+// (nil for non-mapped invocations).  It delegates to core.ParseInvocationID.
+func ParseInvocationID(id string) (uuid.UUID, []int, error) {
+	return core.ParseInvocationID(id)
 }
 
 // InvocationFromJob converts a Job's WorkerAssignment + Pipeline context
@@ -75,7 +57,7 @@ func ParseInvocationID(id string) (uuid.UUID, *int, error) {
 // authoritative pipeline definition (not from the assignment payload,
 // which could drift), and returns a fully populated invocation.
 func InvocationFromJob(j Job) (core.BlockInvocation, error) {
-	blockID, mapIdx, err := ParseInvocationID(j.Assignment.InvocationID)
+	blockID, mapIndices, err := ParseInvocationID(j.Assignment.InvocationID)
 	if err != nil {
 		return core.BlockInvocation{}, err
 	}
@@ -90,7 +72,7 @@ func InvocationFromJob(j Job) (core.BlockInvocation, error) {
 			PipelineId: j.Assignment.PipelineID,
 			Inputs:     pb.Inputs,
 			Arguments:  pb.Args,
-			MapIndex:   mapIdx,
+			MapIndices: mapIndices,
 		}
 		return inv, nil
 	}

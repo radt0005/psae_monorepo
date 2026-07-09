@@ -324,6 +324,8 @@ items:
 
 The `path` field points to the file relative to the map block's working directory.  The `key` field is a human-readable identifier for the item.  The item order must be **deterministic** for a given input to support caching.
 
+Map blocks are **nesting-agnostic**: when a map runs inside another map's context (nested map/reduce), it enumerates its input and writes `expansion.yaml` exactly as it would at the top level -- the scheduler and worker handle per-instance fan-out.
+
 See `scheduler.md` for full map/reduce semantics.
 
 The runtime collects, hashes, and persists outputs after successful execution.

@@ -207,10 +207,14 @@ type blockStatusJSON struct {
 	BlockID        uuid.UUID                `json:"block_id"`
 	Name           string                   `json:"name"`
 	Status         core.BlockSnapshotStatus `json:"status"`
-	MapIndex       *int                     `json:"map_index,omitempty"`
+	MapIndices     []int                    `json:"map_indices,omitempty"`
 	MapInvocations []string                 `json:"map_invocations,omitempty"`
-	ExitCode       int                      `json:"exit_code"`
-	ErrorMessage   string                   `json:"error,omitempty"`
+	// InstanceCounts maps each expanded instance of a map block (index
+	// prefix, "" for top-level) to its item count — the aggregate view
+	// of ragged nested fan-out.
+	InstanceCounts map[string]int `json:"instance_counts,omitempty"`
+	ExitCode       int            `json:"exit_code"`
+	ErrorMessage   string         `json:"error,omitempty"`
 }
 
 func (s *Server) handleGetPipeline(c echo.Context) error {
@@ -233,8 +237,9 @@ func (s *Server) handleGetPipeline(c echo.Context) error {
 	for _, b := range view.Blocks {
 		resp.Blocks = append(resp.Blocks, blockStatusJSON{
 			BlockID: b.BlockID, Name: b.Name, Status: b.Status,
-			MapIndex: b.MapIndex, MapInvocations: b.MapInvocations,
-			ExitCode: b.ExitCode, ErrorMessage: b.ErrorMessage,
+			MapIndices: b.MapIndices, MapInvocations: b.MapInvocations,
+			InstanceCounts: b.InstanceCounts,
+			ExitCode:       b.ExitCode, ErrorMessage: b.ErrorMessage,
 		})
 	}
 	return c.JSON(http.StatusOK, resp)
@@ -260,7 +265,7 @@ type invocationJSON struct {
 	PipelineID   uuid.UUID              `json:"pipeline_id"`
 	BlockID      uuid.UUID              `json:"block_id"`
 	BlockName    string                 `json:"block_name"`
-	MapIndex     *int                   `json:"map_index,omitempty"`
+	MapIndices   []int                  `json:"map_indices,omitempty"`
 	Status       store.InvocationStatus `json:"status"`
 	DispatchedAt *time.Time             `json:"dispatched_at,omitempty"`
 	CompletedAt  *time.Time             `json:"completed_at,omitempty"`
@@ -311,9 +316,12 @@ func (s *Server) handleGetInvocationLogs(c echo.Context) error {
 }
 
 func invocationToJSON(r store.InvocationRecord) invocationJSON {
+	// The invocation ID is authoritative for the index vector; the
+	// denormalized MapIndices column is for queries only.
+	_, indices, _ := core.ParseInvocationID(r.ID)
 	return invocationJSON{
 		ID: r.ID, PipelineID: r.PipelineID, BlockID: r.BlockID,
-		BlockName: r.BlockName, MapIndex: r.MapIndex, Status: r.Status,
+		BlockName: r.BlockName, MapIndices: indices, Status: r.Status,
 		DispatchedAt: r.DispatchedAt, CompletedAt: r.CompletedAt,
 		ExitCode: r.ExitCode, LogsPath: r.LogsPath, ErrorMessage: r.ErrorMessage,
 	}

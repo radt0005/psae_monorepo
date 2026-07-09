@@ -1,32 +1,32 @@
-id: 019ee02c-c768-7c87-80cc-9d018fcebdb8
+id: 019f47d8-0848-7c3f-80d3-c571b6b46e38
 name: gdal_map_warp_reduce_mosaic
 version: "1.0"
 description: Map raster tiles, reproject each, mosaic back
 blocks:
-- id: 019ee02c-c768-7ef6-80c8-8c94617abbad
+- id: 019f47d8-0848-7bd2-80cf-f2f1048efc59
   name: data.read_collection
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster*.tif
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster*.tif
     format: GeoTIFF
     max_items: 10
-- id: 019ee02c-c768-7a44-80c9-915d9c54f33f
+- id: 019f47d8-0848-797b-80d0-55849aabc39a
   name: gdal.map_raster_tiles
   inputs:
-  - 019ee02c-c768-7ef6-80c8-8c94617abbad
+  - 019f47d8-0848-7bd2-80cf-f2f1048efc59
   args: {}
-- id: 019ee02c-c768-71f6-80ca-9413a5679c38
+- id: 019f47d8-0848-7993-80d1-a809ac3ba803
   name: gdal.warp
   inputs:
-  - 019ee02c-c768-7a44-80c9-915d9c54f33f
+  - 019f47d8-0848-797b-80d0-55849aabc39a
   args:
     target_crs: EPSG:32610
     resolution: 0
     resampling: bilinear
     output_format: GTiff
-- id: 019ee02c-c768-7e68-80cb-70e5d937c8a1
+- id: 019f47d8-0848-70eb-80d2-4a28827158b5
   name: gdal.reduce_mosaic
   inputs:
-  - 019ee02c-c768-71f6-80ca-9413a5679c38
+  - 019f47d8-0848-7993-80d1-a809ac3ba803
   args:
     resampling: nearest

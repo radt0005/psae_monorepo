@@ -1,0 +1,13 @@
+reference
+blocks/sae/blocks/all_subsets_fh.yaml
+blocks/sae/blocks/eblupFH.yaml
+blocks/sae/blocks/fay_herriot.yaml
+blocks/sae/blocks/fay_herriot_mse.yaml
+
+blocks/sae/R/all_subsets_fh.R
+blocks/sae/R/eblupFH.R
+blocks/sae/R/fay_herriot.R
+blocks/sae/R/fay_herriot_mse.R
+blocks/sae/R/mseFH.R
+
+SAE_WORKFLOW_IMPLEMENTATION_PLAN.md

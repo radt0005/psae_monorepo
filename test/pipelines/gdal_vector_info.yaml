@@ -1,16 +1,16 @@
-id: 019ee02c-c765-726e-80c2-e453313cfda1
+id: 019f47d8-0847-732a-80c9-e71045f232d1
 name: gdal_vector_info
 version: "1.0"
 description: Report vector metadata as JSON
 blocks:
-- id: 019ee02c-c765-74a2-80c0-a971e214fe3a
+- id: 019f47d8-0847-7f93-80c7-d44fadd79032
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019ee02c-c765-73b7-80c1-a58fdd008c41
+- id: 019f47d8-0847-754f-80c8-d44039478c6a
   name: gdal.vector_info
   inputs:
-  - 019ee02c-c765-74a2-80c0-a971e214fe3a
+  - 019f47d8-0847-7f93-80c7-d44fadd79032
   args: {}

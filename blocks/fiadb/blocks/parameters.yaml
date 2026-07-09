@@ -1,0 +1,23 @@
+id: fiadb.parameters
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Fetch a USFS FIADB-API parameter dictionary — the valid values and metadata
+  for a named /fullreport parameter (e.g. "snum", "wc", "rselected") — as a JSON
+  array. Use it to discover estimate-attribute numbers and the LABEL_VAR
+  grouping strings that the fiadb.fullreport block expects.
+
+inputs:
+  name:
+    type: string
+    description: >-
+      Parameter name to look up: one of snum, wc, rselected, cselected,
+      pselected (and other /fullreport parameter names).
+
+outputs:
+  dictionary:
+    type: json
+    description: >-
+      JSON array of dictionary entries. For snum these include ATTRIBUTE_NBR and
+      ATTRIBUTE_DESCR; for grouping parameters they include LABEL_VAR and DB_VAR.

@@ -130,6 +130,37 @@ describe("run", () => {
     ).toBe(true);
   });
 
+  test("async handler output is awaited before writing", async () => {
+    createInputFile("source", "data.tif");
+    const resultPath = join(workDir.path, "async.tif");
+    writeFileSync(resultPath, "async data");
+
+    const handler = spadeBlock({
+      inputs: { source: File },
+      output: File,
+    })(async (args: { source: File }) => {
+      await Promise.resolve();
+      return new File(resultPath);
+    });
+
+    await run(handler);
+    const outputFiles = rglob(join(workDir.path, "outputs"));
+    expect(outputFiles).toHaveLength(1);
+    expect(readFileSync(outputFiles[0], "utf-8")).toBe("async data");
+  });
+
+  test("async handler rejection propagates", async () => {
+    createInputFile("source", "data.tif");
+
+    const handler = spadeBlock({ inputs: { source: File } })(
+      async (args: { source: File }) => {
+        throw new Error("async processing failed");
+      }
+    );
+
+    await expect(run(handler)).rejects.toThrow("async processing failed");
+  });
+
   test("handler exception propagates", () => {
     createInputFile("source", "data.tif");
 

@@ -1,19 +1,19 @@
-id: 019f18ed-0fed-7333-8117-5c1ca4c134e1
+id: 019f47d8-0855-7181-811e-b8867a08c10b
 name: stats_frequency
 version: "1.0"
 description: Build a frequency table for a categorical column, optionally cross-tabulated
   by a second column.
 blocks:
-- id: 019f18ed-0fed-7cc1-8115-b7e24ab32811
+- id: 019f47d8-0854-7969-811c-e01a909595a9
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
     format: CSV
-- id: 019f18ed-0fed-709f-8116-606b7c9f42ba
+- id: 019f47d8-0854-72e9-811d-ff97b80ca080
   name: stats.frequency
   inputs:
-  - 019f18ed-0fed-7cc1-8115-b7e24ab32811
+  - 019f47d8-0854-7969-811c-e01a909595a9
   args:
     column: group
     by: region

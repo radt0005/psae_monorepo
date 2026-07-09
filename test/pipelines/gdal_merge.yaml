@@ -1,19 +1,19 @@
-id: 019ee02c-c737-7559-803b-50ed9b205a2b
+id: 019f47d8-0834-7f1b-8042-cecdadaf95d6
 name: gdal_merge
 version: "1.0"
 description: Mosaic raster collection
 blocks:
-- id: 019ee02c-c737-743e-8039-be8dffb08026
+- id: 019f47d8-0834-7eb8-8040-8975ec2fefe4
   name: data.read_collection
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster*.tif
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster*.tif
     format: GeoTIFF
     max_items: 10
-- id: 019ee02c-c737-76f8-803a-d9a7645481ab
+- id: 019f47d8-0834-73a7-8041-d43473a3429d
   name: gdal.merge
   inputs:
-  - 019ee02c-c737-743e-8039-be8dffb08026
+  - 019f47d8-0834-7eb8-8040-8975ec2fefe4
   args:
     resampling: nearest
     output_format: GTiff

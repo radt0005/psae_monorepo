@@ -1,0 +1,78 @@
+id: fiadb.fullreport
+version: 0.1.0
+kind: standard
+network: true
+description: >-
+  Query the USFS FIADB-API / EVALIDator /fullreport endpoint for a design-based
+  FIA population estimate and its sampling error. Returns the grouped estimate
+  cells as a tidy CSV (ESTIMATE, VARIANCE, SE, SE_PERCENT, PLOT_COUNT plus a
+  column per active grouping dimension). Response warnings and provenance are
+  written to the block logs.
+
+inputs:
+  wc:
+    type: string
+    description: >-
+      Evaluation group code(s): state FIPS + 4-digit inventory year, e.g.
+      "102020" for Delaware 2020. Multiple codes may be comma-separated.
+  snum:
+    type: string
+    description: >-
+      Numerator estimate attribute number (e.g. "2" for area of forest land in
+      acres). Use the fiadb.parameters block with name "snum" to list valid
+      attribute numbers and descriptions.
+  sdenom:
+    type: string
+    description: >-
+      Optional ratio denominator attribute number. When set, the estimate is
+      the ratio snum/sdenom.
+  rselected:
+    type: string
+    description: >-
+      Optional row grouping. Use the LABEL_VAR string from the rselected
+      parameter dictionary (e.g. "County code and name"), not the bare DB_VAR.
+      Becomes the first grouping column.
+  cselected:
+    type: string
+    description: >-
+      Optional column grouping (LABEL_VAR string from the cselected dictionary).
+      Becomes the second grouping column.
+  pselected:
+    type: string
+    description: >-
+      Optional page grouping (LABEL_VAR string from the pselected dictionary).
+      Becomes the third grouping column.
+  rtime:
+    type: string
+    description: >-
+      Optional temporal basis for the row grouping in change/growth/removal/
+      mortality estimates.
+  ctime:
+    type: string
+    description: Optional temporal basis for the column grouping.
+  ptime:
+    type: string
+    description: Optional temporal basis for the page grouping.
+  strFilter:
+    type: string
+    description: >-
+      Optional SQL-style filter applied to the estimate (advanced). Long filters
+      are automatically submitted via POST.
+  FIAorRPA:
+    type: string
+    description: >-
+      Forest land definition: "FIADEF" (default) or "RPADEF".
+  estOnly:
+    type: string
+    description: >-
+      Set to "Y" to return grouped estimates only (omit subtotals/totals
+      computation server-side).
+
+outputs:
+  estimates:
+    type: file
+    format: CSV
+    description: >-
+      Tidy CSV of estimate cells: one column per active grouping dimension
+      followed by ESTIMATE, VARIANCE, SE, SE_PERCENT, PLOT_COUNT. With no
+      grouping, a single grand-total row.

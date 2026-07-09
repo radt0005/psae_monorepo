@@ -50,6 +50,7 @@ func Execute(block BlockInvocation, pipelineDir string, manifest BlockManifest, 
 	result := BlockInvocationResult{
 		Id:         block.Id,
 		PipelineId: block.PipelineId,
+		MapIndices: block.MapIndices,
 		ExitCode:   -1,
 	}
 

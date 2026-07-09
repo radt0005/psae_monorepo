@@ -1,6 +1,1 @@
-Loaded pipeline: data_census_acs (019db076-2466-790b-80f1-c744c0c97c1b)
-Executing pipeline with 1 block(s)...
-  [1/1] data.census_acs running...
-Block data.census_acs failed: block exited with code 1: spade: bad argument 'CENSUS_API_KEY': CENSUS_API_KEY env var is required (pending proper secret-management integration)
-Exited with error status 1
-
+Pipeline "data_census_acs" is valid.

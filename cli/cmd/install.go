@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"core"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -281,7 +282,12 @@ func runBuild(dir string, lang core.CollectionLanguage, name string) error {
 	case core.CollectionLanguagePython:
 		cmd = exec.Command("uv", "sync")
 	case core.CollectionLanguageTypeScript:
-		cmd = exec.Command("bun", "build", ".")
+		// Bun collections compile to a single self-contained executable named
+		// after the collection, invoked as `<collection> <block>`. This mirrors
+		// the registry BunBuilder: resolve deps, then `bun build <entry>
+		// --compile --outfile <name>`. (Plain `bun build .` only prints a bundle
+		// to stdout and produces no runnable binary.)
+		return runBunBuild(dir, name)
 	case core.CollectionLanguageR:
 		switch {
 		case fileExists(filepath.Join(dir, "DESCRIPTION")), fileExists(filepath.Join(dir, "pkg.lock")):
@@ -307,6 +313,65 @@ func runBuild(dir string, lang core.CollectionLanguage, name string) error {
 	}
 
 	return nil
+}
+
+// runBunBuild resolves dependencies and compiles a TypeScript (Bun) collection
+// into a single self-contained executable named after the collection. It mirrors
+// registry/internal/builder.BunBuilder so local `spade install` and cloud builds
+// produce identical artifacts.
+func runBunBuild(dir, name string) error {
+	entry, err := bunEntrypoint(dir)
+	if err != nil {
+		return err
+	}
+
+	// Resolve dependencies (needed so `spade` and its transitive deps are on
+	// disk for the compile). Prefer a frozen install when a lockfile exists,
+	// falling back to a normal install.
+	install := exec.Command("bun", "install", "--frozen-lockfile")
+	install.Dir = dir
+	install.Stdout = os.Stdout
+	install.Stderr = os.Stderr
+	if err := install.Run(); err != nil {
+		install = exec.Command("bun", "install")
+		install.Dir = dir
+		install.Stdout = os.Stdout
+		install.Stderr = os.Stderr
+		if err := install.Run(); err != nil {
+			return fmt.Errorf("bun install failed: %w", err)
+		}
+	}
+
+	build := exec.Command("bun", "build", entry, "--compile", "--outfile", name)
+	build.Dir = dir
+	build.Stdout = os.Stdout
+	build.Stderr = os.Stderr
+	if err := build.Run(); err != nil {
+		return fmt.Errorf("bun build failed: %w", err)
+	}
+	return nil
+}
+
+// bunEntrypoint resolves a Bun collection's entry module from package.json
+// (`module` then `main`), falling back to conventional locations. Mirrors
+// registry/internal/builder.bunEntrypoint.
+func bunEntrypoint(dir string) (string, error) {
+	var pkg struct {
+		Module string `json:"module"`
+		Main   string `json:"main"`
+	}
+	if data, err := os.ReadFile(filepath.Join(dir, "package.json")); err == nil {
+		_ = json.Unmarshal(data, &pkg)
+	}
+	for _, c := range []string{pkg.Module, pkg.Main, "src/index.ts", "index.ts", "src/main.ts", "index.js"} {
+		if c == "" {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, c)); err == nil {
+			return c, nil
+		}
+	}
+	return "", fmt.Errorf("no Bun entrypoint found (looked for package.json module/main, src/index.ts, index.ts)")
 }
 
 // finalizePythonInstall creates the venv inside the install directory so

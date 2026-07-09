@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -193,16 +194,77 @@ type BlockInvocation struct {
 	PipelineId uuid.UUID      `yaml:"pipeline_id"`
 	Inputs     []InputRef     `yaml:"inputs"`
 	Arguments  map[string]any `yaml:"arguments"`
-	MapIndex   *int           `yaml:"map_index,omitempty"`
+	// MapIndices is the invocation's index vector: one integer per
+	// enclosing map context, outermost first.  nil/empty means the block
+	// is not mapped.  A block nested two maps deep has len == 2.
+	MapIndices []int `yaml:"map_indices,omitempty"`
 }
 
-// InvocationID returns the invocation ID string. For non-mapped blocks this is the
-// UUID string; for mapped blocks it is <UUID>.<MapIndex>.
+// InvocationID returns the invocation ID string: the block UUID followed by
+// one ".<index>" component per enclosing map context, outermost first
+// (e.g. "0197...-edc", "0197...-edc.3", "0197...-edc.3.0").
 func (b *BlockInvocation) InvocationID() string {
-	if b.MapIndex != nil {
-		return fmt.Sprintf("%s.%d", b.Id.String(), *b.MapIndex)
+	return FormatInvocationID(b.Id, b.MapIndices)
+}
+
+// MapDepth returns the number of enclosing map contexts this invocation
+// runs under (0 for a non-mapped block).
+func (b *BlockInvocation) MapDepth() int {
+	return len(b.MapIndices)
+}
+
+// FormatInvocationID renders a block UUID plus index vector as the dotted
+// invocation ID string used for work directories, object-storage keys, and
+// scheduler bookkeeping.
+func FormatInvocationID(id uuid.UUID, indices []int) string {
+	var sb strings.Builder
+	sb.WriteString(id.String())
+	for _, i := range indices {
+		sb.WriteString(fmt.Sprintf(".%d", i))
 	}
-	return b.Id.String()
+	return sb.String()
+}
+
+// IndexPrefix renders the first d components of an index vector as a dotted
+// string ("" for d == 0, "3" for one component, "3.0" for two).  It is the
+// key used for per-instance map-context bookkeeping.
+func IndexPrefix(indices []int, d int) string {
+	if d > len(indices) {
+		d = len(indices)
+	}
+	var sb strings.Builder
+	for i := 0; i < d; i++ {
+		if i > 0 {
+			sb.WriteByte('.')
+		}
+		sb.WriteString(strconv.Itoa(indices[i]))
+	}
+	return sb.String()
+}
+
+// ParseInvocationID splits an invocation ID of the form
+// "<uuid>[.<i>[.<j>…]]" into the block UUID and its index vector.  A bare
+// UUID returns a nil vector.
+func ParseInvocationID(id string) (uuid.UUID, []int, error) {
+	raw := id
+	var indices []int
+	for {
+		dot := strings.LastIndex(raw, ".")
+		if dot < 0 {
+			break
+		}
+		n, err := strconv.Atoi(raw[dot+1:])
+		if err != nil || n < 0 {
+			break // suffix is not a non-negative integer — part of the UUID
+		}
+		indices = append([]int{n}, indices...)
+		raw = raw[:dot]
+	}
+	u, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, nil, fmt.Errorf("parsing invocation id %q: %w", id, err)
+	}
+	return u, indices, nil
 }
 
 // ExecutionStatus represents the current status of a block execution.
@@ -220,8 +282,12 @@ const (
 
 // BlockInvocationResult represents the result of executing a block.
 type BlockInvocationResult struct {
-	Id         uuid.UUID          `yaml:"id"`
-	PipelineId uuid.UUID          `yaml:"pipeline_id"`
+	Id         uuid.UUID `yaml:"id"`
+	PipelineId uuid.UUID `yaml:"pipeline_id"`
+	// MapIndices is the index vector of the invocation that produced this
+	// result (nil for non-mapped blocks).  Together with Id it identifies
+	// the invocation: see InvocationID().
+	MapIndices []int              `yaml:"map_indices,omitempty"`
 	Status     ExecutionStatus    `yaml:"status"`
 	Outputs    []string           `yaml:"outputs"`
 	Expansion  *ExpansionManifest `yaml:"expansion,omitempty"`
@@ -231,6 +297,12 @@ type BlockInvocationResult struct {
 	// the block never ran (setup error, hash mismatch, etc.).
 	ExitCode int    `yaml:"exit_code"`
 	LogsPath string `yaml:"logs_path,omitempty"`
+}
+
+// InvocationID returns the invocation ID string of the invocation that
+// produced this result (see BlockInvocation.InvocationID).
+func (r *BlockInvocationResult) InvocationID() string {
+	return FormatInvocationID(r.Id, r.MapIndices)
 }
 
 // Worker represents a worker node.

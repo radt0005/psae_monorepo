@@ -1,18 +1,18 @@
-id: 019ee02c-c744-729c-805e-9160d9003827
+id: 019f47d8-0839-7168-8065-3660da3dbfcf
 name: gdal_sieve
 version: "1.0"
 description: Remove small connected regions
 blocks:
-- id: 019ee02c-c744-76df-805c-058fb99d3b03
+- id: 019f47d8-0839-7054-8063-87cdf095d494
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_categorical.tif
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_categorical.tif
     format: GeoTIFF
-- id: 019ee02c-c744-7e70-805d-4f580080b512
+- id: 019f47d8-0839-76bb-8064-371bfde71491
   name: gdal.sieve
   inputs:
-  - 019ee02c-c744-76df-805c-058fb99d3b03
+  - 019f47d8-0839-7054-8063-87cdf095d494
   args:
     threshold: 10
     connectedness: 4

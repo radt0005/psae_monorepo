@@ -128,6 +128,10 @@ func runPipeline(pipelinePath string) error {
 		pipelineBlockByID[b.Id] = b
 	}
 
+	// Context depths let symlink setup pick the right instance directory
+	// for nested map/reduce dependencies.
+	depDepths := core.DependencyDepths(pipeline, manifests)
+
 	// Track output hashes for caching.  Keyed by InvocationID (the
 	// `<uuid>.<index>` form for mapped invocations) so each mapped
 	// invocation gets its own entry.
@@ -158,21 +162,21 @@ func runPipeline(pipelinePath string) error {
 		invID := invocation.InvocationID()
 
 		blockLabel := invocation.BlockId
-		if invocation.MapIndex != nil {
-			blockLabel = fmt.Sprintf("%s[%d]", invocation.BlockId, *invocation.MapIndex)
+		if len(invocation.MapIndices) > 0 {
+			blockLabel = fmt.Sprintf("%s[%s]", invocation.BlockId, core.IndexPrefix(invocation.MapIndices, len(invocation.MapIndices)))
 		}
 
-		// Cache check.  The cache key includes MapIndex so that each mapped
-		// invocation (which consumes a different expansion item) gets its
-		// own cache entry rather than sharing one with its siblings.
+		// Cache check.  The cache key includes the map index vector so that
+		// each mapped invocation (which consumes a different expansion item)
+		// gets its own cache entry rather than sharing one with its siblings.
 		inputHashes := buildInputHashes(invocation, outputHashesByInvocation, pipelineBlockByID)
 		cacheArgs := invocation.Arguments
-		if invocation.MapIndex != nil {
+		if len(invocation.MapIndices) > 0 {
 			cacheArgs = make(map[string]any, len(invocation.Arguments)+1)
 			for k, v := range invocation.Arguments {
 				cacheArgs[k] = v
 			}
-			cacheArgs["__map_index__"] = *invocation.MapIndex
+			cacheArgs["__map_indices__"] = core.IndexPrefix(invocation.MapIndices, len(invocation.MapIndices))
 		}
 		cacheKey, cacheErr := core.ComputeCacheKey(manifest.ID, manifest.Version, inputHashes, cacheArgs)
 		if cacheErr == nil {
@@ -181,24 +185,47 @@ func runPipeline(pipelinePath string) error {
 				workDir := filepath.Join(pipelineDir, invID)
 				if err := os.MkdirAll(filepath.Join(workDir, "outputs"), 0755); err == nil {
 					if err := core.CacheRestore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir); err == nil {
-						outputHashes, _ := core.CollectOutputs(workDir)
-						outputHashesByInvocation[invID] = outputHashes
-						outputs := make([]string, 0, len(outputHashes))
-						for name := range outputHashes {
-							outputs = append(outputs, name)
-						}
-
 						result := core.BlockInvocationResult{
 							Id:         invocation.Id,
 							PipelineId: pipeline.Id,
+							MapIndices: invocation.MapIndices,
 							Status:     core.ExecutionStatusComplete,
-							Outputs:    outputs,
 						}
-						scheduler.Update(result)
-						completedCount++
-						cachedCount++
-						fmt.Printf("  [%d/%d] %s (cached)\n", completedCount, totalBlocks, blockLabel)
-						continue
+
+						// A cached map block must still report its
+						// expansion so the scheduler fans out; a bare
+						// "complete" would stall the map context.
+						restoreOK := true
+						if manifest.Kind == core.BlockKindMap {
+							restoreOK = false
+							for outName, outDecl := range manifest.Outputs {
+								if outDecl.Type != "expansion" {
+									continue
+								}
+								expPath := filepath.Join(workDir, "outputs", outName, "expansion.yaml")
+								if exp, expErr := core.LoadExpansionManifest(expPath); expErr == nil {
+									result.Expansion = &exp
+									result.Status = core.ExecutionStatusMap
+									restoreOK = true
+								}
+								break
+							}
+						}
+
+						if restoreOK {
+							outputHashes, _ := core.CollectOutputs(workDir)
+							outputHashesByInvocation[invID] = outputHashes
+							for name := range outputHashes {
+								result.Outputs = append(result.Outputs, name)
+							}
+							scheduler.Update(result)
+							completedCount++
+							cachedCount++
+							fmt.Printf("  [%d/%d] %s (cached)\n", completedCount, totalBlocks, blockLabel)
+							continue
+						}
+						// Unusable cache entry (map block without a
+						// readable expansion): fall through and re-execute.
 					}
 				}
 			}
@@ -228,7 +255,7 @@ func runPipeline(pipelinePath string) error {
 			resolvedInputs, resolveErr := core.ResolveInputs(pipelineBlock, depManifests, manifest)
 			if resolveErr == nil {
 				workDir := filepath.Join(pipelineDir, invID)
-				core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir, invocation, manifest, depManifests)
+				core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir, invocation, manifest, depManifests, depDepths)
 			}
 		}
 
@@ -248,7 +275,9 @@ func runPipeline(pipelinePath string) error {
 			outputHashes, _ := core.CollectOutputs(workDir)
 			outputHashesByInvocation[invID] = outputHashes
 
-			if result.Status == core.ExecutionStatusComplete && cacheErr == nil {
+			// Map results are cacheable too: the expansion manifest is
+			// restored and re-reported as a map result on cache hit.
+			if cacheErr == nil {
 				core.CacheStore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir)
 			}
 		}
@@ -294,8 +323,8 @@ func buildInputHashes(invocation core.BlockInvocation, outputHashes map[string]m
 		var depInvocationIDs []string
 		if _, ok := outputHashes[depKey]; ok {
 			depInvocationIDs = []string{depKey}
-		} else if invocation.MapIndex != nil {
-			peer := fmt.Sprintf("%s.%d", depKey, *invocation.MapIndex)
+		} else if len(invocation.MapIndices) > 0 {
+			peer := depKey + "." + core.IndexPrefix(invocation.MapIndices, len(invocation.MapIndices))
 			if _, ok := outputHashes[peer]; ok {
 				depInvocationIDs = []string{peer}
 			}

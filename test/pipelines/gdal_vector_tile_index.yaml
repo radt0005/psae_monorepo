@@ -1,18 +1,18 @@
-id: 019ee02c-c75a-7505-809f-22fdc5ecb37d
+id: 019f47d8-0842-713c-80a6-f508894b0866
 name: gdal_vector_tile_index
 version: "1.0"
 description: Build vector footprint index
 blocks:
-- id: 019ee02c-c75a-7b8d-809d-efeb721637b7
+- id: 019f47d8-0842-7e4a-80a4-68ceb23d9c35
   name: data.read_collection
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_vectors*.geojson
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors*.geojson
     format: GeoJSON
     max_items: 10
-- id: 019ee02c-c75a-7de4-809e-66ef31cfb744
+- id: 019f47d8-0842-76ec-80a5-b9cc832d3426
   name: gdal.vector_tile_index
   inputs:
-  - 019ee02c-c75a-7b8d-809d-efeb721637b7
+  - 019f47d8-0842-7e4a-80a4-68ceb23d9c35
   args:
     location_field: location

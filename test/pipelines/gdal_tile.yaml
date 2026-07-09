@@ -1,18 +1,18 @@
-id: 019ee02c-c73d-7b02-804b-48127fc17810
+id: 019f47d8-0836-7ddd-8052-af8360253b0c
 name: gdal_tile
 version: "1.0"
 description: Translate to Byte then generate XYZ map tiles
 blocks:
-- id: 019ee02c-c73d-726e-8048-03fedaf6935c
+- id: 019f47d8-0836-75e3-804f-80a294d6d93a
   name: data.read
   inputs: []
   args:
-    uri: /home/krbundy/UMaine/psae_monorepo/test/fixtures/test_raster.tif
+    uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019ee02c-c73d-7294-8049-6a0660259a25
+- id: 019f47d8-0836-7fe2-8050-c238168e9ea3
   name: gdal.translate
   inputs:
-  - 019ee02c-c73d-726e-8048-03fedaf6935c
+  - 019f47d8-0836-75e3-804f-80a294d6d93a
   args:
     output_format: GTiff
     output_type: Byte
@@ -20,10 +20,10 @@ blocks:
     height: 0
     scale_min: 0
     scale_max: 0
-- id: 019ee02c-c73d-7cbc-804a-b972dacf52b8
+- id: 019f47d8-0836-7812-8051-482aa7434f2d
   name: gdal.tile
   inputs:
-  - 019ee02c-c73d-7294-8049-6a0660259a25
+  - 019f47d8-0836-7fe2-8050-c238168e9ea3
   args:
     zoom: "0-2"
     profile: mercator

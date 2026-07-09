@@ -164,7 +164,7 @@ func (s *PgStore) UpsertInvocation(ctx context.Context, rec InvocationRecord) er
 	conflict := clause.OnConflict{
 		Columns: []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{
-			"pipeline_id", "block_id", "block_name", "map_index",
+			"pipeline_id", "block_id", "block_name", "map_indices",
 			"status", "dispatched_at", "completed_at",
 			"exit_code", "logs_path", "error_message",
 			"output_hashes_json", "expansion_json",
