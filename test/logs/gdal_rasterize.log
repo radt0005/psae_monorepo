@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_rasterize (019f47d8-0837-7811-8059-3cca7280d92b)
+Loaded pipeline: gdal_rasterize (019f5c5d-fe37-78e3-8059-ca1a2ac55b79)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.rasterize running...
   [3/3] gdal.rasterize complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 1.037s
+Pipeline complete: 3 block(s) executed (2 cached) in 1.023s

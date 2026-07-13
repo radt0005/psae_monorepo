@@ -21,7 +21,7 @@ The `--language` (or `-l`) flag is required. Supported values are:
 | `go` | `go.mod` |
 | `python` | `pyproject.toml` |
 | `typescript` | `package.json` |
-| `r` | `DESCRIPTION` |
+| `r` | `renv.lock` |
 
 The collection name is derived from the current directory name.
 
@@ -127,7 +127,7 @@ spade init -l r
 
 ```
 my-collection/
-  DESCRIPTION        # pak dependency manifest (list deps under Imports:)
+  renv.lock          # renv dependency lockfile
   R/                 # R scripts for block handlers
   blocks/            # Block manifest YAML files
 ```
@@ -158,7 +158,7 @@ Spade detects a collection's language by checking for marker files in the projec
 4. `package.json` -- TypeScript
 5. If none of these are found, the collection defaults to R
 
-This detection order is used by `spade add`, `spade check`, `spade install`, and `spade upload` whenever they need to determine the language of an existing collection.
+This detection order is used by `spade add`, `spade check`, `spade install`, and `spade publish` whenever they need to determine the language of an existing collection.
 
 ## See also
 

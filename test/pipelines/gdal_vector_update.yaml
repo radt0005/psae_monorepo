@@ -1,27 +1,27 @@
-id: 019f47d8-0846-7f31-80c6-0710117e88e9
+id: 019f5c5d-fe47-77c2-80c6-47170d0799cb
 name: gdal_vector_update
 version: "1.0"
 description: Update layer A with features from B
 blocks:
-- id: 019f47d8-0846-7e70-80c3-8819a3810f48
+- id: 019f5c5d-fe47-74a2-80c3-9c8ae337a106
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019f47d8-0846-788e-80c4-f3252da423e9
+- id: 019f5c5d-fe47-710a-80c4-bd895047ca3a
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019f47d8-0846-7cff-80c5-6477a8fe30d5
+- id: 019f5c5d-fe47-7da0-80c5-2a2bb88b2e7e
   name: gdal.vector_update
   inputs:
-  - block: 019f47d8-0846-7e70-80c3-8819a3810f48
+  - block: 019f5c5d-fe47-74a2-80c3-9c8ae337a106
     output: file
     as: a
-  - block: 019f47d8-0846-788e-80c4-f3252da423e9
+  - block: 019f5c5d-fe47-710a-80c4-bd895047ca3a
     output: file
     as: b
   args: {}

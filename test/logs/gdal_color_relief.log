@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_color_relief (019f47d8-083d-7307-8085-82b225cec990)
+Loaded pipeline: gdal_color_relief (019f5c5d-fe3d-74cb-8085-03661e15fd3d)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.color_relief running...
   [3/3] gdal.color_relief complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 931ms
+Pipeline complete: 3 block(s) executed (2 cached) in 1s

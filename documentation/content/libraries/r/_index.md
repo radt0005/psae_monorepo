@@ -11,14 +11,12 @@ The R library lets you write Spade blocks using familiar R patterns — reading 
 ## Prerequisites
 
 - **R 4.0 or later**
-- **`pak`** for dependency management (recommended)
+- **`renv`** for dependency locking, with **`pak`** as its recommended installer backend
 - The Spade CLI installed ([Installation guide](/getting-started/installation/))
 
 ## Dependencies
 
-A collection declares its CRAN dependencies in a `DESCRIPTION` file under
-`Imports:`. `pak` resolves them into a `pkg.lock` at build time and installs them
-into the collection's library.
+A collection declares its CRAN dependencies in a `DESCRIPTION` file under `Imports:`:
 
 ```
 Imports:
@@ -26,8 +24,18 @@ Imports:
     yaml
 ```
 
+Running `renv::snapshot()` resolves those declared dependencies (using `pak` under the hood for fast, parallel installs) and records the exact versions into `renv.lock` at the collection root:
+
+```r
+install.packages("jsonlite")
+renv::snapshot()
+```
+
+`renv.lock` is the file `spade install` and the registry's build step actually read to reproduce the collection's library -- `DESCRIPTION` is where you declare what you depend on, `renv.lock` is the resolved, reproducible record of it.
+
 ## Installation
 
 ```r
-pak::pkg_install("spade")
+install.packages("spade")
+renv::snapshot()
 ```

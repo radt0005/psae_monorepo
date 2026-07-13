@@ -1,5 +1,5 @@
 # The URL the site will be built for
-base_url = "https://spade.app"
+base_url = "https://spade.psae.us"
 
 title = "Spade"
 description = "A data processing system for massive data with first-class geospatial support"
@@ -17,4 +17,4 @@ theme = "github-dark"
 [extra]
 site_tagline = "Data processing at scale. Built for geospatial."
 github_url = "https://github.com/spade-dev/spade"
-docs_url = "https://docs.spade.app"
+docs_url = "https://docs.psae.us"

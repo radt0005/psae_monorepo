@@ -1,18 +1,18 @@
-id: 019f47d8-0853-7226-8118-219f60665b81
+id: 019f5c5d-fe54-742a-8118-93d8dbaef6fd
 name: stats_summary
 version: "1.0"
 description: Compute per-column descriptive statistics (n, mean, sd, min, quartiles,
   max, missing) for the numeric columns of a tabular dataset.
 blocks:
-- id: 019f47d8-0852-703a-8116-74208399b53c
+- id: 019f5c5d-fe53-7266-8116-acadde3cdf58
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
     format: CSV
-- id: 019f47d8-0852-7659-8117-0d6ac956c319
+- id: 019f5c5d-fe53-74a0-8117-3045b28c161a
   name: stats.summary
   inputs:
-  - 019f47d8-0852-703a-8116-74208399b53c
+  - 019f5c5d-fe53-7266-8116-acadde3cdf58
   args:
     columns: x,y

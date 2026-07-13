@@ -181,9 +181,79 @@ inputs/tiles/004.tif   (output from process-tile.3)
 
 The reduce block processes all items together and produces a single combined output.
 
-## Limitations
+## Nested map/reduce
 
-**Nested maps are not yet supported.** You cannot have a map block whose downstream blocks include another map block. If you need multi-level fan-out, split your workflow into separate pipelines or restructure so that a single map block enumerates all items at the finest granularity.
+A map block can appear inside another map block's context. This lets you fan out at two (or more) levels -- for example, enumerate scenes, then for each scene enumerate its tiles, process each tile, mosaic tiles back into a scene, then combine all scenes into a final result.
+
+### How nesting works
+
+- **The inner map block is itself a mapped block of the outer context.** If the outer map produces N₁ items, the inner map runs N₁ times -- once per outer item -- and each run produces its **own** expansion. The item counts don't have to match across outer items: outer item 0 might expand to 5 inner items while outer item 1 expands to 300. This is called a **ragged** fan-out.
+- **The inner reduce is also a mapped block of the outer context.** It runs once per outer item, and each run gathers only the inner invocations belonging to that same outer item -- never across outer items. Only the **outermost** reduce runs exactly once for the whole pipeline.
+- **Invocations are identified by an index vector**, one integer per enclosing map level, outermost first. A block nested two levels deep has an invocation ID like `<block-id>.1.4` -- inner item 4 of outer item 1. This makes it possible to trace any invocation back to exactly which item, at every level, produced it.
+- **Blocks are nesting-agnostic.** A map block enumerates its input and writes `expansion.yaml` exactly the same way whether it's at the top level or nested two levels deep. You do not write map or reduce blocks any differently to support nesting -- the scheduler and worker handle the per-instance fan-out and reduce readiness.
+- **Broadcasting still works, generalized by context depth.** A broadcast input from outside all map contexts is shared by every invocation, as before. A broadcast from an *intermediate* level (for example, a per-scene reference feeding every tile of that scene) is shared by every inner invocation belonging to that specific outer item, but not across outer items.
+- **An empty fan-out completes vacuously.** If an inner map instance enumerates zero items, its corresponding inner reduce runs immediately with an empty collection -- the pipeline does not stall waiting for invocations that were never created.
+
+### Rules
+
+- **Every map context must be closed by a reduce.** A nested map that never reaches a matching reduce is a validation error.
+- **Contexts must be well-nested.** You cannot combine the outputs of two sibling map contexts unless at least one has already been closed by its reduce -- there's no way to "merge" two open fan-outs directly.
+- **Nesting depth is capped at 4 levels.** Invocation counts multiply at each level (N₁ × N₂ × ...), so this bound exists to keep worst-case fan-out from growing unpredictably.
+- **Failure semantics are unchanged at any depth.** A failed invocation, however deeply nested, halts the entire pipeline just like a failure at the top level.
+
+### Example
+
+Consider a pipeline `M1 → M2 → X → R2 → R1`, where `M1` (outer map) expands into 2 items, and `M2` (inner map) expands outer item 0 into 3 items and outer item 1 into just 1 item:
+
+```
+M1                          runs once   → expansion [a, b]
+M2.0, M2.1                  run twice   → expansions [p,q,r] and [s]
+X.0.0, X.0.1, X.0.2, X.1.0  run 4x      (ragged: 3 + 1)
+R2.0                        runs when X.0.* complete → gathers 3 outputs
+R2.1                        runs when X.1.* complete → gathers 1 output
+R1                          runs once, when R2.0 and R2.1 have both completed
+```
+
+`X` is an ordinary standard block -- it has no idea it's nested two levels deep. It just receives one item and produces one output, exactly like the single-level examples earlier on this page.
+
+### Pipeline YAML for nested map/reduce
+
+Nesting requires no special syntax -- it falls out naturally from which blocks depend on which. Here, `tiles.enumerate` runs inside `scenes.enumerate`'s context because it depends on a mapped block, and `raster.mosaic` closes the inner context before `report.combine` closes the outer one:
+
+```yaml
+blocks:
+  - id: "@scenes"
+    name: scenes.enumerate       # kind: map (outer)
+    inputs: []
+    args:
+      region: "POLYGON((-105.5 40.0, -105.0 40.0, -105.0 40.5, -105.5 40.5, -105.5 40.0))"
+
+  - id: "@tiles"
+    name: tiles.enumerate        # kind: map (inner, nested inside @scenes' context)
+    inputs:
+      - "@scenes"
+    args:
+      zoom: 14
+
+  - id: "@classify"
+    name: ml.classify            # runs once per (scene, tile) pair
+    inputs:
+      - "@tiles"
+    args:
+      confidence_threshold: 0.8
+
+  - id: "@mosaic"
+    name: raster.mosaic          # kind: reduce (inner) -- closes @tiles' context, once per scene
+    inputs:
+      - "@classify"
+
+  - id: "@report"
+    name: report.combine         # kind: reduce (outer) -- closes @scenes' context, once total
+    inputs:
+      - "@mosaic"
+```
+
+See [Map/Reduce Pipelines](/pipelines/map-reduce-pipelines/) for more on writing these pipelines by hand, and [Pipeline Validation](/pipelines/validation/) for the full set of map/reduce validation rules `spade check` enforces.
 
 ## Complete walkthrough example
 

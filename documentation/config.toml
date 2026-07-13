@@ -1,5 +1,5 @@
 # Spade Documentation Site
-base_url = "https://docs.spade.app"
+base_url = "https://docs.psae.us"
 title = "Spade Documentation"
 description = "Documentation for Spade, a data processing system for massive data with first-class geospatial support."
 default_language = "en"
@@ -16,5 +16,5 @@ theme = "nord"
 
 [extra]
 docs_version = "1.0"
-product_url = "https://spade.app"
+product_url = "https://spade.psae.us"
 github_repo = "https://github.com/spade-dev/spade"

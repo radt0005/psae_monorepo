@@ -19,3 +19,6 @@ __pycache__/
 export_keys.sh
 deploy.sh
 tf_temp.txt
+
+tests/pipeline/*
+test/logs/*.log

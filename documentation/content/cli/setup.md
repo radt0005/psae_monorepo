@@ -18,13 +18,14 @@ The command creates the following directory tree (by default at `~/.spade/`):
 
 ```
 ~/.spade/
+  auth/         # Session credentials from `spade login`
   blocks/       # Installed block collections
   cache/        # Content-addressed cache of block outputs
   pipelines/    # Working directories for pipeline runs
   registry.db   # SQLite registry of installed blocks
 ```
 
-Each subdirectory is created with `0755` permissions. The `registry.db` file is a SQLite database that tracks every installed block, its collection, version, language, entrypoint, and content hash.
+Each subdirectory is created with `0755` permissions. The `registry.db` file is a SQLite database that tracks every installed block, its collection, version, language, entrypoint, and content hash. The `auth/` directory starts empty; it's populated by [`spade login`](/cli/login/) when you authenticate to the cloud registry.
 
 ## Flags
 
@@ -64,6 +65,7 @@ All subsequent Spade commands will use the directory specified by `SPADE_DIR`. I
 
 ```
   Created /home/user/.spade
+  Created /home/user/.spade/auth
   Created /home/user/.spade/blocks
   Created /home/user/.spade/cache
   Created /home/user/.spade/pipelines

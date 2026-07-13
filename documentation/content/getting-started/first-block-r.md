@@ -30,7 +30,7 @@ This scaffolds an R project:
 
 ```
 field-stats/
-  DESCRIPTION     # R package metadata
+  renv.lock       # renv dependency lockfile
   R/              # Handler scripts go here
   blocks/         # Block manifests go here
 ```

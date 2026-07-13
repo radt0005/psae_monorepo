@@ -1,18 +1,18 @@
-id: 019f47d8-083c-73c4-807e-b46a7ad723c7
+id: 019f5c5d-fe3c-7927-807e-f97123dec874
 name: gdal_slope
 version: "1.0"
 description: Compute slope from DEM
 blocks:
-- id: 019f47d8-083c-7868-807c-3d116fb1a96b
+- id: 019f5c5d-fe3c-70ee-807c-d199bdb8c6bf
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f47d8-083c-7561-807d-c85509057b95
+- id: 019f5c5d-fe3c-7925-807d-dcf3c3b3260e
   name: gdal.slope
   inputs:
-  - 019f47d8-083c-7868-807c-3d116fb1a96b
+  - 019f5c5d-fe3c-70ee-807c-d199bdb8c6bf
   args:
     scale: 1
     slope_format: degree

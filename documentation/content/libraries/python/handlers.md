@@ -42,6 +42,30 @@ In this example:
 
 The names `raster`, `target_crs`, and `resolution` must appear in the block manifest as input or parameter names.
 
+## Secrets
+
+Blocks that need credentials -- a database connection string, an API key -- request them by a logical name with `get_secret`, rather than reading `params.yaml` or the process environment directly.
+
+```python
+from spade import run, get_secret, TabularFile
+
+
+def handler() -> TabularFile:
+    """Query a database and return the result as a table."""
+    dsn = get_secret("db")
+    # ... connect with dsn and query ...
+
+
+if __name__ == "__main__":
+    run(handler)
+```
+
+`get_secret(name: str) -> str` returns the secret value bound to the logical `name`. The logical name is part of your block's contract, documented like any other parameter: the pipeline author binds it to one of their stored secrets via a `secrets:` map alongside `args:` in the pipeline YAML.
+
+If `name` was not declared in the pipeline's `secrets:` map, or the bound secret failed to resolve, `get_secret` raises `KeyError`. A declared-but-unresolvable secret is a real error, not a silently empty string -- let it propagate like any other unhandled exception (see Error handling below).
+
+`get_secret` never talks to a keychain or key-management service itself. It only reads values the worker or CLI already injected into the process environment before your handler ran.
+
 ## Returning a single output
 
 The simplest pattern is to return a single typed object. The library uses the return type to determine the output name and writes the file to the `outputs/` directory.

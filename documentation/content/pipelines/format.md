@@ -55,12 +55,13 @@ The order of blocks in the list does not determine execution order. Spade uses t
 
 Each block invocation has the following fields:
 
-| Field    | Type              | Required | Description |
-|----------|-------------------|----------|-------------|
-| `id`     | string            | yes      | A unique invocation ID within this pipeline, in UUIDv7 format |
-| `name`   | string            | yes      | The block to run, in `collection.block` format |
-| `inputs` | list              | yes      | References to upstream block invocations that provide input data |
-| `args`   | map (string: any) | no       | Parameters passed to the block at runtime |
+| Field     | Type                | Required | Description |
+|-----------|---------------------|----------|-------------|
+| `id`      | string              | yes      | A unique invocation ID within this pipeline, in UUIDv7 format |
+| `name`    | string              | yes      | The block to run, in `collection.block` format |
+| `inputs`  | list                | yes      | References to upstream block invocations that provide input data |
+| `args`    | map (string: any)   | no       | Parameters passed to the block at runtime |
+| `secrets` | map (string: string)| no       | Binds the logical secret names the block requests via `get_secret` to your stored secret names. Values are secret **names**, never values. See [Secrets](/concepts/secrets/). |
 
 ### The block `id`
 
@@ -117,6 +118,17 @@ args:
 ```
 
 File-type inputs come from upstream blocks via the `inputs` list, not from `args`. The `args` field is only for scalar parameters.
+
+### The `secrets` map
+
+The `secrets` field binds the logical secret names a block's code requests (via `get_secret("db")`, for example) to the names of secrets stored in your local keychain or the cloud KMS:
+
+```yaml
+secrets:
+  db: prod-postgres-dsn
+```
+
+Here, `db` is the logical name the block asks for in its code, and `prod-postgres-dsn` is the name of a secret you stored with `spade secret set`. Only the secret's **name** ever appears in the pipeline file -- never its value. `secrets` is optional; omit it if the block doesn't declare any. See [Secrets](/concepts/secrets/) for the full picture, including how local and cloud secret stores are independent namespaces.
 
 ## How `args` become `params.yaml`
 

@@ -67,6 +67,7 @@ Block IDs use `@`-prefixed **short codes** (`@source`, `@ndvi`, `@report`). Shor
 | `name` | Yes | The block to run, in `<collection>.<block>` format. |
 | `inputs` | Yes | List of upstream invocation IDs or explicit references. See [Input Resolution](/concepts/input-resolution/). |
 | `args` | No | Key-value parameters passed to the block via `params.yaml`. |
+| `secrets` | No | Binds logical secret names the block requests (via `get_secret`) to your stored secret names. See [Secrets](/concepts/secrets/). |
 
 ## Data flow between blocks
 

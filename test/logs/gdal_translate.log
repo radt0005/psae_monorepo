@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_translate (019f47d8-0833-72d0-803c-797dacea46c9)
+Loaded pipeline: gdal_translate (019f5c5d-fe32-7556-803c-e046aa47a0e9)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.translate running...
   [2/2] gdal.translate complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 995ms
+Pipeline complete: 2 block(s) executed (1 cached) in 1.036s

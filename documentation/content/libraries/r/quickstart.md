@@ -25,7 +25,7 @@ This produces:
 
 ```
 raster-tools/
-  DESCRIPTION
+  renv.lock
   R/
   blocks/
 ```

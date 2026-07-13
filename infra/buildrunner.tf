@@ -18,7 +18,7 @@ locals {
   # records); image short-names match the registry/Dockerfile.builder-* files.
   builder_langs = { go = "go", rust = "rust", typescript = "ts", python = "python", r = "r" }
   builder_images_map = { for lang, short in local.builder_langs :
-    lang => "${data.digitalocean_container_registry.spade.endpoint}/spade-builder-${short}:${var.image_tag}"
+    lang => "${local.docr_endpoint}/spade-builder-${short}:${var.image_tag}"
   }
 }
 
@@ -42,7 +42,7 @@ resource "digitalocean_droplet" "buildrunner" {
   tags       = ["spade", digitalocean_tag.buildrunner.name]
 
   user_data = templatefile("${path.module}/cloud-init/buildrunner.sh.tftpl", {
-    runner_image       = "${data.digitalocean_container_registry.spade.endpoint}/spade-buildrunner:${var.image_tag}"
+    runner_image       = "${local.docr_endpoint}/spade-buildrunner:${var.image_tag}"
     builder_images     = join(",", [for lang, img in local.builder_images_map : "${lang}=${img}"])
     builder_image_list = join(" ", values(local.builder_images_map))
     docr_token         = var.docr_read_token

@@ -1,35 +1,35 @@
-id: 019f47d8-083f-78ab-8093-fd2f93bdbdac
+id: 019f5c5d-fe3f-7064-8093-fe6d1490025a
 name: gdal_terrain_parallel
 version: "1.0"
 description: 'Parallel terrain analysis: hillshade + slope + aspect from single DEM'
 blocks:
-- id: 019f47d8-083f-79a4-808f-74ce34f6a724
+- id: 019f5c5d-fe3f-7a36-808f-71d6011172cc
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f47d8-083f-78b6-8090-16903961266e
+- id: 019f5c5d-fe3f-7249-8090-81241f30cdb9
   name: gdal.hillshade
   inputs:
-  - 019f47d8-083f-79a4-808f-74ce34f6a724
+  - 019f5c5d-fe3f-7a36-808f-71d6011172cc
   args:
     azimuth: 315
     altitude: 45
     z_factor: 1
     scale: 1
     multidirectional: false
-- id: 019f47d8-083f-79e4-8091-f6737a390fb9
+- id: 019f5c5d-fe3f-7f6f-8091-69d5f26cb061
   name: gdal.slope
   inputs:
-  - 019f47d8-083f-79a4-808f-74ce34f6a724
+  - 019f5c5d-fe3f-7a36-808f-71d6011172cc
   args:
     scale: 1
     slope_format: degree
-- id: 019f47d8-083f-7c6a-8092-9c447ee20f64
+- id: 019f5c5d-fe3f-74a0-8092-48b499b52a8c
   name: gdal.aspect
   inputs:
-  - 019f47d8-083f-79a4-808f-74ce34f6a724
+  - 019f5c5d-fe3f-7a36-808f-71d6011172cc
   args:
     zero_for_flat: false
     trigonometric: false

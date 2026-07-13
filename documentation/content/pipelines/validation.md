@@ -17,7 +17,7 @@ An invalid pipeline produces one or more error messages describing exactly what 
 
 ## Validation rules
 
-Spade checks the following seven rules, in order. Each rule is described below with an explanation and an example of a pipeline that violates it.
+Spade checks the following seven core rules, in order, plus two additional rule sets that only apply if your pipeline uses short codes or map/reduce (see [Additional validation for short codes and map/reduce](#additional-validation-for-short-codes-and-map-reduce) below). Each core rule is described below with an explanation and an example of a pipeline that violates it.
 
 ### Rule 1: Unique invocation IDs
 
@@ -285,6 +285,33 @@ Error: Block 'raster.reproject' (019cf4bc-2222-7000-0000-000000000000)
   is missing required argument 'target_crs'.
 ```
 
+## Additional validation for short codes and map/reduce
+
+These rules only apply to pipelines that use the relevant feature -- they run in addition to the seven core rules above.
+
+### Short codes
+
+If a pipeline uses `@`-prefixed short codes instead of UUIDs, `spade check` additionally verifies:
+
+1. **Grammar** -- every short code matches `@[A-Za-z_][A-Za-z0-9_]*`.
+2. **Resolution** -- every short code referenced in `inputs` is defined as the `id` of some block in the pipeline.
+3. **Uniqueness** -- no two blocks share the same short code (a repeat resolves to the same UUID, which then trips Rule 1 above).
+4. **Lockfile validity** -- every binding in the sibling `.lock.yaml` is a valid UUIDv7, and every bound short code that's still referenced in the source exists.
+
+See [Short Codes and Hand-Authoring](/pipelines/short-codes/#validation-of-short-codes) for the full detail and error message examples.
+
+### Map/reduce
+
+If a pipeline contains `kind: map` or `kind: reduce` blocks, `spade check` additionally verifies:
+
+1. **Map blocks output `expansion`** -- a `kind: map` block must declare at least one output of type `expansion`.
+2. **Reduce blocks accept `collection`** -- a `kind: reduce` block must declare at least one input of type `collection`.
+3. **Every map context is closed by a reduce** -- a fan-out that never reaches a matching `kind: reduce` block is rejected.
+4. **Contexts are well-nested** -- a block may not combine the outputs of two sibling map contexts unless at least one has already been closed by its reduce.
+5. **Nesting depth does not exceed 4 levels** -- since invocation counts multiply at each nesting level, this bounds worst-case fan-out.
+
+See [Map/Reduce Pipelines](/pipelines/map-reduce-pipelines/) and [Nested map/reduce](/concepts/map-reduce/#nested-mapreduce) for the full mechanics.
+
 ## Summary of validation rules
 
 | # | Rule | What it checks |
@@ -296,6 +323,8 @@ Error: Block 'raster.reproject' (019cf4bc-2222-7000-0000-000000000000)
 | 5 | Type compatibility | Connected blocks have compatible input/output types |
 | 6 | Named outputs exist | Explicit `output` references match declared outputs |
 | 7 | Required args present | All required scalar parameters are provided in `args` |
+| -- | Short codes (if used) | Grammar, resolution, uniqueness, lockfile validity -- see above |
+| -- | Map/reduce (if used) | Output/input types, context closure, well-nestedness, depth ≤ 4 -- see above |
 
 ## Tips for fixing validation errors
 

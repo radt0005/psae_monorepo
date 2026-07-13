@@ -67,7 +67,7 @@ my-collection/
 
 ```
 my-collection/
-  DESCRIPTION
+  renv.lock
   blocks/
     interpolate.yaml
   R/
@@ -127,22 +127,27 @@ When you install a new version of a collection, it is stored alongside previous 
 
 ## Installing collections
 
-Collections are installed from Git repositories or local directories using the `spade install` command:
+The `spade install` command supports two modes: fetching a signed, prebuilt artifact from the cloud registry, or building from source yourself.
 
 ```bash
-# From a Git repository
+# Registry-fetch: download a signed, prebuilt artifact -- no toolchain needed
+spade install gdal@1.0.0
+
+# Build-from-source: a Git repository, built locally
 spade install https://github.com/spade-dev/core-blocks.git
 
-# From a local directory
-spade install file://.
+# Build-from-source: a local directory, built locally
+spade install .
 ```
 
-When you install a collection, Spade:
+For a registry reference, Spade downloads the artifact and its signature, verifies both against the registry's trusted keys, and unpacks it -- no cloning or compiling. For a Git URL or local path, Spade:
 
 1. Clones or copies the source
 2. Detects the language from the project file
-3. Builds the collection using the appropriate toolchain (e.g., `pip install` for Python, `cargo build` for Rust)
-4. Copies the built artifacts and manifests to `~/.spade/blocks/<collection>/<version>/`
+3. Builds the collection using the appropriate toolchain (e.g., `uv sync` for Python, `cargo build --release` for Rust)
+4. Installs the built artifacts and manifests to `~/.spade/blocks/<collection>/<version>/`
+
+Build-from-source installs are unsigned and marked as locally built in the local block index -- see [`spade install`](/cli/install/) for the full breakdown of both modes.
 
 The installed layout looks like:
 
@@ -163,6 +168,23 @@ The installed layout looks like:
         classify.yaml
       <built artifacts>
 ```
+
+## Publishing and the registry
+
+Collections are shared through the cloud registry, published with [`spade publish`](/cli/publish/). Publishing is git-based, not a local build-and-upload step: `spade publish` submits a `(repo_url, commit_sha, collection_name, version)` reference for a commit you've already pushed, and the registry does the rest.
+
+This ordering is the registry's trust chain: the registry clones your repo at that exact commit, **screens** the source first, and only then **builds** the artifact — in the same base image workers run — and **signs** it. Because build always follows screening, the registry (not the developer) controls the bytes that end up signed and distributed. A local `spade install` of a git URL or path skips this chain entirely and produces an unsigned, locally-built artifact instead; see [`spade install`](/cli/install/) for how the two modes differ.
+
+A published collection version moves through several states, which affect whether `spade install <collection>@<version>` can fetch it:
+
+| State | Meaning |
+|-------|---------|
+| `available` | Signed and stored; can be installed and run |
+| `deprecated` | Hidden from browse/discovery, but still installable and runnable |
+| `yanked` | Blocks new installs; workers that already have it keep running |
+| `recalled` | Refuses to execute; existing installs are invalidated and removed |
+
+See [`spade publish`](/cli/publish/) for the full command reference, including the preconditions (clean working tree, pushed `HEAD`) and the earlier `submitted` / `screening` / `screened` / `building` states a version passes through on its way to `available`.
 
 ## Creating a new collection
 

@@ -1,9 +1,9 @@
-id: 019f47d8-0850-7e74-810a-523d481562ec
+id: 019f5c5d-fe51-7241-810a-0669a320401d
 name: data_ssurgo
 version: "1.0"
 description: '[NETWORK] Download SSURGO soils for RI survey area'
 blocks:
-- id: 019f47d8-0850-70dd-8109-6da5a0f3bc57
+- id: 019f5c5d-fe51-7fbf-8109-54b77e101ff3
   name: data.ssurgo
   inputs: []
   args:

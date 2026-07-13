@@ -61,7 +61,7 @@ const handler = spadeBlock({
   return new RasterFile(outputPath);
 });
 
-run(handler);
+await run(handler);
 ```
 
 ### Runtime directory layout
@@ -154,7 +154,7 @@ const handler = spadeBlock({
   return new JsonFile(outputPath);
 });
 
-run(handler);
+await run(handler);
 ```
 
 ### Runtime directory layout
@@ -221,7 +221,7 @@ const handler = spadeBlock({
   return new RasterFile(outputPath);
 });
 
-run(handler);
+await run(handler);
 ```
 
 When used in a pipeline with a collection of rasters, the Spade runtime calls this handler once per raster file. Each invocation sees a single raster in `inputs/raster/`.
@@ -278,7 +278,7 @@ const handler = spadeBlock({
   };
 });
 
-run(handler);
+await run(handler);
 ```
 
 ### Runtime directory layout

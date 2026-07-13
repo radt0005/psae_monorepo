@@ -23,7 +23,7 @@ resource "digitalocean_droplet" "worker" {
   tags       = ["spade", "worker"]
 
   user_data = templatefile("${path.module}/cloud-init/worker.sh.tftpl", {
-    worker_image = "${data.digitalocean_container_registry.spade.endpoint}/spade-worker:${var.image_tag}"
+    worker_image = "${local.docr_endpoint}/spade-worker:${var.image_tag}"
     docr_token   = var.docr_read_token
     # Worker is in-VPC → private broker IP. Registry/KMS are on App Platform → public URL.
     amqp_url     = "amqp://${var.rabbitmq_user}:${random_password.rabbitmq.result}@${digitalocean_droplet.rabbitmq.ipv4_address_private}:5672/"

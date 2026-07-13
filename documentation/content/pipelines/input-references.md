@@ -46,12 +46,13 @@ Spade sees that `data.sentinel2` produces a GeoTIFF output and `raster.reproject
 
 ## Explicit references
 
-An explicit reference is an object with two keys:
+An explicit reference is an object with up to three keys:
 
-| Key      | Description |
-|----------|-------------|
-| `block`  | The invocation ID of the upstream block |
-| `output` | The name of the specific output to use |
+| Key      | Required | Description |
+|----------|----------|-------------|
+| `block`  | Yes | The invocation ID of the upstream block |
+| `output` | Yes | The name of the specific output to use |
+| `as`     | No  | The name of the input on the downstream block to connect to. If omitted, Spade type-matches the named output against the current block's remaining unmatched inputs. |
 
 ```yaml
 inputs:
@@ -60,6 +61,8 @@ inputs:
 ```
 
 Explicit references are necessary when a bare reference would be ambiguous. This happens when the upstream block produces multiple outputs of the same type, or when there are multiple upstream blocks whose outputs could match the same input.
+
+`as` is necessary on top of `block`+`output` in a further, more specific case: when two or more explicit references in the same `inputs` list target outputs that share a type, *and* the current block has two or more unmatched inputs of that same type. Naming the output alone doesn't tell Spade which of those same-typed inputs to wire it to -- see the `raster.band-ratio` example below.
 
 ### Example: explicit reference needed
 
@@ -73,7 +76,7 @@ And a downstream block `raster.band-ratio` that expects two inputs:
 - `numerator` (type: `file`, format: `GeoTIFF`)
 - `denominator` (type: `file`, format: `GeoTIFF`)
 
-Using bare references here would be ambiguous -- Spade cannot determine which output (`red` or `nir`) maps to which input (`numerator` or `denominator`). You must use explicit references:
+Using bare references here would be ambiguous -- Spade cannot determine which output (`red` or `nir`) maps to which input (`numerator` or `denominator`). Naming the output with `block`+`output` alone is not enough either: both `numerator` and `denominator` are GeoTIFF, so after fixing `nir` and `red` as the two outputs, there would still be two equally valid ways to pair them with the two remaining GeoTIFF inputs. You need `as` to pin each one directly:
 
 ```yaml
 blocks:
@@ -90,12 +93,14 @@ blocks:
     inputs:
       - block: "@split"
         output: nir
+        as: numerator
       - block: "@split"
         output: red
+        as: denominator
     args: {}
 ```
 
-Here, the `nir` output is explicitly wired to the `numerator` input and the `red` output is wired to the `denominator` input. Spade matches explicit references to inputs by type after fixing the output -- since each explicit reference names exactly one output, there is only one type to match, and Spade assigns it to the compatible input.
+Here, `as` wires the `nir` output directly to the `numerator` input and the `red` output directly to the `denominator` input -- no type matching is needed for either reference, so there's no ambiguity to resolve.
 
 ## Mixed references
 
@@ -128,10 +133,11 @@ When Spade processes a block's `inputs` list, it runs the following algorithm to
 
    1. Look up the upstream block invocation by its `block` ID.
    2. Look up the named `output` in that upstream block's manifest.
-   3. Find the declared input on the current block whose type is compatible with the output's type.
-   4. If exactly one input matches, wire them together and mark both the output and the input as resolved.
-   5. If no input matches, report a type-mismatch error.
-   6. If multiple inputs match, report an ambiguity error (you need to restructure the pipeline or use additional explicit references).
+   3. **If the reference has an `as` key**, wire the output directly to the named input and mark both as resolved -- skip to the next reference. No type matching needed.
+   4. **Otherwise**, find the declared input on the current block whose type is compatible with the output's type.
+   5. If exactly one input matches, wire them together and mark both the output and the input as resolved.
+   6. If no input matches, report a type-mismatch error.
+   7. If multiple inputs match, report an ambiguity error and suggest adding `as` to pin the target input explicitly.
 
 **Step 3: Resolve bare references.** For each bare reference in the `inputs` list:
 

@@ -29,14 +29,25 @@ The scheduler maintains a work queue. At any point in time, every block in the p
 
 The scheduler continuously moves blocks from "Waiting" to "Ready" as their dependencies complete, and dispatches ready blocks to available workers. Blocks that have no dependencies on each other run in parallel, limited only by the number of available workers.
 
+## Storage model: no shared filesystem
+
+Workers do not share a filesystem with each other or with the scheduler. This is a deliberate architectural choice, not a current limitation: Spade considered a shared network filesystem (NFS or similar) and rejected it because the overhead and operational complexity of a shared volume outweighed the benefit at the scale Spade targets. Instead, data flowing between blocks moves through **object storage**, and each worker keeps its own local disk for two distinct purposes:
+
+- **Per-invocation scratch** — the working directory for one in-progress invocation. Short-lived; removed once the invocation completes.
+- **A worker-local input cache** — a content-addressed cache of files fetched from object storage, persisted across invocations on that worker. A cache hit avoids re-fetching data the worker has already pulled down (a foundational reference dataset, an intermediate output from earlier in the same pipeline run, a broadcast input shared by many mapped invocations).
+
+When a block finishes successfully, the worker uploads each of its outputs to object storage. When a downstream block is dispatched — to that same worker or a different one — the worker resolves each input by checking its local cache first; on a miss, it fetches the file from object storage and stores it under a content-addressed key for future reuse. Because the cache is purely a performance optimization, losing it (a fresh worker, a disk failure, a manual clear) affects latency, not correctness — the data is always recoverable from object storage.
+
+This means a worker can be added, removed, or replaced without coordinating with any other worker, and the scheduler never needs to reason about which physical machine holds which file.
+
 ## Workers and working directory setup
 
 A **worker** receives a block assignment from the scheduler and prepares the execution environment. The setup process is:
 
 1. **Create the working directory** with subdirectories: `inputs/`, `outputs/`, `logs/`
 2. **Write `params.yaml`** containing the block's parameters from the pipeline's `args`
-3. **Write `invocation.yaml`** containing metadata (block ID, run ID, map context if applicable)
-4. **Symlink inputs** from upstream block outputs into `inputs/`. For each declared input, the worker creates a symlink pointing to the corresponding output file or directory from the upstream block. This avoids copying large files.
+3. **Write `invocation.yaml`** containing metadata about the invocation (see [Blocks: invocation.yaml](/concepts/blocks/#invocationyaml) for the exact schema)
+4. **Resolve inputs from the local cache.** For each declared input, the worker either finds the file already in its local cache (cache hit) or fetches it from object storage and stores it under a content-addressed key (cache miss). It then creates a symlink from `inputs/<name>/` to the cached copy. This is why the working directory is self-contained regardless of which worker produced the upstream output or which worker is running the current block.
 
 The result is a self-contained working directory:
 
@@ -45,8 +56,8 @@ The result is a self-contained working directory:
   params.yaml
   invocation.yaml
   inputs/
-    image -> /path/to/upstream/outputs/satellite_image.tif
-    model -> /path/to/upstream/outputs/trained_model.pkl
+    image -> <local-cache>/<content-hash-of-satellite_image.tif>
+    model -> <local-cache>/<content-hash-of-trained_model.pkl>
   outputs/
   logs/
 ```
@@ -61,6 +72,15 @@ Once the working directory is ready, the worker launches the block's entrypoint 
 - **Network** — Network access is disabled by default. Blocks that declare `network: true` in their manifest are given network access.
 
 The subprocess runs the block's entrypoint (e.g., a Python script, a compiled Go binary). The block reads its inputs, performs its computation, and writes its outputs. Standard output and standard error are captured to `logs/stdout.log` and `logs/stderr.log`.
+
+## Trust and integrity
+
+Before running a block, the worker looks it up in a local **block index** -- a rebuildable cache of what's installed under `~/.spade/blocks/`, tracking each block's collection, version, language, entrypoint, and a content hash of its binary or script computed at install time. Two checks happen at dispatch:
+
+- **Tamper detection.** The worker recomputes the hash of the block's binary or script and compares it against the value recorded at install time. If they don't match, the worker refuses to execute the block. This catches both accidental corruption and a compromised process replacing a binary underneath the worker.
+- **Recall check.** A block collection version published to the registry can later be marked **recalled** (for example, after a security issue is discovered). If the worker's index entry for that version is stale, it re-checks the registry before running. A recalled version is refused, reported to the scheduler, and removed from the local install -- even if the worker already had it unpacked and had run it successfully before.
+
+This is a runtime safety net, separate from the registry's own publish-time trust chain (screening, signed builds) -- see [Block Collections](/concepts/collections/#publishing-and-the-registry) for how a collection gets published and signed in the first place.
 
 ## Completion and reporting
 
@@ -111,16 +131,20 @@ For large workloads, Spade supports distributed execution across multiple machin
 
 - A **scheduler** runs on one machine and coordinates the pipeline
 - Multiple **workers** run on separate machines, each pulling block assignments from the scheduler
-- All machines must share a **common filesystem** (e.g., NFS, a network-attached storage volume) so that input symlinks and cached outputs are accessible everywhere
+- Workers do **not** share a filesystem with each other or with the scheduler -- see [Storage model: no shared filesystem](#storage-model-no-shared-filesystem) above. Data moves between workers through object storage, not a network-attached volume.
 
-The scheduler and workers communicate to dispatch work and report results. From the pipeline's perspective, distributed execution behaves identically to local execution: the same dependency resolution, sandboxing, and caching rules apply. The only difference is that blocks can run on different machines, increasing total throughput.
+The scheduler dispatches each block invocation as a message on a durable job queue; workers consume competing-consumer style, so work fans out across however many workers are running with no additional scheduler-side bookkeeping. From the pipeline's perspective, distributed execution behaves identically to local execution: the same dependency resolution, sandboxing, and caching rules apply. The only difference is that blocks can run on different machines, increasing total throughput.
 
 ## Error handling
 
-When a block fails (exits with a non-zero exit code), the following happens:
+Spade distinguishes two failure modes, because they call for different responses.
+
+### Block failure
+
+A block failure is when the block's subprocess runs to completion but **exits with a non-zero exit code**. The block ran; its logic (or its inputs) produced an error. When this happens:
 
 1. **The pipeline halts.** The scheduler stops dispatching new blocks. Blocks that are already running are allowed to finish, but no new blocks are started.
-2. **Logs are preserved.** The failed block's `logs/stdout.log` and `logs/stderr.log` are kept in the working directory for inspection.
+2. **Logs are preserved.** The failed block's `logs/stdout.log` and `logs/stderr.log` are uploaded to object storage before the failure is reported, so they remain available even after the local working directory is cleaned up.
 3. **Spade reports the failure.** The CLI displays which block failed, its exit code, and the path to its logs.
 
 To debug a failure:
@@ -134,6 +158,16 @@ cat ~/.spade/pipelines/<run-id>/<block-id>/logs/stderr.log
 ```
 
 Blocks that completed successfully before the failure are cached normally. When you fix the failing block and re-run the pipeline, the successful blocks are skipped (served from cache) and only the previously-failed block and its downstream dependents re-execute.
+
+### Worker failure
+
+A worker failure is different: the **worker process itself** crashes, its host loses power, or the network drops before it can report a result -- the block's own exit code is never the issue, because the worker never got to report one. Spade handles this transparently:
+
+- The worker never acknowledges the job as done, so the job is automatically redelivered to another worker once a timeout elapses.
+- The redelivered job runs the block fresh, with a new working directory and a new set of logs. Any logs from the failed attempt are lost along with the worker.
+- The scheduler is not aware a first attempt was made -- from its perspective, the block simply took a bit longer to complete.
+
+You will not typically see a worker failure surfaced as a pipeline error; if you notice a block invocation retried with no corresponding error in your history, this is why. Locally, with a single worker, a worker failure just means `spade run` itself was interrupted -- rerunning picks the pipeline back up using the cache, exactly as a block failure does.
 
 ## Summary of the execution lifecycle
 

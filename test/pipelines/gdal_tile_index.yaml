@@ -1,18 +1,18 @@
-id: 019f47d8-0835-758e-804b-13baad3f7ac9
+id: 019f5c5d-fe35-759c-804b-c1f54d6e7b4e
 name: gdal_tile_index
 version: "1.0"
 description: Build raster tile index
 blocks:
-- id: 019f47d8-0835-7d1f-8049-4c0eca0f76d5
+- id: 019f5c5d-fe35-7d92-8049-ac516f1e6c03
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster*.tif
     format: GeoTIFF
     max_items: 10
-- id: 019f47d8-0835-75be-804a-4cc10eff8a1b
+- id: 019f5c5d-fe35-7e28-804a-0e76eb6c4677
   name: gdal.tile_index
   inputs:
-  - 019f47d8-0835-7d1f-8049-4c0eca0f76d5
+  - 019f5c5d-fe35-7d92-8049-ac516f1e6c03
   args:
     location_field: location

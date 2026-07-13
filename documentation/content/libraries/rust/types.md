@@ -199,6 +199,7 @@ The `SpadeError` enum covers all error cases:
 | `ParamNotFound { name }` | `args.param()` called with a name not in `params.yaml` |
 | `EmptyInputDir { name }` | An input subdirectory exists but contains no files |
 | `TypeMismatch { name, expected, found }` | Input data cannot be converted to the requested type |
+| `SecretNotFound { name }` | `get_secret()` called with a name not declared in the pipeline's `secrets:` map, or resolution failed |
 | `IoError(std::io::Error)` | Filesystem errors |
 | `YamlError(serde_yaml::Error)` | YAML parsing errors |
 | `JsonError(serde_json::Error)` | JSON parsing errors |

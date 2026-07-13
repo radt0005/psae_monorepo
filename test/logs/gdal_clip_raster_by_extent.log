@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_clip_raster_by_extent (019f47d8-083c-74c2-8078-1eeac749adf0)
+Loaded pipeline: gdal_clip_raster_by_extent (019f5c5d-fe3b-7a35-8078-7cd56c78107d)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.clip_raster_by_extent running...
   [2/2] gdal.clip_raster_by_extent complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 976ms
+Pipeline complete: 2 block(s) executed (1 cached) in 1.004s

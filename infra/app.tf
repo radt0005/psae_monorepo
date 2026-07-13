@@ -26,6 +26,16 @@ resource "digitalocean_app" "spade" {
     name   = "spade"
     region = var.app_region
 
+    # Custom primary domain (DNS on Cloudflare). Making it PRIMARY sets the
+    # ${APP_URL} bindable — and therefore BETTER_AUTH_URL — to https://app.psae.us.
+    # Point a CNAME app -> <app>.ondigitalocean.app in Cloudflare. Use DNS-only
+    # (grey cloud) so App Platform can validate + issue its cert; you can enable
+    # the proxy afterward with SSL mode "Full".
+    domain {
+      name = "app.psae.us"
+      type = "PRIMARY"
+    }
+
     # ---- Managed Postgres binding (injects ${spade-db.DATABASE_URL}, etc.) ----
     database {
       name         = "spade-db"

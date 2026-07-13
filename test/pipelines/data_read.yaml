@@ -1,9 +1,9 @@
-id: 019f47d8-084b-760a-80e7-0191c37770ea
+id: 019f5c5d-fe4c-7e33-80e7-ff1fcd705338
 name: data_read
 version: "1.0"
 description: Read a single local file
 blocks:
-- id: 019f47d8-084b-72f7-80e6-c60613a40fa2
+- id: 019f5c5d-fe4c-75ec-80e6-576b5225617a
   name: data.read
   inputs: []
   args:

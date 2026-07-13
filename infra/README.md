@@ -53,8 +53,11 @@ Builder containers report back to the registry at the app's public `/registry`
 path (same App Platform open item #3 as the worker) and upload staged artifacts
 to the `spade-artifacts` bucket.
 
-**Droplet quota:** worker (1) + rabbitmq (1) + build runner (1) = 3, which is the
-default account cap — request an increase before adding a second worker.
+**Droplet quota:** the deployed stack uses worker (`worker_count`, default 1) +
+rabbitmq (1) + build runner (1) = **3 droplets**, which is exactly the default
+account cap. All three slots are consumed at `worker_count = 1`, so raising
+`worker_count` (or adding any other Droplet) needs a quota increase first —
+request one via the DO console before `apply`, or the extra Droplet errors out.
 
 ## Runtime secrets for App Platform
 
@@ -116,6 +119,50 @@ The app config is complete and valid, but these must be resolved before it runs:
 5. **Bucket mapping.** `S3_BUCKET` for the web UI/worker is a single bucket
    (`var.app_data_bucket`); the spec splits pipeline-io vs user-data. Reconcile
    when the code supports separate bucket configs.
+
+## Static sites (website + docs)
+
+Two Zola sites are hosted on **Cloudflare Pages** — Cloudflare owns them end to
+end (CDN, TLS, clean URLs, custom domains). They are **not** in Terraform; the DO
+stack doesn't touch them. Create the Pages projects once, then deploy with the
+scripts.
+
+| Site | Source | Pages project | URL |
+| --- | --- | --- | --- |
+| Marketing | `../website` | `spade-website` | https://spade.psae.us |
+| Docs | `../documentation` | `spade-docs` | https://docs.psae.us |
+
+### One-time Cloudflare setup (psae.us zone)
+
+1. **Create the two Pages projects** — dashboard → Workers & Pages → Create →
+   Pages, or `wrangler pages project create spade-website` / `... spade-docs`.
+2. **Custom domains** — in each project's settings add `spade.psae.us` (marketing)
+   and `docs.psae.us` (docs). Cloudflare provisions the certs automatically.
+3. **`app` subdomain** — `CNAME app → <app>.ondigitalocean.app`, **DNS only**
+   (grey) so App Platform can validate + issue its cert; proxy later with SSL "Full".
+4. **Apex redirect** — a CF **Redirect Rule**: when `http.host eq "psae.us"`,
+   301 to `concat("https://spade.psae.us", http.request.uri.path)` (preserve query).
+
+Pages serves `index.html` for directory paths automatically, so Zola's clean URLs
+just work — no rewrite rule needed.
+
+### Deploy
+
+```sh
+./deploy-website.sh
+./deploy-docs.sh
+```
+
+Each runs `zola build` then `wrangler pages deploy public/`. Needs `zola` and
+`wrangler`. Authenticate wrangler once with `wrangler login`, or export a scoped
+token for non-interactive use:
+
+```sh
+export CLOUDFLARE_API_TOKEN=...  CLOUDFLARE_ACCOUNT_ID=...
+```
+
+The scripts invoke wrangler via `npx` by default; override with e.g.
+`export WRANGLER="bunx wrangler"`.
 
 ## SSH keys
 

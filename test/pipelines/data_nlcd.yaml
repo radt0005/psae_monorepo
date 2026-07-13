@@ -1,9 +1,9 @@
-id: 019f47d8-084f-7040-8106-9de8946be564
+id: 019f5c5d-fe50-7f39-8106-3c6bd852e3c7
 name: data_nlcd
 version: "1.0"
 description: '[NETWORK] Download NLCD land cover for Hawaii'
 blocks:
-- id: 019f47d8-084f-7a20-8105-92d08935fce3
+- id: 019f5c5d-fe50-7eee-8105-27170c77f933
   name: data.nlcd
   inputs: []
   args:

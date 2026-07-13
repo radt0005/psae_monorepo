@@ -55,6 +55,28 @@ func Run[O IntoOutput](handler func(*Args) (O, error))
 
 The generic type parameter `O` is inferred from the handler's return type.
 
+## Closures
+
+A handler does not have to be a named function -- `Run` accepts any value matching the `func(*Args) (O, error)` signature, including an anonymous function literal. This is useful for capturing values (flags, config loaded in `main`) without threading them through `*Args`:
+
+```go
+func main() {
+    threshold := parseThresholdFlag()
+
+    spade.Run(func(args *spade.Args) (*spade.RasterFile, error) {
+        source, err := spade.Input[*spade.RasterFile](args, "source")
+        if err != nil {
+            return nil, err
+        }
+        // threshold is captured from the enclosing scope
+        result := spade.NewRasterFile("result.tif")
+        return &result, nil
+    })
+}
+```
+
+Because `Run` infers its generic type parameter `O` from the closure's signature, inference occasionally fails (most often when returning `*spade.Outputs`); if it does, supply `O` explicitly: `spade.Run[*spade.RasterFile](func(args *spade.Args) (*spade.RasterFile, error) { ... })`.
+
 ## Accessing inputs
 
 Use the `Input` generic function to retrieve typed file inputs:
@@ -83,6 +105,24 @@ enabled, err := spade.Param[bool](args, "enabled")
 ```
 
 The library handles YAML type conversions automatically. For example, a YAML integer `10` can be read as `float64`, `int`, or `int64`.
+
+## Accessing secrets
+
+Use `spade.GetSecret` to retrieve a credential the pipeline injected under a logical name, rather than reading it from `params.yaml` or the OS environment directly:
+
+```go
+dsn, err := spade.GetSecret("db")
+if err != nil {
+    return nil, err
+}
+// dsn is a connection string, e.g. "postgresql://user:pass@host:5432/db"
+```
+
+`GetSecret(name string) (string, error)` returns the secret value bound to the logical `name`, following the same `(value, error)` convention as `Input` and `Param`. The logical name is part of your block's contract, documented like any other parameter: the pipeline author binds it to one of their stored secrets via a `secrets:` map alongside `args:` in the pipeline YAML.
+
+If `name` was not declared in the pipeline's `secrets:` map, or the bound secret failed to resolve, `GetSecret` returns `spade.ErrSecretNotFound`. A declared-but-unresolvable secret is a real error, not a silently empty string -- handle it the same way you would `ErrInputNotFound` or `ErrParamNotFound`.
+
+`GetSecret` never talks to a keychain or key-management service itself. It only reads values the worker or CLI already injected into the process environment before your handler ran.
 
 ## Single output
 

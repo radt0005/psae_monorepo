@@ -97,6 +97,23 @@ let method: String = args.param("method")?;
 let normalize: bool = args.param("normalize")?;
 ```
 
+## Accessing secrets
+
+Use `spade::get_secret` to retrieve a credential the pipeline injected under a logical name, rather than reading it from `params.yaml` or the process environment directly:
+
+```rust
+use spade::get_secret;
+
+let dsn: String = get_secret("db")?;
+// dsn is a connection string, e.g. "postgresql://user:pass@host:5432/db"
+```
+
+`get_secret(name: &str) -> Result<String, SpadeError>` returns the secret value bound to the logical `name`. The logical name is part of your block's contract, documented like any other parameter: the pipeline author binds it to one of their stored secrets via a `secrets:` map alongside `args:` in the pipeline YAML.
+
+If `name` was not declared in the pipeline's `secrets:` map, or the bound secret failed to resolve, `get_secret` returns `SpadeError::SecretNotFound { name }`. A declared-but-unresolvable secret is a real error, not a silently empty string -- propagate it with `?` like any other `SpadeError`.
+
+`get_secret` never talks to a keychain or key-management service itself. It only reads values the worker or CLI already injected into the process environment before your handler ran.
+
 ## Single output
 
 When the handler returns a single typed value, the library writes it to `outputs/`. The output directory name is determined by:

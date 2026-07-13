@@ -233,9 +233,15 @@ The execution flow is:
 4. `raster.classify` runs N times in parallel, once per tile. Each invocation receives its tile's NDVI output (mapped) and the shared model (broadcast).
 5. `raster.mosaic` runs once after all classify invocations complete. It receives a collection of all N classified tiles and produces a single output mosaic.
 
+## Nested map/reduce
+
+A map block may itself sit inside another map block's context, giving you multi-level fan-out -- for example, enumerate scenes, then enumerate tiles within each scene, process each tile, mosaic per scene, then combine all scenes. Nesting requires no special YAML: it falls out of which blocks depend on which. Downstream invocation IDs gain one index component per enclosing map level (`@classify.1.4` is tile 4 of scene 1), and inner reduce blocks run once per outer item rather than once for the whole pipeline. Nesting is capped at 4 levels deep, since invocation counts multiply at each level.
+
+See [Nested map/reduce](/concepts/map-reduce/#nested-mapreduce) for the full mechanics (ragged fan-out, broadcasting by context depth, well-nestedness) and a worked YAML example.
+
 ## Constraints and limitations
 
-- **No nested maps.** A map block cannot appear inside the map context of another map block. If you need multi-level fan-out, design intermediate reduce blocks to flatten the structure.
 - **Reduce blocks must have `kind: reduce` in their manifest.** An ordinary block cannot receive a collection input from a map context -- Spade will report a type error during validation.
-- **Broadcast inputs must come from outside the map context.** You cannot broadcast an input from a block that is itself inside the map context.
-- **All parallel invocations must complete before the reduce block runs.** There is no partial reduction or streaming behavior.
+- **Broadcast inputs must come from outside the map context they're feeding, or from an enclosing context.** A block cannot broadcast an input from a sibling invocation inside its own context.
+- **Every map context must be closed by a matching reduce**, and contexts must be well-nested -- you cannot combine the outputs of two sibling unclosed contexts. See [Pipeline Validation](/pipelines/validation/) for the exact rules `spade check` enforces.
+- **All parallel invocations in a context must complete before that context's reduce block runs.** There is no partial reduction or streaming behavior.

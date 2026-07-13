@@ -23,6 +23,27 @@ The library resolves each argument at runtime:
 
 Inputs take precedence when a name appears in both `inputs/` and `params.yaml`.
 
+## Secrets
+
+Blocks that need credentials -- a database connection string, an API key -- request them by a logical name with `get_secret()`, rather than reading them from `params.yaml` or the process environment directly.
+
+```r
+library(spade)
+
+handler <- function() {
+  dsn <- get_secret("db")
+  # ... connect with dsn and query ...
+}
+
+run(handler)
+```
+
+`get_secret(name)` returns the secret value (a length-one character string) bound to the logical `name`. The logical name is part of your block's contract, documented like any other parameter: the pipeline author binds it to one of their stored secrets via a `secrets:` map alongside `args:` in the pipeline YAML.
+
+If `name` was not declared in the pipeline's `secrets:` map, or the bound secret failed to resolve, `get_secret()` calls `stop()`. A declared-but-unresolvable secret is a real error, not a silently empty string -- wrap the call in `tryCatch()` if you need to handle it, otherwise let it propagate like any other error (see Error handling below).
+
+`get_secret()` never talks to a keychain or key-management service itself. It only reads values the worker or CLI already injected into the process environment before your script ran.
+
 ## Attaching type annotations
 
 Use the `spade_types<-` replacement function to attach a named list of type annotations. Each key is a parameter name (or `.return` for the return type), and each value is a type name string:

@@ -100,13 +100,21 @@ inputs:
     output: clipped_raster
   - block: 019cf4bc-1111-7000-0000-000000000000
     output: metadata
+    as: metadata_input
 ```
 
 When a block has multiple outputs of the same type, or when clarity is preferred, the explicit form maps a specific **named output** (as declared in the dependency block's `block.yaml` `outputs` section) to an input on the current block.
 
+An explicit reference may optionally include an `as` key naming the exact input on the current block to bind to. When `as` is present, resolution is direct -- no type matching is involved for that reference. When `as` is absent, the named output is still type-matched against the current block's unmatched inputs, exactly as in the bare-reference case (§5.4 step 2).
+
+`as` exists because naming the output alone does not always disambiguate the input side: if a block has two explicit references whose outputs share a type, and the current block has two unmatched inputs of that same type, type matching after resolving the output name is still ambiguous. `as` is required in that situation.
+
 The explicit form is **required** when:
 - A dependency block has multiple outputs that match the same input type (ambiguous type matching)
 - Multiple bare references to different dependency blocks produce outputs of the same type that could satisfy the same input
+
+`as` is additionally **required** within an explicit reference when:
+- Two or more explicit references target outputs of the same type, and the current block has two or more unmatched inputs of that same type (type matching alone cannot disambiguate which output binds to which input)
 
 The explicit form is **optional but recommended** when:
 - The pipeline author wants to be precise about data flow
@@ -129,9 +137,9 @@ Explicit references are resolved first.  Remaining inputs are resolved using typ
 
 The full input resolution algorithm is:
 
-1. **Resolve explicit references**: Match each `block` + `output` reference to the named output of the dependency.  Remove the matched inputs and outputs from further consideration.
+1. **Resolve explicit references**: For each `block` + `output` reference, look up the named output of the dependency. If the reference includes `as`, bind the output directly to the named input. Otherwise, type-match the output against the current block's unmatched inputs (this can still be ambiguous -- see step 3). Remove the matched inputs and outputs from further consideration.
 2. **Resolve bare references by type**: For each remaining bare reference, match the dependency's unmatched outputs to the current block's unmatched inputs by type.
-3. **Check for ambiguity**: If any step produces multiple possible matches for the same input (e.g. two unmatched GeoTIFF outputs for one GeoTIFF input), **reject the pipeline** with an error directing the user to use explicit references.
+3. **Check for ambiguity**: If any step produces multiple possible matches for the same input (e.g. two unmatched GeoTIFF outputs for one GeoTIFF input), **reject the pipeline** with an error directing the user to use explicit references -- and, if the ambiguity involves explicit references whose outputs share a type, to add `as`.
 4. **Check for completeness**: If any input has no match, reject the pipeline with an error.
 
 ---

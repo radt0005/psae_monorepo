@@ -1,18 +1,18 @@
-id: 019f47d8-0838-7edb-805f-0b0bf6a59b25
+id: 019f5c5d-fe38-7e4c-805f-046c0c059aae
 name: gdal_contour
 version: "1.0"
 description: Generate contour lines from DEM
 blocks:
-- id: 019f47d8-0838-72e9-805d-469609372108
+- id: 019f5c5d-fe38-763a-805d-0de41480662f
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f47d8-0838-73c3-805e-fecf076dc514
+- id: 019f5c5d-fe38-70a2-805e-a83bbe8a5a2c
   name: gdal.contour
   inputs:
-  - 019f47d8-0838-72e9-805d-469609372108
+  - 019f5c5d-fe38-763a-805d-0de41480662f
   args:
     band: 1
     interval: 50

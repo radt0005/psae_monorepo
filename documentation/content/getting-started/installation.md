@@ -9,7 +9,7 @@ weight = 1
 Spade runs on **Linux** and **macOS**. You need:
 
 - A terminal with a POSIX-compatible shell (bash, zsh)
-- Git (for installing block collections from repositories)
+- Git (for building block collections from source with `spade install`; not needed for registry-fetch installs like `spade install gdal@latest`)
 
 For block development, you also need the toolchain for your chosen language — see the [library documentation](/libraries/) for specifics.
 
@@ -39,6 +39,7 @@ This creates `~/.spade/` with the following structure:
 
 ```
 ~/.spade/
+  auth/        # Session credentials from `spade login`
   blocks/      # Installed block collections
   cache/       # Execution cache for block outputs
   pipelines/   # Working directories for pipeline runs
@@ -62,13 +63,15 @@ Usage:
   spade [command]
 
 Available Commands:
-  setup       Set up the Spade environment
+  run         Run a pipeline locally
+  check       Validate blocks or pipelines
+  install     Install a block collection from the cloud registry, a git repository, or a local directory
+  publish     Submit a block collection to the cloud registry for screening, build, and distribution
   init        Create a new block collection
   add         Add a new block to the current collection
-  check       Validate blocks or pipelines
-  install     Install a block collection from a git repository
-  run         Run a pipeline locally
-  upload      Package a collection for cloud deployment
+  setup       Set up the Spade environment
+  login       Authenticate to the cloud registry
+  secret      Manage local and cloud secrets for pipeline runs
 ```
 
 ## Custom install location

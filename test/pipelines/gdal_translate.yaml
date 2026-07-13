@@ -1,18 +1,18 @@
-id: 019f47d8-0833-72d0-803c-797dacea46c9
+id: 019f5c5d-fe32-7556-803c-e046aa47a0e9
 name: gdal_translate
 version: "1.0"
 description: Translate raster to Byte type
 blocks:
-- id: 019f47d8-0833-7c0e-803a-b9f1eb20f7c9
+- id: 019f5c5d-fe32-7e2f-803a-e10b01e43a5e
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f47d8-0833-719e-803b-8f5019666ad9
+- id: 019f5c5d-fe32-76ca-803b-8c5ea4262693
   name: gdal.translate
   inputs:
-  - 019f47d8-0833-7c0e-803a-b9f1eb20f7c9
+  - 019f5c5d-fe32-7e2f-803a-e10b01e43a5e
   args:
     output_format: GTiff
     output_type: Byte

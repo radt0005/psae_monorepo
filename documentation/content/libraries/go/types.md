@@ -175,3 +175,4 @@ The library defines typed errors for input/parameter access:
 | `ErrParamNotFound` | `Param()` called with a name not present in `params.yaml` |
 | `ErrEmptyInputDir` | An input subdirectory exists but contains no files |
 | `ErrTypeMismatch` | Input data cannot be converted to the requested type |
+| `ErrSecretNotFound` | `GetSecret()` called with a name not declared in the pipeline's `secrets:` map, or resolution failed |

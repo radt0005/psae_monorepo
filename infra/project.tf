@@ -12,6 +12,7 @@ resource "digitalocean_project" "spade" {
     [
       digitalocean_database_cluster.postgres.urn,
       digitalocean_droplet.rabbitmq.urn,
+      digitalocean_droplet.buildrunner.urn,
     ],
   )
 }

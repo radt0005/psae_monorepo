@@ -10,10 +10,12 @@ The `spade` command-line tool is used throughout the block development and pipel
 
 | Command | Description |
 |---------|-------------|
-| `spade setup` | Initialize the local Spade environment |
+| `spade run` | Run a pipeline locally |
+| `spade check` | Validate blocks or pipelines |
+| `spade install` | Install a block collection from the cloud registry, a Git repository, or a local directory |
+| `spade publish` | Submit a block collection to the cloud registry for screening, build, and distribution |
 | `spade init` | Scaffold a new block collection |
 | `spade add` | Add a new block to the current collection |
-| `spade check` | Validate blocks or pipelines |
-| `spade install` | Install a block collection from a Git repository |
-| `spade run` | Run a pipeline locally |
-| `spade upload` | Package a collection for cloud deployment |
+| `spade setup` | Initialize the local Spade environment |
+| `spade login` | Authenticate to the cloud registry |
+| `spade secret` | Manage local and cloud secrets for pipeline runs |

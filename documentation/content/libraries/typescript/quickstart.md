@@ -96,14 +96,14 @@ const handler = spadeBlock({
   return new RasterFile(outputPath);
 });
 
-run(handler);
+await run(handler);
 ```
 
 Key concepts:
 
 - **`spadeBlock`** is a decorator factory that attaches type metadata to your handler via a `WeakMap`. The metadata tells `run()` how to load inputs and tells `build()` how to generate the manifest.
 - The handler receives a single object. File inputs arrive as typed class instances (e.g., `RasterFile` with a `.path` property). Scalar parameters like `resolution` arrive as plain values.
-- **`run(handler)`** is the entry point. It reads `params.yaml` for scalar parameters, scans `inputs/` for file inputs, merges everything into a single argument object, calls your handler, and writes outputs.
+- **`run(handler)`** is the entry point, and it's `async` -- call it with `await`. It reads `params.yaml` for scalar parameters, scans `inputs/` for file inputs, merges everything into a single argument object, calls your handler (awaiting it if it returns a `Promise`), and writes outputs.
 
 ## Step 5: Validate and install
 
@@ -139,7 +139,7 @@ setMetadata(handler, {
   output: RasterFile,
 });
 
-run(handler);
+await run(handler);
 ```
 
 Both approaches store the same metadata and produce identical behavior at runtime.
@@ -147,6 +147,6 @@ Both approaches store the same metadata and produce identical behavior at runtim
 ## Next steps
 
 - [Types](/libraries/typescript/types/) -- all available Spade types
-- [Handler Functions](/libraries/typescript/handlers/) -- handler patterns and multiple outputs
+- [Handler Functions](/libraries/typescript/handlers/) -- handler patterns, async `run()`, secrets, and multiple outputs
 - [Manifest Generation](/libraries/typescript/manifest-generation/) -- auto-generating `block.yaml` from metadata
 - [Examples](/libraries/typescript/examples/) -- complete worked examples

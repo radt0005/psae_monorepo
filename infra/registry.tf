@@ -8,3 +8,12 @@
 data "digitalocean_container_registry" "spade" {
   name = var.container_registry_name
 }
+
+# The data source's `.endpoint` is null unless the token carries registry-read
+# scope, so derive it from the (deterministic) DOCR format instead. The endpoint
+# path is global — `registry.digitalocean.com/<name>` — independent of the
+# registry's storage region. The data source is kept only to assert the registry
+# exists at plan time.
+locals {
+  docr_endpoint = "registry.digitalocean.com/${var.container_registry_name}"
+}

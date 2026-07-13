@@ -462,7 +462,7 @@ Spade checks map/reduce-specific constraints in addition to the standard validat
 - Map blocks must have at least one `expansion` output
 - Reduce blocks must have at least one `collection` input
 - Every map context must eventually be terminated by a reduce block
-- Nested maps (a map block inside another map's context) are not allowed
+- Map contexts may be nested (a map block inside another map's context), up to 4 levels deep -- see [Nested map/reduce](/concepts/map-reduce/#nested-mapreduce)
 
 Run the pipeline:
 
@@ -488,7 +488,7 @@ The `--workers` flag limits how many block invocations run simultaneously. With 
 
 **Reduce blocks collect everything.** The reduce block waits for all parallel invocations to complete, then receives all their outputs as a numbered collection. It produces a single combined result.
 
-**Nested maps are not supported.** You cannot have a map block inside another map block's context. If you need multi-level parallelism, use a reduce block to flatten the first level before mapping again in a separate pipeline.
+**Map/reduce can be nested.** A map block can appear inside another map block's context for multi-level fan-out -- for example, mapping over scenes and then over tiles within each scene. This tutorial only walks through a single level; see [Nested map/reduce](/concepts/map-reduce/#nested-mapreduce) for the full mechanics and a worked example once you need more than one level.
 
 ## Next steps
 

@@ -152,6 +152,6 @@ The CLI provides scaffolding and validation:
 - `spade init` creates the collection structure for a chosen language
 - `spade add <name>` scaffolds a new block (manifest + entry point)
 - `spade check` validates all block manifests in the collection
-- `spade upload` packages and uploads the collection for cloud deployment
+- `spade publish` submits the collection to the cloud registry for screening, build, and distribution
 
 See `cli.md` for full details on each command.

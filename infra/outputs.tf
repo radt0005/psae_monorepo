@@ -44,7 +44,7 @@ output "spaces_endpoint" {
 
 output "container_registry_endpoint" {
   description = "Registry endpoint (registry.digitalocean.com/<name>)."
-  value       = data.digitalocean_container_registry.spade.endpoint
+  value       = local.docr_endpoint
 }
 
 output "rabbitmq_private_ip" {

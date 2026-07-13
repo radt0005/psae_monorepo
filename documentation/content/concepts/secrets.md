@@ -37,13 +37,13 @@ The value only ever exists in the block process's memory; it is never written to
 
 The function is the same across every runtime library — it takes the logical name and returns the value, and raises/returns an error if the secret was not provided.
 
-| Language | Call |
-|----------|------|
-| Python | `get_secret("db")` |
-| R | `get_secret("db")` |
-| TypeScript | `getSecret("db")` |
-| Go | `GetSecret("db")` |
-| Rust | `get_secret("db")?` |
+| Language | Call | Reference |
+|----------|------|-----------|
+| Python | `get_secret("db")` | [Python handlers](/libraries/python/handlers/#secrets) |
+| R | `get_secret("db")` | [R handlers](/libraries/r/handlers/#secrets) |
+| TypeScript | `getSecret("db")` | [TypeScript handlers](/libraries/typescript/handlers/#secrets) |
+| Go | `GetSecret("db")` | [Go handlers](/libraries/go/handlers/#accessing-secrets) |
+| Rust | `get_secret("db")?` | [Rust handlers](/libraries/rust/handlers/#accessing-secrets) |
 
 ## Setting secrets
 

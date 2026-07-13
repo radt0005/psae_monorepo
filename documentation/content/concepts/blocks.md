@@ -58,12 +58,16 @@ outputs:
 |-------|----------|-------------|
 | `id` | Yes | Unique identifier in the form `<collection>.<block>`. This is how pipelines reference the block. |
 | `version` | Yes | Semantic version string (e.g., `0.1.0`, `1.2.3`). Used for caching and installation. |
-| `kind` | Yes | One of `standard`, `map`, or `reduce`. Determines how the scheduler handles the block. See [Map/Reduce](/concepts/map-reduce/) for details on `map` and `reduce` kinds. |
+| `kind` | No | One of `standard`, `map`, or `reduce`. Determines how the scheduler handles the block. Defaults to `standard`. See [Map/Reduce](/concepts/map-reduce/) for details on `map` and `reduce` kinds. |
 | `network` | No | Boolean. Whether the block needs network access. Defaults to `false`. |
 | `description` | No | Human-readable description of what the block does. |
-| `entrypoint` | Yes | Path to the executable file, relative to the collection root. This is the program Spade runs inside the sandbox. |
+| `entrypoint` | No | Path to the executable file, relative to the collection root, or a subcommand/entry-point name. This is what Spade runs inside the sandbox. Defaults to the manifest's filename stem (e.g. `rasterize.yaml` → the `rasterize` subcommand or `rasterize.py`/`rasterize.R` script). |
 | `inputs` | Yes | A map of named inputs the block expects. |
 | `outputs` | Yes | A map of named outputs the block produces. |
+
+{% note() %}
+`kind` and `entrypoint` are optional for `standard` blocks, which can rely entirely on the defaults above. To create a **map** or **reduce** block, you must explicitly set `kind: map` or `kind: reduce` (there's no way to opt into fan-out behavior by default) and explicitly declare `entrypoint`, since map and reduce entry points typically don't follow the same filename-stem convention as a standard block's. See [Map/Reduce](/concepts/map-reduce/) for the full pattern.
+{% end %}
 
 ### Input fields
 
@@ -202,7 +206,23 @@ Spade captures the block's standard output and standard error into `logs/stdout.
 
 ### invocation.yaml
 
-Contains metadata about the current invocation, including the block ID, pipeline run ID, and the map context (if the block is running inside a map/reduce fan-out). Most blocks do not need to read this file, but it is available for advanced use cases.
+Contains machine-generated metadata about the current invocation:
+
+```yaml
+block:
+  id: raster.reproject
+  version: 1.0.0
+invocation_id: 01HZX...
+inputs:
+  reference:
+    path: inputs/reference/data.tif
+    hash: abc123
+  target:
+    path: inputs/target/data.tif
+    hash: def456
+```
+
+This includes the block's own `id` and `version`, the invocation ID, and -- per declared input -- the resolved path and a content hash. Most blocks do not need to read this file, but it is available for advanced use cases (for example, logging exactly which input version produced a given output). Blocks may read `invocation.yaml` but should not modify it.
 
 ## Caching
 
@@ -225,6 +245,17 @@ network: true
 ```
 
 Only enable network access when the block genuinely needs it. Keeping network disabled for most blocks improves reproducibility and security.
+
+## What blocks must not do
+
+The execution model described above only works if blocks stick to it. Specifically, a block must not:
+
+- **Access files outside its working directory.** The sandbox enforces this, but design your block to only ever touch `params.yaml`, `inputs/`, `outputs/`, and `invocation.yaml`.
+- **Discover inputs dynamically.** Don't scan for files or infer what data is available -- read only the named inputs declared in the manifest.
+- **Assume original filenames.** An input's path inside `inputs/<name>/` is not guaranteed to match the filename it had before Spade placed it there.
+- **Write outside `outputs/`.** Anything a downstream block or the pipeline result needs must be written under `outputs/<name>/`.
+- **Depend on global or external mutable state.** A block's output should be a pure function of its declared inputs, parameters, and version -- this is what makes caching correct. Reading from a database or API that can change between runs is fine, but be aware it breaks the assumption that identical inputs produce identical (cacheable) outputs.
+- **Access the network unless `network: true` is declared.** The sandbox blocks it by default; declaring the flag is also how the network requirement becomes visible to anyone reviewing the pipeline.
 
 ## Error handling
 

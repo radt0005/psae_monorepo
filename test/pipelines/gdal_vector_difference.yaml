@@ -1,27 +1,27 @@
-id: 019f47d8-0843-7442-80b2-398fef41afe6
+id: 019f5c5d-fe44-7bdd-80b2-26d75c5fe35f
 name: gdal_vector_difference
 version: "1.0"
 description: Difference A \ B
 blocks:
-- id: 019f47d8-0843-7acc-80af-d8db11c0231c
+- id: 019f5c5d-fe44-7c8b-80af-5ec26d664855
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019f47d8-0843-7969-80b0-6204a5e555e3
+- id: 019f5c5d-fe44-7103-80b0-4736efd00cc4
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors2.geojson
     format: GeoJSON
-- id: 019f47d8-0843-719f-80b1-4e9a1c29e8ae
+- id: 019f5c5d-fe44-73a0-80b1-0c9a50360518
   name: gdal.vector_difference
   inputs:
-  - block: 019f47d8-0843-7acc-80af-d8db11c0231c
+  - block: 019f5c5d-fe44-7c8b-80af-5ec26d664855
     output: file
     as: a
-  - block: 019f47d8-0843-7969-80b0-6204a5e555e3
+  - block: 019f5c5d-fe44-7103-80b0-4736efd00cc4
     output: file
     as: b
   args: {}

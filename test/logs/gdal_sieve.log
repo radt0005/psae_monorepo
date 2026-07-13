@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_sieve (019f47d8-0839-7168-8065-3660da3dbfcf)
+Loaded pipeline: gdal_sieve (019f5c5d-fe39-7de7-8065-04ae4a72860e)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.sieve running...
   [2/2] gdal.sieve complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.059s
+Pipeline complete: 2 block(s) executed (1 cached) in 998ms

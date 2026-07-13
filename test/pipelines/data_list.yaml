@@ -1,9 +1,9 @@
-id: 019f47d8-084d-7e7d-80f1-c6b6f762cb98
+id: 019f5c5d-fe4d-7389-80f1-c2e289d606f0
 name: data_list
 version: "1.0"
 description: List files in fixtures directory
 blocks:
-- id: 019f47d8-084d-7f74-80f0-408392ebd1ad
+- id: 019f5c5d-fe4d-794c-80f0-cad45ec13870
   name: data.list
   inputs: []
   args:

@@ -232,16 +232,20 @@ blocks:
   #   - "numerator"   (type: file, format: GeoTIFF)
   #   - "denominator" (type: file, format: GeoTIFF)
   #
-  # Both upstream outputs are the same type (GeoTIFF), so a bare
-  # reference would be ambiguous. We use explicit references to
-  # wire NIR to numerator and Red to denominator.
+  # Both upstream outputs AND both downstream inputs are the same
+  # type (GeoTIFF), so neither a bare reference nor a plain
+  # block+output reference is enough to disambiguate -- type
+  # matching alone still leaves two valid pairings. The `as` key
+  # pins each output directly to its target input.
   - id: "@band-ratio"
     name: raster.band-ratio
     inputs:
       - block: "@split-bands"
         output: nir
+        as: numerator
       - block: "@split-bands"
         output: red
+        as: denominator
     args: {}
 
   # Threshold the ratio to produce a binary classification
@@ -265,9 +269,9 @@ data.sentinel2 --> raster.split-bands                                --> raster.
 
 1. `data.sentinel2` downloads the multispectral imagery.
 2. `raster.split-bands` extracts two individual bands from the image. It produces two named outputs: `red` and `nir`, both of type GeoTIFF.
-3. `raster.band-ratio` needs both bands as input. Because both outputs have the same type, Spade cannot determine which should be `numerator` and which should be `denominator` using type matching alone. The explicit references solve this:
-   - `output: nir` from `raster.split-bands` is wired to the `numerator` input (Spade matches by type after resolving the explicit output name -- since each explicit reference narrows to exactly one output, the remaining type match is unambiguous).
-   - `output: red` from `raster.split-bands` is wired to the `denominator` input.
+3. `raster.band-ratio` needs both bands as input. Because both outputs *and* both inputs share the same type (GeoTIFF), type matching can't disambiguate even after the output is named -- `as` is required to pin the wiring directly:
+   - `output: nir` with `as: numerator` wires the NIR band straight to the `numerator` input.
+   - `output: red` with `as: denominator` wires the red band straight to the `denominator` input.
 4. `raster.threshold` receives the band ratio result via a bare reference (unambiguous, since `raster.band-ratio` produces one output) and applies a threshold to produce a binary classification.
 
 If you attempted to use bare references for step 3:

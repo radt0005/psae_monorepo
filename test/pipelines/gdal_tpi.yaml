@@ -1,16 +1,16 @@
-id: 019f47d8-083e-7fe3-808b-453221fc6e86
+id: 019f5c5d-fe3e-7605-808b-f4bea9ea4a35
 name: gdal_tpi
 version: "1.0"
 description: Compute Topographic Position Index
 blocks:
-- id: 019f47d8-083e-72b7-8089-f1666186aa55
+- id: 019f5c5d-fe3e-7a68-8089-46b0a7929cb1
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f47d8-083e-75db-808a-1dac8a99fd09
+- id: 019f5c5d-fe3e-7a19-808a-461e9d10cadb
   name: gdal.tpi
   inputs:
-  - 019f47d8-083e-72b7-8089-f1666186aa55
+  - 019f5c5d-fe3e-7a68-8089-46b0a7929cb1
   args: {}

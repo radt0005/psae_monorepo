@@ -21,6 +21,10 @@ var (
 	keepWorkDir bool
 )
 
+// errNoCache marks invocations that bypass the result cache entirely
+// (map blocks; see the cache-check comment in runPipeline).
+var errNoCache = errors.New("caching disabled for this block")
+
 var runCmd = &cobra.Command{
 	Use:   "run <pipeline.yaml>",
 	Short: "Run a pipeline locally",
@@ -171,63 +175,55 @@ func runPipeline(pipelinePath string) error {
 		// Cache check.  The cache key includes the map index vector so that
 		// each mapped invocation (which consumes a different expansion item)
 		// gets its own cache entry rather than sharing one with its siblings.
-		inputHashes := buildInputHashes(invocation, outputHashesByInvocation, pipelineBlockByID)
-		cacheArgs := invocation.Arguments
-		if len(invocation.MapIndices) > 0 {
-			cacheArgs = make(map[string]any, len(invocation.Arguments)+1)
-			for k, v := range invocation.Arguments {
-				cacheArgs[k] = v
+		//
+		// Map blocks are excluded from the cache entirely — lookup and
+		// store.  Their expansion items reference files in their own
+		// inputs/ directory, which a cache restore does not recreate
+		// (only outputs/ are stored), so a restored map block leaves any
+		// downstream mapped invocation that misses cache with dangling
+		// input symlinks.  Enumeration is cheap; always re-execute maps.
+		// (Skipping lookup also neutralises map entries stored by
+		// earlier CLI versions.)
+		isMapBlock := manifest.Kind == core.BlockKindMap
+		var cacheKey string
+		cacheErr := errNoCache
+		if !isMapBlock {
+			inputHashes := buildInputHashes(invocation, outputHashesByInvocation, pipelineBlockByID)
+			cacheArgs := invocation.Arguments
+			if len(invocation.MapIndices) > 0 {
+				cacheArgs = make(map[string]any, len(invocation.Arguments)+1)
+				for k, v := range invocation.Arguments {
+					cacheArgs[k] = v
+				}
+				cacheArgs["__map_indices__"] = core.IndexPrefix(invocation.MapIndices, len(invocation.MapIndices))
 			}
-			cacheArgs["__map_indices__"] = core.IndexPrefix(invocation.MapIndices, len(invocation.MapIndices))
+			cacheKey, cacheErr = core.ComputeCacheKey(manifest.ID, manifest.Version, inputHashes, cacheArgs)
 		}
-		cacheKey, cacheErr := core.ComputeCacheKey(manifest.ID, manifest.Version, inputHashes, cacheArgs)
 		if cacheErr == nil {
 			if _, found := core.CacheLookup(cacheKey, cacheDir); found {
 				// Restore from cache
 				workDir := filepath.Join(pipelineDir, invID)
 				if err := os.MkdirAll(filepath.Join(workDir, "outputs"), 0755); err == nil {
 					if err := core.CacheRestore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir); err == nil {
+						outputHashes, _ := core.CollectOutputs(workDir)
+						outputHashesByInvocation[invID] = outputHashes
+						outputs := make([]string, 0, len(outputHashes))
+						for name := range outputHashes {
+							outputs = append(outputs, name)
+						}
+
 						result := core.BlockInvocationResult{
 							Id:         invocation.Id,
 							PipelineId: pipeline.Id,
 							MapIndices: invocation.MapIndices,
 							Status:     core.ExecutionStatusComplete,
+							Outputs:    outputs,
 						}
-
-						// A cached map block must still report its
-						// expansion so the scheduler fans out; a bare
-						// "complete" would stall the map context.
-						restoreOK := true
-						if manifest.Kind == core.BlockKindMap {
-							restoreOK = false
-							for outName, outDecl := range manifest.Outputs {
-								if outDecl.Type != "expansion" {
-									continue
-								}
-								expPath := filepath.Join(workDir, "outputs", outName, "expansion.yaml")
-								if exp, expErr := core.LoadExpansionManifest(expPath); expErr == nil {
-									result.Expansion = &exp
-									result.Status = core.ExecutionStatusMap
-									restoreOK = true
-								}
-								break
-							}
-						}
-
-						if restoreOK {
-							outputHashes, _ := core.CollectOutputs(workDir)
-							outputHashesByInvocation[invID] = outputHashes
-							for name := range outputHashes {
-								result.Outputs = append(result.Outputs, name)
-							}
-							scheduler.Update(result)
-							completedCount++
-							cachedCount++
-							fmt.Printf("  [%d/%d] %s (cached)\n", completedCount, totalBlocks, blockLabel)
-							continue
-						}
-						// Unusable cache entry (map block without a
-						// readable expansion): fall through and re-execute.
+						scheduler.Update(result)
+						completedCount++
+						cachedCount++
+						fmt.Printf("  [%d/%d] %s (cached)\n", completedCount, totalBlocks, blockLabel)
+						continue
 					}
 				}
 			}
@@ -277,15 +273,15 @@ func runPipeline(pipelinePath string) error {
 		// Record output hashes on success (for Complete and Map results).
 		// Map blocks return ExecutionStatusMap but still produce outputs —
 		// their expansion manifest must be hashed so downstream mapped
-		// blocks get distinct cache keys across pipelines.
+		// blocks get distinct cache keys across pipelines.  Only Complete
+		// results are stored in the cache; map blocks always re-execute
+		// (see the cache-check comment above).
 		if result.Status == core.ExecutionStatusComplete || result.Status == core.ExecutionStatusMap {
 			workDir := filepath.Join(pipelineDir, invID)
 			outputHashes, _ := core.CollectOutputs(workDir)
 			outputHashesByInvocation[invID] = outputHashes
 
-			// Map results are cacheable too: the expansion manifest is
-			// restored and re-reported as a map result on cache hit.
-			if cacheErr == nil {
+			if result.Status == core.ExecutionStatusComplete && cacheErr == nil {
 				core.CacheStore(cacheKey, filepath.Join(workDir, "outputs"), cacheDir)
 			}
 		}
@@ -294,8 +290,13 @@ func runPipeline(pipelinePath string) error {
 		scheduler.Update(result)
 
 		if result.Status == core.ExecutionStatusError {
-			fmt.Fprintf(os.Stderr, "Block %s failed: %s\n", blockLabel, result.Error)
-			os.Exit(1)
+			// Return (never os.Exit) so the deferred pipelineDir cleanup
+			// runs: a stale work dir from a failed run breaks later runs —
+			// sandbox-owned files trip permission checks, and leftover
+			// mapped sibling dirs could be gathered by a reduce whose
+			// expansion has since shrunk.  The block's stderr is embedded
+			// in result.Error; rerun with --keep-work-dir for full logs.
+			return fmt.Errorf("block %s failed: %s", blockLabel, result.Error)
 		}
 
 		completedCount++
