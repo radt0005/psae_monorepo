@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and edit as needed. All values are non-secret;
+# secrets come from environment variables (see README). terraform.tfvars is
+# gitignored.
+
+region        = "nyc3"
+spaces_region = "nyc3" # nyc3 is the only NY region with Spaces
+
+project_name = "spade"
+environment  = "Production"
+
+# Managed Postgres
+db_size    = "db-s-1vcpu-1gb"
+db_version = "16"
+
+# Set a suffix if the default bucket names are already taken in the region.
+# bucket_suffix = "-uga"
+
+# The pre-existing container registry (referenced, not created).
+container_registry_name = "spade-default-1"

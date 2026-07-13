@@ -21,12 +21,29 @@ source — the registry, not the developer, controls the artifact bytes.
 
 ## Architecture
 
-Two binaries in one module:
+Three binaries in one module:
 
 | Binary | Role | DB access |
 |---|---|---|
-| `cmd/registryd` | **Control plane**: HTTP API, lifecycle state machine, audit log, ed25519 signing, `/pubkeys`, worker fetch, metadata mirror, **build dispatcher** | Yes (shared Postgres) |
+| `cmd/registryd` | **Control plane**: HTTP API, lifecycle state machine, audit log, ed25519 signing, `/pubkeys`, worker fetch, metadata mirror, embedded **build dispatcher** (optional, see below) | Yes (shared Postgres) |
+| `cmd/buildrunnerd` | **Standalone build service** (hosting.md §5): the same dispatcher as a separate process for the build-runner Droplet — claims jobs off the shared Postgres queue, launches builder containers via the host docker socket | Yes (shared Postgres) |
 | `cmd/builder` | **Build worker**, runs inside a per-language container: clone → screen → build → upload unsigned tarball to S3 staging → report over HTTP | **No** |
+
+The dispatcher lives in `internal/dispatch` and is embedded in `registryd` for
+local/dev single-service runs (docker-compose, SQLite quickstart). In production
+`registryd` runs on App Platform — which has no Docker daemon — with
+`BUILD_DISPATCH_ENABLED=false`, and `buildrunnerd` owns the queue from the
+build-runner Droplet (`infra/buildrunner.tf`). The `/builds/:id/*` callback
+endpoints stay on either way; builders always report over HTTP. Job claiming
+uses `FOR UPDATE SKIP LOCKED`, so the two dispatchers cannot double-claim even
+if both are accidentally enabled.
+
+Whichever dispatcher runs also **reaps stuck jobs**: a job left in
+`claimed`/`running` past `BUILD_TIMEOUT` + margin (a dispatcher crash between
+claim and terminal state) is requeued — the version transitions back to
+`submitted` for a clean re-dispatch — up to 3 attempts, then abandoned as
+`failed`. Versions held at `screened` (the `REQUIRE_APPROVAL` gate) are never
+reaped.
 
 Key decisions (confirmed with the project owner; some refine the spec):
 
@@ -108,10 +125,18 @@ so the worker invalidates its local index.
 `registryd`: `LISTEN_ADDR`, `DATABASE_URL` (empty → `SQLITE_PATH`), `S3_ENDPOINT`
 / `S3_REGION` / `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` /
 `S3_USE_PATH_STYLE` (empty S3 → filesystem `BLOB_DIR`), `STAGING_PREFIX`,
-`ARTIFACT_PREFIX`, `REQUIRE_APPROVAL`, `ADMIN_USER_IDS`, `BUILDER_IMAGES`
-(`go=img:tag,…`), `BUILDER_DOCKER_ARGS`, `BUILD_TIMEOUT`, `SIGNING_KEY_SOURCE`
-(`db`|`env` + `SIGNING_PUBLIC_KEY`/`SIGNING_PRIVATE_KEY`), `MIRROR_ENABLED`,
+`ARTIFACT_PREFIX`, `REQUIRE_APPROVAL`, `ADMIN_USER_IDS`,
+`BUILD_DISPATCH_ENABLED` (default `true`; set `false` when `buildrunnerd` owns
+the queue), `BUILDER_IMAGES` (`go=img:tag,…`), `BUILDER_DOCKER_ARGS`,
+`BUILD_TIMEOUT`, `SIGNING_KEY_SOURCE` (`db`|`env` +
+`SIGNING_PUBLIC_KEY`/`SIGNING_PRIVATE_KEY`), `MIRROR_ENABLED`,
 `REGISTRY_PUBLIC_URL`, `REGISTRY_INTERNAL_URL`.
+
+`buildrunnerd`: `DATABASE_URL` (required — must be the same Postgres as
+`registryd`), `REGISTRY_URL` (required — the registryd endpoint builder
+containers report to), `BUILDER_IMAGES` (required, explicit), `S3_*`,
+`STAGING_PREFIX`, `BUILDER_DOCKER_ARGS`, `BUILD_TIMEOUT`, `MIRROR_ENABLED`,
+`BUILDRUNNER_LISTEN_ADDR` (`/healthz`, default `:8091`).
 
 `builder`: `REGISTRY_URL`, `BUILD_JOB_ID`, `BUILD_TOKEN`, `S3_*`, `STAGING_PREFIX`
 (all injected by the dispatcher).

@@ -81,22 +81,27 @@ func run() error {
 	})
 	e := srv.Routes()
 
-	// Build dispatcher: launch an ephemeral container per build.
-	internalURL := os.Getenv("REGISTRY_INTERNAL_URL")
-	if internalURL == "" {
-		internalURL = "http://localhost" + cfg.ListenAddr
-	}
-	disp := dispatch.New(dispatch.Options{
-		Config: cfg, Store: st, State: machine,
-		Launcher:    dispatch.DockerLauncher{ExtraArgs: cfg.BuilderDockerArgs},
-		RegistryURL: internalURL,
-		Logger:      log,
-	})
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	go disp.Run(ctx)
+	// Build dispatcher: launch an ephemeral container per build. Disabled when a
+	// standalone build service (cmd/buildrunnerd) owns the queue, e.g. on App
+	// Platform where there is no Docker daemon.
+	if cfg.BuildDispatchEnabled {
+		internalURL := os.Getenv("REGISTRY_INTERNAL_URL")
+		if internalURL == "" {
+			internalURL = "http://localhost" + cfg.ListenAddr
+		}
+		disp := dispatch.New(dispatch.Options{
+			Config: cfg, Store: st, State: machine,
+			Launcher:    dispatch.DockerLauncher{ExtraArgs: cfg.BuilderDockerArgs},
+			RegistryURL: internalURL,
+			Logger:      log,
+		})
+		go disp.Run(ctx)
+	} else {
+		log.Info("build dispatch disabled; expecting an external build service (buildrunnerd)")
+	}
 
 	httpSrv := &http.Server{Addr: cfg.ListenAddr, Handler: e}
 	go func() {

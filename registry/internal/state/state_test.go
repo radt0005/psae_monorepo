@@ -28,6 +28,16 @@ func TestCanTransitionOffStates(t *testing.T) {
 	require.False(t, CanTransition(store.StateAvailable, store.StateBuilding), "no backward")
 }
 
+func TestCanTransitionRequeueEdges(t *testing.T) {
+	// The reaper returns abandoned builds to the queue.
+	require.True(t, CanTransition(store.StateScreening, store.StateSubmitted))
+	require.True(t, CanTransition(store.StateBuilding, store.StateSubmitted))
+	// But not from states outside the active pipeline.
+	require.False(t, CanTransition(store.StateScreened, store.StateSubmitted), "approval gate is not requeueable")
+	require.False(t, CanTransition(store.StateAvailable, store.StateSubmitted))
+	require.False(t, CanTransition(store.StateFailed, store.StateSubmitted))
+}
+
 func TestRecallFromAnyStateButIrreversible(t *testing.T) {
 	for _, from := range []store.State{
 		store.StateSubmitted, store.StateScreening, store.StateScreened,
@@ -57,6 +67,11 @@ func TestAuthorize(t *testing.T) {
 	// Pipeline edges: system (or operator) only.
 	require.NoError(t, Authorize(system, store.StateAvailable))
 	require.ErrorIs(t, Authorize(owner, store.StateBuilding), ErrUnauthorized)
+
+	// Requeue: system only — not even operators.
+	require.NoError(t, Authorize(system, store.StateSubmitted))
+	require.ErrorIs(t, Authorize(operator, store.StateSubmitted), ErrUnauthorized)
+	require.ErrorIs(t, Authorize(owner, store.StateSubmitted), ErrUnauthorized)
 }
 
 // recordingMirror captures mirror calls for assertions.

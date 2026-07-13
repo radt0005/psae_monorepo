@@ -1,0 +1,30 @@
+#!/bin/bash
+# First-boot bootstrap for the RabbitMQ 1-Click Droplet. The image already has
+# rabbitmq-server + the management plugin running; this just provisions the
+# Spade application user and locks down the default guest account.
+#
+# NOTE: the password arrives via Droplet user-data (visible in the metadata
+# service to anyone with root on this box). Acceptable for bootstrap; rotate via
+# `rabbitmqctl change_password` if the value is ever exposed.
+set -euo pipefail
+
+# Wait for RabbitMQ to accept commands (the 1-Click starts it on boot).
+for _ in $(seq 1 60); do
+  if rabbitmqctl status >/dev/null 2>&1; then break; fi
+  sleep 5
+done
+
+USER='${rabbitmq_user}'
+PASS='${rabbitmq_password}'
+
+# Create (or reset) the application user with admin rights on the default vhost.
+if rabbitmqctl list_users | awk '{print $1}' | grep -qx "$USER"; then
+  rabbitmqctl change_password "$USER" "$PASS"
+else
+  rabbitmqctl add_user "$USER" "$PASS"
+fi
+rabbitmqctl set_user_tags "$USER" administrator
+rabbitmqctl set_permissions -p / "$USER" ".*" ".*" ".*"
+
+# Remove the default guest account (localhost-only, but no reason to keep it).
+rabbitmqctl delete_user guest || true

@@ -3,6 +3,7 @@ package store
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -105,6 +106,48 @@ func TestClaimNextBuildJobSingleClaimUnderConcurrency(t *testing.T) {
 	wg.Wait()
 	require.Equal(t, 0, errored)
 	require.Equal(t, 1, claims, "exactly one worker may claim the single job")
+}
+
+func TestListStuckBuildJobsAndRequeue(t *testing.T) {
+	s := newTestStore(t)
+	c, _, _ := s.EnsureCollection("gdal", "u", "go")
+	v := &Version{CollectionID: c.ID, Version: "1.0.0", State: StateSubmitted}
+	require.NoError(t, s.CreateVersion(v))
+
+	// One job per state; only stale claimed/running ones are stuck.
+	mkJob := func(state BuildJobState) *BuildJob {
+		j := &BuildJob{VersionID: v.ID, Language: "go", State: state}
+		require.NoError(t, s.CreateBuildJob(j))
+		return j
+	}
+	queued := mkJob(BuildQueued)
+	claimed := mkJob(BuildClaimed)
+	running := mkJob(BuildRunning)
+	done := mkJob(BuildSucceeded)
+
+	// Everything was just created, so nothing predates a past cutoff...
+	stuck, err := s.ListStuckBuildJobs(time.Now().Add(-time.Hour))
+	require.NoError(t, err)
+	require.Empty(t, stuck)
+
+	// ...but with a future cutoff the claimed + running jobs are stale.
+	stuck, err = s.ListStuckBuildJobs(time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.Len(t, stuck, 2)
+	ids := []string{stuck[0].ID, stuck[1].ID}
+	require.Contains(t, ids, claimed.ID)
+	require.Contains(t, ids, running.ID)
+	require.NotContains(t, ids, queued.ID)
+	require.NotContains(t, ids, done.ID)
+
+	// Requeue clears the claim and token so the next dispatch mints fresh ones.
+	require.NoError(t, s.SetBuildJobToken(running.ID, "stale-hash"))
+	require.NoError(t, s.RequeueBuildJob(running.ID))
+	fresh, err := s.GetBuildJob(running.ID)
+	require.NoError(t, err)
+	require.Equal(t, BuildQueued, fresh.State)
+	require.Empty(t, fresh.TokenHash)
+	require.Nil(t, fresh.ClaimedAt)
 }
 
 func TestReplaceBlockMetaIdempotent(t *testing.T) {

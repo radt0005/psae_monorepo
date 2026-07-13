@@ -43,6 +43,7 @@ func (f fakeDev) Verify(tok string) (auth.Developer, error) {
 
 type stack struct {
 	url    string
+	dbPath string
 	store  *store.Store
 	blob   blob.Store
 	keyset *sign.Keyset
@@ -51,7 +52,8 @@ type stack struct {
 
 func newStack(t *testing.T, admins ...string) *stack {
 	t.Helper()
-	st, err := store.OpenSQLite(t.TempDir() + "/e2e.db")
+	dbPath := t.TempDir() + "/e2e.db"
+	st, err := store.OpenSQLite(dbPath)
 	require.NoError(t, err)
 	bs, err := blob.NewFSStore(t.TempDir() + "/blobs")
 	require.NoError(t, err)
@@ -90,7 +92,7 @@ func newStack(t *testing.T, admins ...string) *stack {
 		RegistryURL: ts.URL,
 	})
 
-	return &stack{url: ts.URL, store: st, blob: bs, keyset: ks, disp: disp}
+	return &stack{url: ts.URL, dbPath: dbPath, store: st, blob: bs, keyset: ks, disp: disp}
 }
 
 func (s *stack) publish(t *testing.T, col testutil.GoCollection) {
@@ -177,6 +179,66 @@ func TestEndToEndPublishBuildFetchVerify(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, blocks, 1)
 	require.Equal(t, "hello.greet", blocks[0].BlockID)
+}
+
+// TestEndToEndSplitBuildService mirrors the production split (hosting.md §5):
+// registryd runs control-plane-only (BUILD_DISPATCH_ENABLED=false) while a
+// standalone build service — buildrunnerd — claims the same queue over its own
+// database connection and drives the build. The control plane's dispatcher is
+// never used; only the runner's is.
+func TestEndToEndSplitBuildService(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go toolchain not available")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	s := newStack(t)
+	col := testutil.NewGoCollectionRepo(t)
+	s.publish(t, col)
+
+	// The build runner's side: a second store connection to the same database
+	// and its own state machine, wired exactly like cmd/buildrunnerd.
+	runnerStore, err := store.OpenSQLite(s.dbPath)
+	require.NoError(t, err)
+	runner := func(ctx context.Context, env map[string]string) error {
+		c := builder.NewClient(env["REGISTRY_URL"], env["BUILD_JOB_ID"], env["BUILD_TOKEN"])
+		return builder.Run(ctx, builder.Deps{
+			Client:   c,
+			Cloner:   builder.GitCloner{},
+			Screener: builder.NoopScreener{},
+			Blob:     s.blob,
+		})
+	}
+	runnerDisp := dispatch.New(dispatch.Options{
+		Config: config.RegistryConfig{
+			StagingPrefix:  "staging/",
+			ArtifactPrefix: "artifacts/",
+			BuilderImages:  map[string]string{"go": "spade-builder-go"},
+		},
+		Store:       runnerStore,
+		State:       state.New(runnerStore, audit.New(runnerStore), nil),
+		Launcher:    dispatch.InProcessLauncher{Runner: runner},
+		RegistryURL: s.url,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	worked, err := runnerDisp.ProcessOne(ctx)
+	require.NoError(t, err)
+	require.True(t, worked)
+
+	// The control plane sees the version as available and serves the artifact.
+	v, err := s.store.GetVersion(col.Collection, col.Version)
+	require.NoError(t, err)
+	require.Equal(t, store.StateAvailable, v.State, "version error: %s", v.Error)
+
+	require.NoError(t, s.store.CreateServiceToken(&store.ServiceToken{
+		Name: "worker-1", TokenHash: auth.HashToken("worker-token"), Active: true,
+	}))
+	resp := s.get(t, "/artifacts/"+col.Collection+"/"+col.Version+"/linux/amd64", "worker-token")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	readAll(t, resp)
 }
 
 func TestEndToEndRecallRefusesFetch(t *testing.T) {

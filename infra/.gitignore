@@ -1,0 +1,15 @@
+# Local state (may contain secrets — DB passwords, etc.)
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Provider plugins / working dir
+.terraform/
+
+# Variable files (non-secret by convention, but keep local)
+terraform.tfvars
+*.auto.tfvars
+
+# Plan artifacts
+*.tfplan
+crash.log

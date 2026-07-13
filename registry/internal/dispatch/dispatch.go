@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -29,6 +30,10 @@ type Dispatcher struct {
 
 	// PollInterval is how often the queue is polled when idle.
 	PollInterval time.Duration
+	// ReapInterval is how often Run sweeps for stuck jobs (see Reap).
+	ReapInterval time.Duration
+	// MaxAttempts is how many claims a job gets before the reaper abandons it.
+	MaxAttempts int
 }
 
 // Options configures a Dispatcher.
@@ -55,19 +60,29 @@ func New(o Options) *Dispatcher {
 		registryURL:  o.RegistryURL,
 		log:          log,
 		PollInterval: 2 * time.Second,
+		ReapInterval: time.Minute,
+		MaxAttempts:  3,
 	}
 }
 
 // Run polls the queue until ctx is cancelled, processing one job at a time
-// (single-concurrency at launch, per hosting.md §5.3).
+// (single-concurrency at launch, per hosting.md §5.3), and periodically reaps
+// jobs stranded by a dispatcher that died mid-build.
 func (d *Dispatcher) Run(ctx context.Context) {
 	t := time.NewTimer(0)
 	defer t.Stop()
+	var lastReap time.Time
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			if time.Since(lastReap) >= d.ReapInterval {
+				if err := d.Reap(); err != nil {
+					d.log.Error("reap error", "err", err)
+				}
+				lastReap = time.Now()
+			}
 			worked, err := d.ProcessOne(ctx)
 			if err != nil {
 				d.log.Error("dispatch error", "err", err)
@@ -152,6 +167,73 @@ func (d *Dispatcher) buildEnv(jobID, token string) map[string]string {
 		env["S3_USE_PATH_STYLE"] = "true"
 	}
 	return env
+}
+
+// reapMargin is added to the build timeout before a claimed/running job counts
+// as stuck, so the reaper never races a live build that the owning dispatcher
+// is still going to time out and fail itself.
+const reapMargin = 5 * time.Minute
+
+// Reap sweeps for jobs stuck in claimed/running past the stale window — left
+// behind by a dispatcher that died between claiming and recording a terminal
+// state. Jobs with attempts remaining are requeued (the version returns to
+// submitted for a clean re-dispatch); exhausted jobs are abandoned as failed.
+func (d *Dispatcher) Reap() error {
+	window := d.cfg.BuildTimeout
+	if window <= 0 {
+		window = 15 * time.Minute
+	}
+	stuck, err := d.store.ListStuckBuildJobs(time.Now().Add(-(window + reapMargin)))
+	if err != nil {
+		return err
+	}
+	var firstErr error
+	for i := range stuck {
+		if err := d.reapOne(&stuck[i]); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
+}
+
+func (d *Dispatcher) reapOne(job *store.BuildJob) error {
+	v, collection, err := d.jobContext(job)
+	if err != nil {
+		return err
+	}
+	switch {
+	case v.State == store.StateAvailable:
+		// The build finished; only the job row missed its terminal update.
+		return d.store.SetBuildJobState(job.ID, store.BuildSucceeded, "")
+	case v.State == store.StateScreened:
+		// Held at the human-approval gate (REQUIRE_APPROVAL) — not stuck.
+		return nil
+	case job.Attempts >= d.MaxAttempts:
+		reason := fmt.Sprintf("build abandoned after %d attempts", job.Attempts)
+		d.log.Warn("abandoning stuck build job", "job", job.ID, "collection", collection,
+			"version", v.Version, "attempts", job.Attempts)
+		if state.CanTransition(v.State, store.StateFailed) {
+			_ = d.state.Transition(systemActor, v, collection, store.StateFailed, reason, reason)
+		}
+		return d.store.SetBuildJobState(job.ID, store.BuildFailed, "")
+	case v.State == store.StateSubmitted:
+		// Died between claim and the screening transition; just requeue.
+		d.log.Warn("requeueing stuck build job", "job", job.ID, "collection", collection,
+			"version", v.Version, "attempts", job.Attempts)
+		return d.store.RequeueBuildJob(job.ID)
+	case state.CanTransition(v.State, store.StateSubmitted):
+		d.log.Warn("requeueing stuck build job", "job", job.ID, "collection", collection,
+			"version", v.Version, "attempts", job.Attempts)
+		if err := d.state.Transition(systemActor, v, collection, store.StateSubmitted,
+			"requeued: build runner did not complete", ""); err != nil {
+			return err
+		}
+		return d.store.RequeueBuildJob(job.ID)
+	default:
+		// The version is in a state no rebuild can proceed from (failed,
+		// recalled, ...); close out the orphaned job row.
+		return d.store.SetBuildJobState(job.ID, store.BuildFailed, "")
+	}
 }
 
 func (d *Dispatcher) failIfUnfinished(jobID string, v *store.Version, collection string, cause error) {

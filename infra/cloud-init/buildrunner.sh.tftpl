@@ -1,0 +1,63 @@
+#!/bin/bash
+# First-boot bootstrap for the Spade build-runner Droplet (spec/hosting.md §5).
+# Installs Docker, then runs the spade-buildrunner image from DOCR with the host
+# docker socket mounted, so buildrunnerd can launch an ephemeral per-language
+# builder container per build (registry.md §5.2).
+#
+# NOTE: the DOCR token and DATABASE_URL (with password) arrive via Droplet
+# user-data, visible in the metadata service to root on this box. Acceptable for
+# bootstrap; both are rotatable. The builder containers never receive
+# DATABASE_URL — buildrunnerd injects only a per-job token and S3 credentials.
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+# --- Install Docker CE ---
+apt-get update
+apt-get install -y ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" \
+  > /etc/apt/sources.list.d/docker.list
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io
+systemctl enable --now docker
+
+# --- Pull + run the build runner ---
+RUNNER_IMAGE='${runner_image}'
+DOCR_TOKEN='${docr_token}'
+
+if [ -n "$DOCR_TOKEN" ]; then
+  # DOCR accepts the API token as both username and password.
+  echo "$DOCR_TOKEN" | docker login registry.digitalocean.com -u "$DOCR_TOKEN" --password-stdin
+  docker pull "$RUNNER_IMAGE"
+
+  # Pre-pull the per-language builder images so builds don't pay the pull (and
+  # so the runner container, which lacks the host's registry login, never needs
+  # to pull through the socket itself).
+  for img in ${builder_image_list}; do
+    docker pull "$img"
+  done
+
+  docker rm -f spade-buildrunner 2>/dev/null || true
+  # /root/.docker is mounted read-only so `docker run` through the socket can
+  # still auth to DOCR if an image tag is missing locally.
+  docker run -d --name spade-buildrunner \
+    --restart always \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /root/.docker:/root/.docker:ro \
+    -e DATABASE_URL='${database_url}' \
+    -e REGISTRY_URL='${registry_url}' \
+    -e BUILDER_IMAGES='${builder_images}' \
+    -e S3_ENDPOINT='${spaces_endpoint}' \
+    -e S3_REGION='${spaces_region}' \
+    -e S3_BUCKET='${artifacts_bucket}' \
+    -e S3_ACCESS_KEY_ID='${spaces_access_key_id}' \
+    -e S3_SECRET_ACCESS_KEY='${spaces_secret_access_key}' \
+    -e S3_USE_PATH_STYLE=false \
+    "$RUNNER_IMAGE"
+else
+  echo "docr_read_token is empty; Droplet is up but the build runner was not started." >&2
+  echo "Set TF_VAR_docr_read_token and re-apply to start it." >&2
+fi

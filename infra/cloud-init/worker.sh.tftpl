@@ -1,0 +1,48 @@
+#!/bin/bash
+# First-boot bootstrap for a Spade worker Droplet. Installs Docker, then runs the
+# spade-worker image from DOCR as a PRIVILEGED container — isolate needs cgroup +
+# user-namespace access, which a Droplet's Docker can grant (App Platform can't,
+# which is why workers live here).
+#
+# NOTE: the DOCR token and the AMQP URI (with password) arrive via Droplet
+# user-data, visible in the metadata service to root on this box. Acceptable for
+# bootstrap; both are rotatable.
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+# --- Install Docker CE ---
+apt-get update
+apt-get install -y ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" \
+  > /etc/apt/sources.list.d/docker.list
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io
+systemctl enable --now docker
+
+# --- Pull + run the worker ---
+WORKER_IMAGE='${worker_image}'
+DOCR_TOKEN='${docr_token}'
+
+if [ -n "$DOCR_TOKEN" ]; then
+  # DOCR accepts the API token as both username and password.
+  echo "$DOCR_TOKEN" | docker login registry.digitalocean.com -u "$DOCR_TOKEN" --password-stdin
+  docker pull "$WORKER_IMAGE"
+
+  docker rm -f spade-worker 2>/dev/null || true
+  docker run -d --name spade-worker \
+    --privileged \
+    --restart always \
+    -e SPADE_AMQP_URL='${amqp_url}' \
+    -e REGISTRY_URL='${registry_url}' \
+    -e KMS_URL='${kms_url}' \
+    -e SPADE_WORKER_TOKEN='${worker_token}' \
+    -e SPADE_LOG_LEVEL=info \
+    "$WORKER_IMAGE"
+else
+  echo "docr_read_token is empty; Droplet is up but the worker was not started." >&2
+  echo "Set TF_VAR_docr_read_token and re-apply to start it." >&2
+fi

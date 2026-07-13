@@ -300,6 +300,30 @@ func (s *Store) ClaimNextBuildJob() (*BuildJob, error) {
 	return claimed, nil
 }
 
+// ListStuckBuildJobs returns claimed/running jobs whose last update is older
+// than staleBefore — orphans left behind by a dispatcher that died between
+// claiming a job and recording a terminal state.
+func (s *Store) ListStuckBuildJobs(staleBefore time.Time) ([]BuildJob, error) {
+	var js []BuildJob
+	err := s.db.
+		Where("state IN ? AND updated_at < ?", []BuildJobState{BuildClaimed, BuildRunning}, staleBefore).
+		Order("created_at").Find(&js).Error
+	if err != nil {
+		return nil, err
+	}
+	return js, nil
+}
+
+// RequeueBuildJob returns a job to the queue, clearing the claim and the old
+// builder token so the next dispatch mints a fresh one. Attempts are preserved
+// (they increment at claim time), which is how the reaper's retry cap counts.
+func (s *Store) RequeueBuildJob(id string) error {
+	return s.db.Model(&BuildJob{}).Where("id = ?", id).Updates(map[string]any{
+		"state": BuildQueued, "token_hash": "", "container_id": "",
+		"claimed_at": nil, "updated_at": time.Now(),
+	}).Error
+}
+
 // SetBuildJobState updates a build job's state (and optional container id).
 func (s *Store) SetBuildJobState(id string, to BuildJobState, containerID string) error {
 	updates := map[string]any{"state": to, "updated_at": time.Now()}

@@ -1,0 +1,31 @@
+# Multi-stage build for buildrunnerd, the standalone registry build runner
+# (spec/hosting.md §5). It claims build jobs from the shared Postgres queue and
+# launches ephemeral per-language builder containers against the mounted host
+# docker socket, so the runtime image needs the static docker CLI.
+#
+# The build context must be the *monorepo root* (`docker build -f
+# registry/Dockerfile.buildrunnerd .`) because go.mod uses a `replace` directive
+# pointing at the sibling module `../core`.
+
+FROM golang:1.26-bookworm AS build
+WORKDIR /src
+COPY core ./core
+COPY registry ./registry
+WORKDIR /src/registry
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" -o /out/buildrunnerd ./cmd/buildrunnerd
+
+FROM debian:bookworm-slim
+ARG DOCKER_CLI_VERSION=27.5.1
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o /tmp/docker.tgz \
+    && tar -xzf /tmp/docker.tgz -C /tmp \
+    && mv /tmp/docker/docker /usr/local/bin/docker \
+    && rm -rf /tmp/docker.tgz /tmp/docker \
+    && apt-get purge -y curl && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /out/buildrunnerd /usr/local/bin/buildrunnerd
+EXPOSE 8091
+ENTRYPOINT ["/usr/local/bin/buildrunnerd"]

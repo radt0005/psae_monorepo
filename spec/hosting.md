@@ -36,10 +36,12 @@ Decisions deferred:
 | Registry build runner | Droplet from a separate bundler snapshot | Ephemeral builds triggered by registry control plane |
 | Application database | Managed PostgreSQL | App data, Better Auth, registry metadata mirror |
 | Object storage | Spaces (S3-compatible) | Block artifacts, intermediate pipeline I/O, user uploads, signed worker-binary releases |
-| Message broker | CloudAMQP | RabbitMQ; DO has no native offering |
+| Message broker | RabbitMQ on a Droplet | Self-hosted from the DO Marketplace 1-Click image; lives inside the VPC (see §6.3) |
 | Container registry | DO Container Registry | Source for App Platform deploys |
 
-App Platform and Droplets live in the same DigitalOcean project and private VPC.  Managed PostgreSQL is reachable only over the private VPC.  CloudAMQP is the one external dependency.
+All components are deployed to the **New York (`nyc3`) region**.  Atlanta (`atl1`) was the initial preference, for proximity to the primary user base -- the University of Georgia (Athens, GA) and Virginia Tech -- but DigitalOcean does not currently offer Managed PostgreSQL in `atl1`, and consolidating the whole stack in a single region outweighs the latency benefit of splitting it.  `nyc3` is the nearest region that hosts the full product set together -- Managed PostgreSQL, Spaces, Droplets, and App Platform -- keeping inter-service traffic on one VPC.  (Among the New York regions, only `nyc3` offers Spaces.)
+
+App Platform and Droplets live in the same DigitalOcean project and private VPC.  Managed PostgreSQL and the RabbitMQ broker are reachable only over the private VPC.  At launch the stack has **no external (non-DO) service dependency**; the message broker runs on an in-VPC Droplet rather than a hosted third party (§6.3).
 
 ---
 
@@ -122,7 +124,19 @@ Snapshot storage cost is $0.06/GB-month; a ~30 GB worker snapshot is about $2/mo
 
 Starting Droplet: 4 vCPU / 8 GB / 80 GB NVMe (~$48/month).  Local NVMe sizing is the constraint that matters most -- it holds the worker-local input cache (see §1).  80 GB is sufficient for the cache + working set of a few concurrent invocations on common geospatial workloads.  Workers processing larger reference datasets may need 160 GB or 320 GB Droplets.
 
-The fleet starts at 1 Droplet and scales by adding more Droplets from the same snapshot.  Autoscaling is manual at first; an autoscaling implementation may be added later if demand justifies it.
+The fleet starts at 1 Droplet and scales by adding more Droplets from the same snapshot.  Autoscaling is manual at first; an autoscaling implementation may be added later if demand justifies it (see §4.6 for why it is queue-depth-driven, and §10).
+
+Account Droplet-limit caveat: the DigitalOcean account's Droplet quota bounds the fleet.  With the worker, the build runner (§5), and the RabbitMQ broker (§6.3) each consuming one Droplet, a default 3-Droplet limit leaves no headroom -- adding even a second worker requires a limit increase (a support request), which should be filed ahead of any scaling need.
+
+### 4.6 Why Workers Are Not on App Platform
+
+The worker is the one component that cannot run on App Platform, for two independent reasons.
+
+**Runtime model.**  `isolate` requires a setuid install plus cgroup and user-namespace control (hence `privileged: true` in the local Docker stack).  App Platform runs containers in a locked-down managed runtime that grants none of these and exposes no flag to enable them.  Running the worker there would mean disabling the sandbox (`SPADE_SKIP_ISOLATE_CHECK`), which removes per-invocation CPU/memory/time limits and filesystem isolation -- the worker's entire safety and resource-control model.  That path exists only for sandbox-free integration testing (e.g. on macOS), not production.
+
+**Autoscaling trigger.**  App Platform's autoscaler scales on CPU/memory utilisation.  Workers are competing consumers whose correct scaling signal is **queue depth** (the `spade.jobs` backlog), not CPU.  A worker blocked on I/O while streaming a large raster shows low CPU even as the queue grows -- App Platform would scale it down precisely when more capacity is needed.
+
+The worker autoscaling path is therefore Droplet-based and queue-depth-driven (see §4.5 and §10): a controller reads `spade.jobs` depth from the broker's management API and provisions or drains worker Droplets via the DO API.  This is manual at launch and automated later; a baked snapshot (§4.4) becomes worthwhile at that point to keep boot times short enough for responsive scaling.
 
 ---
 
@@ -189,13 +203,15 @@ spade-worker-bin/     # signed worker binaries by version
 
 Access policy is enforced via per-bucket access keys delivered to services through DO's secrets mechanism.  No bucket is publicly readable.
 
-### 6.3 CloudAMQP
+### 6.3 Message Broker (RabbitMQ on a Droplet)
 
-CloudAMQP provides hosted RabbitMQ.  The Spade broker holds two durable queues (`spade.jobs` and `spade.results`) as specified in `worker.md`.
+RabbitMQ is self-hosted on a dedicated Droplet, provisioned from the DigitalOcean Marketplace **RabbitMQ 1-Click** image (RabbitMQ 4.x on Ubuntu).  The Spade broker holds two durable queues (`spade.jobs` and `spade.results`) as specified in `worker.md`.
 
-Starting plan: "Tough Tiger" tier (~$19/month).  This is sized for small fleets and modest message volume; upgrading is non-disruptive.
+Running the broker on a Droplet keeps it inside the private VPC: no public exposure, lower latency to the scheduler and workers, and no external service dependency.  The Droplet's firewall restricts the AMQP port (5672) and the management UI (15672) to the VPC; nothing is exposed publicly.  The trade-off is operational -- the Spade team owns OS and RabbitMQ patching, restarts, and (if needed later) clustering.  The Marketplace image ships a configured single node, sufficient for a small fleet and modest message volume.
 
-CloudAMQP is the one external (non-DO) service in the stack.  The connection is over TLS to the CloudAMQP-managed endpoint.  If hosting it on a DO Droplet eventually becomes preferred (for VPC locality or cost), the migration is a queue drain and reconnect -- workers and the scheduler do not care which RabbitMQ they speak to.
+Starting Droplet: a basic 1 vCPU / 2 GB tier (~$12/month).
+
+Because the architecture treats the broker as swappable -- workers and the scheduler do not care which RabbitMQ they speak to -- this decision is reversible.  If self-hosting becomes a burden, migrating to **CloudAMQP** (hosted RabbitMQ, ~$19/month) is a queue drain and reconnect with no code change.  CloudAMQP is retained here as the documented fallback; choosing it also returns the broker off the account's Droplet quota (§4.5).
 
 ### 6.4 DO Container Registry
 
@@ -242,12 +258,11 @@ Workers, the build runner, the database, and the message broker connection are n
 
 ### 8.3 External Dependencies
 
-The deployment has two external network dependencies:
+At launch the deployment has a single external network dependency:
 
-- CloudAMQP (the message broker)
 - Git remotes (cloned by the build runner during the registry's screen-build step)
 
-Both are outbound-only from the perspective of the private VPC.
+This is outbound-only from the perspective of the private VPC.  The message broker, previously an external CloudAMQP dependency, now runs on an in-VPC Droplet (§6.3); if it is ever migrated back to CloudAMQP, that endpoint again becomes an outbound TLS dependency.
 
 ---
 
@@ -267,12 +282,12 @@ Approximate monthly cost for the launch deployment.  Numbers are illustrative ba
 | Build runner Droplet (2 vCPU / 4 GB) | $24 |
 | Managed PostgreSQL (1 GB tier) | $15 |
 | Spaces | $5 + usage |
-| CloudAMQP ("Tough Tiger") | $19 |
+| RabbitMQ Droplet (1 vCPU / 2 GB, 1-Click) | ~$12 |
 | Worker snapshot storage | ~$2 |
-| **Baseline total** | **~$183/month** |
-| With a second worker | ~$231/month |
+| **Baseline total** | **~$176/month** |
+| With a second worker | ~$224/month |
 
-At the project's $10,000 budget, the baseline supports ~4.5 years of runway and the two-worker configuration supports ~3.6 years.  Adding workers scales linearly with Droplet cost; everything else holds steady until usage drives the storage or database tiers up.
+At the project's $10,000 budget, the baseline supports ~4.7 years of runway and the two-worker configuration supports ~3.7 years.  Adding workers scales linearly with Droplet cost; everything else holds steady until usage drives the storage or database tiers up.
 
 ---
 
@@ -284,7 +299,7 @@ The expected order of scaling pressure:
 2. **PostgreSQL tier.**  Upgrade vertically when the registry mirror or invocation history outgrows the starter tier.  Non-disruptive on DO Managed.
 3. **Spaces usage.**  Grows naturally with stored data and egress.  No structural change required.
 4. **App Platform service tiers.**  Scale individual services horizontally or vertically as load demands.  Scheduler is likely the first to need attention as concurrent pipeline count grows.
-5. **CloudAMQP plan.**  Upgrade if message rate or queue depth pushes the current tier.
+5. **Message broker.**  Upgrade the RabbitMQ Droplet (or migrate to CloudAMQP) if message rate or queue depth outgrows a single modest node.
 
 Earlier deferred items become relevant once measurement justifies them: per-worker affinity routing, multi-region replication, a managed CDN in front of Spaces for public download performance.
 

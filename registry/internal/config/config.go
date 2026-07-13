@@ -34,6 +34,12 @@ type RegistryConfig struct {
 	RequireApproval bool
 	AdminUserIDs    []string
 
+	// BuildDispatchEnabled controls the in-process build dispatcher. Disable it
+	// when a standalone build service (cmd/buildrunnerd) owns the queue — e.g.
+	// on App Platform, which has no Docker daemon. The /builds/:id/* callback
+	// endpoints stay on regardless; remote builders report over HTTP.
+	BuildDispatchEnabled bool
+
 	BuilderImages map[string]string // language → container image
 	DockerHost    string
 	// BuilderDockerArgs are extra `docker run` args for the build container
@@ -71,27 +77,28 @@ type BuilderConfig struct {
 // LoadRegistry reads RegistryConfig from the environment, applying defaults.
 func LoadRegistry() (RegistryConfig, error) {
 	c := RegistryConfig{
-		ListenAddr:        envOr("LISTEN_ADDR", ":8090"),
-		DatabaseURL:       os.Getenv("DATABASE_URL"),
-		SQLitePath:        envOr("SQLITE_PATH", "registry.db"),
-		S3Endpoint:        os.Getenv("S3_ENDPOINT"),
-		S3Region:          envOr("S3_REGION", "us-east-1"),
-		S3Bucket:          envOr("S3_BUCKET", "spade-artifacts"),
-		S3AccessKey:       os.Getenv("S3_ACCESS_KEY_ID"),
-		S3SecretKey:       os.Getenv("S3_SECRET_ACCESS_KEY"),
-		S3UsePathStyle:    envBool("S3_USE_PATH_STYLE", true),
-		BlobDir:           envOr("BLOB_DIR", "blobs"),
-		StagingPrefix:     envOr("STAGING_PREFIX", "staging/"),
-		ArtifactPrefix:    envOr("ARTIFACT_PREFIX", "artifacts/"),
-		RequireApproval:   envBool("REQUIRE_APPROVAL", false),
-		AdminUserIDs:      splitList(os.Getenv("ADMIN_USER_IDS")),
-		BuilderImages:     parseImages(os.Getenv("BUILDER_IMAGES")),
-		DockerHost:        os.Getenv("DOCKER_HOST"),
-		BuilderDockerArgs: splitList(os.Getenv("BUILDER_DOCKER_ARGS")),
-		BuildTimeout:      envDuration("BUILD_TIMEOUT", 15*time.Minute),
-		SigningKeySource:  envOr("SIGNING_KEY_SOURCE", "db"),
-		SigningPublicKey:  os.Getenv("SIGNING_PUBLIC_KEY"),
-		SigningPrivateKey: os.Getenv("SIGNING_PRIVATE_KEY"),
+		ListenAddr:           envOr("LISTEN_ADDR", ":8090"),
+		DatabaseURL:          os.Getenv("DATABASE_URL"),
+		SQLitePath:           envOr("SQLITE_PATH", "registry.db"),
+		S3Endpoint:           os.Getenv("S3_ENDPOINT"),
+		S3Region:             envOr("S3_REGION", "us-east-1"),
+		S3Bucket:             envOr("S3_BUCKET", "spade-artifacts"),
+		S3AccessKey:          os.Getenv("S3_ACCESS_KEY_ID"),
+		S3SecretKey:          os.Getenv("S3_SECRET_ACCESS_KEY"),
+		S3UsePathStyle:       envBool("S3_USE_PATH_STYLE", true),
+		BlobDir:              envOr("BLOB_DIR", "blobs"),
+		StagingPrefix:        envOr("STAGING_PREFIX", "staging/"),
+		ArtifactPrefix:       envOr("ARTIFACT_PREFIX", "artifacts/"),
+		RequireApproval:      envBool("REQUIRE_APPROVAL", false),
+		AdminUserIDs:         splitList(os.Getenv("ADMIN_USER_IDS")),
+		BuildDispatchEnabled: envBool("BUILD_DISPATCH_ENABLED", true),
+		BuilderImages:        parseImages(os.Getenv("BUILDER_IMAGES")),
+		DockerHost:           os.Getenv("DOCKER_HOST"),
+		BuilderDockerArgs:    splitList(os.Getenv("BUILDER_DOCKER_ARGS")),
+		BuildTimeout:         envDuration("BUILD_TIMEOUT", 15*time.Minute),
+		SigningKeySource:     envOr("SIGNING_KEY_SOURCE", "db"),
+		SigningPublicKey:     os.Getenv("SIGNING_PUBLIC_KEY"),
+		SigningPrivateKey:    os.Getenv("SIGNING_PRIVATE_KEY"),
 	}
 	c.MirrorEnabled = envBool("MIRROR_ENABLED", c.DatabaseURL != "")
 	if c.SigningKeySource == "env" && (c.SigningPublicKey == "" || c.SigningPrivateKey == "") {

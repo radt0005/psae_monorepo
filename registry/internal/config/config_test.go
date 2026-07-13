@@ -11,7 +11,7 @@ func TestLoadRegistryDefaults(t *testing.T) {
 	for _, k := range []string{
 		"LISTEN_ADDR", "DATABASE_URL", "S3_ENDPOINT", "REQUIRE_APPROVAL",
 		"ADMIN_USER_IDS", "BUILDER_IMAGES", "BUILD_TIMEOUT", "SIGNING_KEY_SOURCE",
-		"MIRROR_ENABLED",
+		"MIRROR_ENABLED", "BUILD_DISPATCH_ENABLED",
 	} {
 		t.Setenv(k, "")
 	}
@@ -22,7 +22,15 @@ func TestLoadRegistryDefaults(t *testing.T) {
 	require.Equal(t, "artifacts/", c.ArtifactPrefix)
 	require.False(t, c.RequireApproval)
 	require.False(t, c.MirrorEnabled, "mirror off when no DATABASE_URL")
+	require.True(t, c.BuildDispatchEnabled, "embedded dispatch on by default")
 	require.Equal(t, "spade-builder-go:latest", c.BuilderImages["go"])
+}
+
+func TestLoadRegistryBuildDispatchDisabled(t *testing.T) {
+	t.Setenv("BUILD_DISPATCH_ENABLED", "false")
+	c, err := LoadRegistry()
+	require.NoError(t, err)
+	require.False(t, c.BuildDispatchEnabled)
 }
 
 func TestLoadRegistryParsing(t *testing.T) {

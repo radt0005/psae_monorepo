@@ -15,3 +15,7 @@ SAE_WORKFLOW_IMPLEMENTATION_PLAN.md
 __pycache__/
 *.pyc
 *.pyo
+
+export_keys.sh
+deploy.sh
+tf_temp.txt

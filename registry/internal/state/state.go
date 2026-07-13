@@ -22,12 +22,14 @@ var (
 // allowed encodes the legal transitions of registry.md §3. The build pipeline
 // drives the happy path (submitted→…→available) and the failure edges; the
 // "off" states are reached by owner/operator action. recalled is reachable from
-// any state and is terminal.
+// any state and is terminal. screening/building→submitted are the requeue
+// edges: the reaper returns a version whose build runner died mid-flight to the
+// queue for a clean re-dispatch (system actors only, see Authorize).
 var allowed = map[store.State][]store.State{
 	store.StateSubmitted:  {store.StateScreening, store.StateFailed},
-	store.StateScreening:  {store.StateScreened, store.StateFailed},
+	store.StateScreening:  {store.StateScreened, store.StateFailed, store.StateSubmitted},
 	store.StateScreened:   {store.StateBuilding, store.StateFailed},
-	store.StateBuilding:   {store.StateAvailable, store.StateFailed},
+	store.StateBuilding:   {store.StateAvailable, store.StateFailed, store.StateSubmitted},
 	store.StateAvailable:  {store.StateDeprecated, store.StateYanked},
 	store.StateDeprecated: {store.StateYanked},
 	store.StateYanked:     {},
@@ -78,6 +80,12 @@ func Authorize(a Actor, to store.State) error {
 			return nil
 		}
 		return fmt.Errorf("%w: pipeline transition is system-driven", ErrUnauthorized)
+	case store.StateSubmitted:
+		// Requeue (the reaper returning an abandoned build to the queue).
+		if a.Type == audit.ActorSystem {
+			return nil
+		}
+		return fmt.Errorf("%w: requeue is system-driven", ErrUnauthorized)
 	default:
 		return fmt.Errorf("%w: unknown target state %q", ErrIllegalTransition, to)
 	}
