@@ -31,7 +31,8 @@ Spade computes a content hash of each block at install time. Before execution, t
 
 ## Trust Model
 
-- Blocks from trusted repositories are verified via content hash
+- Collections published to the cloud registry are screened, then built, then cryptographically signed — in that order, so the registry controls what gets signed
+- Every installed block is content-hashed locally to detect post-install tampering, regardless of where it came from
 - The sandbox prevents untrusted code from escaping its boundaries
 - Network declarations are visible in the manifest for audit
 - All block execution is logged for traceability

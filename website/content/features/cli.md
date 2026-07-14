@@ -15,8 +15,8 @@ The Spade CLI is your primary development tool:
 - **`spade add <name>`** — Add a new block to your collection with manifest and entry point boilerplate
 - **`spade check`** — Validate pipeline definitions and block manifests
 - **`spade run <pipeline.yaml>`** — Execute a pipeline locally for testing
-- **`spade install <git-url>`** — Install a block collection from a Git repository
-- **`spade upload`** — Package and upload your collection for cloud deployment
+- **`spade install <collection>`** — Install a block collection from the cloud registry, a Git repository, or a local path
+- **`spade publish`** — Submit a pushed collection to the cloud registry for screening, signing, and distribution
 - **`spade setup`** — Configure the Spade system and dependencies
 
 ## Web Interface
