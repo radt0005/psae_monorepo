@@ -1,19 +1,19 @@
-id: 019f5c5d-fe4d-7b5a-80ef-eb15b317ed84
+id: 019f5e05-c51a-7db8-80ef-a74c10d31055
 name: data_write_collection
 version: "1.0"
 description: Read and write a file collection
 blocks:
-- id: 019f5c5d-fe4d-7939-80ed-c02d73d2aa66
+- id: 019f5e05-c51a-7c7f-80ed-13eed9952f08
   name: data.read_collection
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data*.csv
     format: CSV
     max_items: 10
-- id: 019f5c5d-fe4d-7ebb-80ee-130754fbbce4
+- id: 019f5e05-c51a-73ec-80ee-cb0d48fa6b94
   name: data.write_collection
   inputs:
-  - 019f5c5d-fe4d-7939-80ed-c02d73d2aa66
+  - 019f5e05-c51a-7c7f-80ed-13eed9952f08
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/output/data_write_collection_test/
     overwrite: true

@@ -1,7 +1,7 @@
-Loaded pipeline: base_csv_to_parquet (019f5c5d-fe2b-7480-8003-dff113fe35ea)
+Loaded pipeline: base_csv_to_parquet (019f5e05-c4fc-7510-8003-6072d4be7a7e)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] base.csv_to_parquet running...
   [2/2] base.csv_to_parquet complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 58ms
+Pipeline complete: 2 block(s) executed (1 cached) in 55ms

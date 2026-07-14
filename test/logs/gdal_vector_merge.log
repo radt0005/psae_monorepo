@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_vector_merge (019f5c5d-fe42-7462-80a3-e5f3897700f6)
+Loaded pipeline: gdal_vector_merge (019f5e05-c510-7d4b-80a3-6f97f523b9ac)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] gdal.vector_merge running...
   [2/2] gdal.vector_merge complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 991ms
+Pipeline complete: 2 block(s) executed (1 cached) in 992ms

@@ -1,18 +1,18 @@
-id: 019f5c5d-fe3b-7a35-8078-7cd56c78107d
+id: 019f5e05-c50a-7f11-8078-46afaa28071b
 name: gdal_clip_raster_by_extent
 version: "1.0"
 description: Clip raster to bounding box
 blocks:
-- id: 019f5c5d-fe3b-7477-8076-fb7562bcf8d1
+- id: 019f5e05-c50a-78ca-8076-e2382fd75e52
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f5c5d-fe3b-7eca-8077-4920e40024ff
+- id: 019f5e05-c50a-7079-8077-3d247c3badfc
   name: gdal.clip_raster_by_extent
   inputs:
-  - 019f5c5d-fe3b-7477-8076-fb7562bcf8d1
+  - 019f5e05-c50a-78ca-8076-e2382fd75e52
   args:
     xmin: -122.4
     ymin: 37.6

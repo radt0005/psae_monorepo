@@ -1,5 +1,5 @@
-Loaded pipeline: gdal_srs_info (019f5c5d-fe48-71fc-80cb-1ccb982fa055)
+Loaded pipeline: gdal_srs_info (019f5e05-c515-72dc-80cb-cdbdf5d01895)
 Executing pipeline with 1 block(s)...
   [1/1] gdal.srs_info (cached)
 
-Pipeline complete: 1 block(s) executed (1 cached) in 5ms
+Pipeline complete: 1 block(s) executed (1 cached) in 1ms

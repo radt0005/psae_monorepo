@@ -1,9 +1,9 @@
-id: 019f5c5d-fe4c-78f3-80ec-e43d6df360b4
+id: 019f5e05-c51a-7b00-80ec-75b55c995de1
 name: data_read_collection
 version: "1.0"
 description: Read collection of local CSV files
 blocks:
-- id: 019f5c5d-fe4c-7d4b-80eb-350d4870112b
+- id: 019f5e05-c51a-7853-80eb-48b96a301647
   name: data.read_collection
   inputs: []
   args:

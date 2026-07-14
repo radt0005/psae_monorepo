@@ -1,18 +1,18 @@
-id: 019f5c5d-fe38-750f-8062-7c21bdfca09d
+id: 019f5e05-c508-7e9a-8062-4c978838491e
 name: gdal_calc
 version: "1.0"
 description: Evaluate raster algebra expression
 blocks:
-- id: 019f5c5d-fe38-70bb-8060-175e71b15b97
+- id: 019f5e05-c508-7b9e-8060-efb67e0c13b6
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f5c5d-fe38-7b34-8061-b1f9653b2e0b
+- id: 019f5e05-c508-73e2-8061-ffc9fc573de1
   name: gdal.calc
   inputs:
-  - 019f5c5d-fe38-70bb-8060-175e71b15b97
+  - 019f5e05-c508-7b9e-8060-efb67e0c13b6
   args:
     expression: A * 2 + 1
     output_type: Float32

@@ -1,9 +1,9 @@
-id: 019f5c5d-fe50-7307-8104-290785323936
+id: 019f5e05-c51d-712b-8104-f2117fbc6aa0
 name: data_osm_extract_shp
 version: "1.0"
 description: '[NETWORK] Download OSM Shapefile for Rhode Island'
 blocks:
-- id: 019f5c5d-fe50-72c8-8103-499aa7104ff4
+- id: 019f5e05-c51d-7e88-8103-9428cfc55f77
   name: data.osm_extract_shp
   inputs: []
   args:

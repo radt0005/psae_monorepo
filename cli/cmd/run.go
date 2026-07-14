@@ -30,6 +30,9 @@ var runCmd = &cobra.Command{
 	Short: "Run a pipeline locally",
 	Long:  `Runs the specified pipeline locally using the single-instance scheduler.`,
 	Args:  cobra.ExactArgs(1),
+	// Runtime failures (block errors, missing inputs) are not usage
+	// errors; suppress the usage dump cobra prints for returned errors.
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPipeline(args[0])
 	},

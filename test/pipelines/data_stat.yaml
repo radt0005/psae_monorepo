@@ -1,9 +1,9 @@
-id: 019f5c5d-fe4e-754a-80f3-1970363c9cb2
+id: 019f5e05-c51b-75fd-80f3-7a97aa6202f2
 name: data_stat
 version: "1.0"
 description: Stat a local file
 blocks:
-- id: 019f5c5d-fe4e-728a-80f2-0c2ebc3ab88a
+- id: 019f5e05-c51b-75a1-80f2-74ae524e4c09
   name: data.stat
   inputs: []
   args:

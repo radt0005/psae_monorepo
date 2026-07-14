@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_build_vrt (019f5c5d-fe34-7698-8045-178d946337cb)
+Loaded pipeline: gdal_build_vrt (019f5e05-c504-7324-8045-57bb1bbaaca2)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] gdal.build_vrt running...
   [2/2] gdal.build_vrt complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.004s
+Pipeline complete: 2 block(s) executed (1 cached) in 978ms

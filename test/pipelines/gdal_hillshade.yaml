@@ -1,18 +1,18 @@
-id: 019f5c5d-fe3c-7773-807b-94c90eb13a0b
+id: 019f5e05-c50b-7c26-807b-0b3eadfdfec0
 name: gdal_hillshade
 version: "1.0"
 description: Generate hillshade from DEM
 blocks:
-- id: 019f5c5d-fe3c-781e-8079-d11a8deaa3d6
+- id: 019f5e05-c50b-7b49-8079-5d389b3b9774
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f5c5d-fe3c-7227-807a-2abc7dd9ccb4
+- id: 019f5e05-c50b-7c32-807a-338a1610f39b
   name: gdal.hillshade
   inputs:
-  - 019f5c5d-fe3c-781e-8079-d11a8deaa3d6
+  - 019f5e05-c50b-7b49-8079-5d389b3b9774
   args:
     azimuth: 315
     altitude: 45

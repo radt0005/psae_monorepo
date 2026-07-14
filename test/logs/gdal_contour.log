@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_contour (019f5c5d-fe38-7e4c-805f-046c0c059aae)
+Loaded pipeline: gdal_contour (019f5e05-c507-7431-805f-8ccce8dba7bb)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.contour running...
   [2/2] gdal.contour complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.073s
+Pipeline complete: 2 block(s) executed (1 cached) in 1.038s

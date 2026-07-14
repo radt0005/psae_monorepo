@@ -1,9 +1,9 @@
-id: 019f5c5d-fe50-783b-8102-f9154286a9e6
+id: 019f5e05-c51d-7d47-8102-20f35e5d864c
 name: data_osm_extract_pbf
 version: "1.0"
 description: '[NETWORK] Download OSM PBF for Rhode Island'
 blocks:
-- id: 019f5c5d-fe50-7937-8101-30788a7843f5
+- id: 019f5e05-c51d-7151-8101-a2493594dc1b
   name: data.osm_extract_pbf
   inputs: []
   args:

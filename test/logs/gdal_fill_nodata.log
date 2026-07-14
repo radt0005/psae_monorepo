@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_fill_nodata (019f5c5d-fe39-7bb2-8068-aa72acc44210)
+Loaded pipeline: gdal_fill_nodata (019f5e05-c508-7813-8068-87b0ebb162ea)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.fill_nodata running...
   [2/2] gdal.fill_nodata complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.016s
+Pipeline complete: 2 block(s) executed (1 cached) in 1.038s

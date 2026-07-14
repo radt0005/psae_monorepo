@@ -1,19 +1,19 @@
-id: 019f5c5d-fe59-7baa-8121-6b832464c70b
+id: 019f5e05-c524-7e8d-8121-1cf0265b3634
 name: stats_t_test
 version: "1.0"
 description: Student's t-test on a numeric column - one-sample against a fixed mean,
   or two-sample comparing the column across the two levels of a grouping column.
 blocks:
-- id: 019f5c5d-fe57-751e-811f-eeca7d9a3187
+- id: 019f5e05-c523-79c2-811f-441e32498682
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
     format: CSV
-- id: 019f5c5d-fe57-7336-8120-3ce8abccb54b
+- id: 019f5e05-c523-7a8a-8120-9af52daa49ff
   name: stats.t_test
   inputs:
-  - 019f5c5d-fe57-751e-811f-eeca7d9a3187
+  - 019f5e05-c523-79c2-811f-441e32498682
   args:
     value_column: x
     group_column: group

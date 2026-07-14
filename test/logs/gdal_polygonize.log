@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_polygonize (019f5c5d-fe37-7ef3-805c-591ad3c1b674)
+Loaded pipeline: gdal_polygonize (019f5e05-c507-7604-805c-1b6b73761e2c)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.polygonize running...
   [2/2] gdal.polygonize complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.034s
+Pipeline complete: 2 block(s) executed (1 cached) in 1.125s
