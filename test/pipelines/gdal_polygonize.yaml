@@ -1,18 +1,18 @@
-id: 019f5e05-c507-7604-805c-1b6b73761e2c
+id: 019f5e17-50ca-77ec-805c-c9373f5eaffe
 name: gdal_polygonize
 version: "1.0"
 description: Polygonize categorical raster
 blocks:
-- id: 019f5e05-c507-746c-805a-3766c76fa564
+- id: 019f5e17-50ca-7e9d-805a-604c5f0ec4ef
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_categorical.tif
     format: GeoTIFF
-- id: 019f5e05-c507-7d68-805b-009b22e71736
+- id: 019f5e17-50ca-721d-805b-dc6764813358
   name: gdal.polygonize
   inputs:
-  - 019f5e05-c507-746c-805a-3766c76fa564
+  - 019f5e17-50ca-7e9d-805a-604c5f0ec4ef
   args:
     band: 1
     field_name: DN

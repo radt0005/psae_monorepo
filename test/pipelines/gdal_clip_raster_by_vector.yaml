@@ -1,27 +1,27 @@
-id: 019f5e05-c50a-7423-8075-bdc1fdff2edd
+id: 019f5e17-50cd-7fc0-8075-8b1b8a26c52a
 name: gdal_clip_raster_by_vector
 version: "1.0"
 description: Clip raster to vector boundary
 blocks:
-- id: 019f5e05-c50a-74f6-8072-e8a66f84fd8b
+- id: 019f5e17-50cd-742f-8072-6a00f433df7f
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f5e05-c50a-73ef-8073-be12a0e0b629
+- id: 019f5e17-50cd-75ea-8073-61665e51c402
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019f5e05-c50a-7c89-8074-1d68c3b22b86
+- id: 019f5e17-50cd-7b05-8074-2b928d7f5ec8
   name: gdal.clip_raster_by_vector
   inputs:
-  - block: 019f5e05-c50a-74f6-8072-e8a66f84fd8b
+  - block: 019f5e17-50cd-742f-8072-6a00f433df7f
     output: file
     as: source
-  - block: 019f5e05-c50a-73ef-8073-be12a0e0b629
+  - block: 019f5e17-50cd-75ea-8073-61665e51c402
     output: file
     as: boundary
   args:

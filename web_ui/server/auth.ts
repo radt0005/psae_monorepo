@@ -17,6 +17,7 @@ function createAuth() {
   return betterAuth({
     secret: (config.betterAuthSecret as string) || process.env.BETTER_AUTH_SECRET,
     baseURL: (config.betterAuthUrl as string) || "http://localhost:3000",
+    trustedOrigins: [ (config.betterAuthUrl as string) || "http://localhost:3000"],
     // Map Better Auth's model names (singular) to our drizzle table objects.
     // Our tables are exported under plural keys (`users`, `sessions`, …), which
     // the adapter can't resolve on its own — so pass the schema explicitly.

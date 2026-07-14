@@ -1,7 +1,8 @@
-Loaded pipeline: data_read_write_chain (019f5e05-c51b-7a6f-80f6-6710645e6d40)
+Loaded pipeline: data_read_write_chain (019f5e17-50df-7bab-80f6-7715cd8bba39)
 Executing pipeline with 2 block(s)...
-  [1/2] data.read (cached)
+  [1/2] data.read running...
+  [1/2] data.read complete
   [2/2] data.write running...
   [2/2] data.write complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 25ms
+Pipeline complete: 2 block(s) executed in 40ms

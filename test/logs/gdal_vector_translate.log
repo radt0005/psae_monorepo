@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_vector_translate (019f5e05-c510-7de2-80a0-737970d19a66)
+Loaded pipeline: gdal_vector_translate (019f5e17-50d3-7227-80a0-e3b3000459f4)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.vector_translate running...
   [2/2] gdal.vector_translate complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.034s
+Pipeline complete: 2 block(s) executed (1 cached) in 993ms

@@ -1,16 +1,16 @@
-id: 019f5e05-c50d-7192-808e-f23ef48ef2c8
+id: 019f5e17-50d1-7275-808e-06b9801bf139
 name: gdal_roughness
 version: "1.0"
 description: Compute terrain roughness
 blocks:
-- id: 019f5e05-c50d-7320-808c-222e7d627f01
+- id: 019f5e17-50d1-72a8-808c-c5de304028ba
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_dem.tif
     format: GeoTIFF
-- id: 019f5e05-c50d-7ac2-808d-24d7dda12162
+- id: 019f5e17-50d1-7d75-808d-492b06713d9f
   name: gdal.roughness
   inputs:
-  - 019f5e05-c50d-7320-808c-222e7d627f01
+  - 019f5e17-50d1-72a8-808c-c5de304028ba
   args: {}

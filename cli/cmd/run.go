@@ -254,9 +254,20 @@ func runPipeline(pipelinePath string) error {
 			}
 
 			resolvedInputs, resolveErr := core.ResolveInputs(pipelineBlock, depManifests, manifest)
-			if resolveErr == nil {
-				workDir := filepath.Join(pipelineDir, invID)
-				core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir, invocation, manifest, depManifests, depDepths)
+			if resolveErr != nil {
+				return fmt.Errorf("resolving inputs for block %s: %w", blockLabel, resolveErr)
+			}
+			// Reset (wipe + recreate) the invocation directory before
+			// input setup: with --keep-work-dir a previous run's directory
+			// survives, and stale input symlinks would fail re-setup with
+			// EEXIST while stale partial outputs would be collected as
+			// this run's.  Cache-restored blocks never reach this path.
+			if err := core.ResetBlockDirectory(invID, pipelineDir); err != nil {
+				return fmt.Errorf("resetting work directory for block %s: %w", blockLabel, err)
+			}
+			workDir := filepath.Join(pipelineDir, invID)
+			if err := core.SetupInputSymlinks(workDir, resolvedInputs, pipelineDir, invocation, manifest, depManifests, depDepths); err != nil {
+				return fmt.Errorf("setting up inputs for block %s: %w", blockLabel, err)
 			}
 		}
 

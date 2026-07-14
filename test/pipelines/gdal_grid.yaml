@@ -1,18 +1,18 @@
-id: 019f5e05-c509-789c-806e-a24d1ff95679
+id: 019f5e17-50cc-78b8-806e-fa4f311a7192
 name: gdal_grid
 version: "1.0"
 description: Interpolate scattered points onto grid
 blocks:
-- id: 019f5e05-c509-76e0-806c-1fbc45655e02
+- id: 019f5e17-50cc-7970-806c-fb00fd7d5f68
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_points.csv
     format: CSV
-- id: 019f5e05-c509-7277-806d-9996c0cf2b04
+- id: 019f5e17-50cc-73b0-806d-7f2ae9910851
   name: gdal.grid
   inputs:
-  - 019f5e05-c509-76e0-806c-1fbc45655e02
+  - 019f5e17-50cc-7970-806c-fb00fd7d5f68
   args:
     algorithm: invdist:power=2.0
     width: 32

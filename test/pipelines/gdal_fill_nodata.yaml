@@ -1,18 +1,18 @@
-id: 019f5e05-c508-7813-8068-87b0ebb162ea
+id: 019f5e17-50cc-71bd-8068-f6295979644b
 name: gdal_fill_nodata
 version: "1.0"
 description: Interpolate nodata pixels
 blocks:
-- id: 019f5e05-c508-7e61-8066-3115ef018731
+- id: 019f5e17-50cc-7283-8066-b5206f2b1a22
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_nodata_raster.tif
     format: GeoTIFF
-- id: 019f5e05-c508-756c-8067-03b15ee6f5be
+- id: 019f5e17-50cc-7f75-8067-b8ecbda149df
   name: gdal.fill_nodata
   inputs:
-  - 019f5e05-c508-7e61-8066-3115ef018731
+  - 019f5e17-50cc-7283-8066-b5206f2b1a22
   args:
     max_distance: 50
     smoothing_iterations: 0

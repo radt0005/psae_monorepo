@@ -1,25 +1,25 @@
-id: 019f5e05-c4fe-707d-8017-a5a1cd66bf17
+id: 019f5e17-50c1-72cf-8017-d60c029677d1
 name: base_group_by
 version: "1.0"
 description: Group by state and aggregate
 blocks:
-- id: 019f5e05-c4fe-74b0-8014-681aa16903e3
+- id: 019f5e17-50c1-7fa0-8014-7bc8ab525aa5
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019f5e05-c4fe-7c7d-8015-5a64ad3fa888
+- id: 019f5e17-50c1-708e-8015-121d1359785f
   name: base.csv_to_parquet
   inputs:
-  - 019f5e05-c4fe-74b0-8014-681aa16903e3
+  - 019f5e17-50c1-7fa0-8014-7bc8ab525aa5
   args:
     delimiter: ','
     has_header: true
-- id: 019f5e05-c4fe-7fa8-8016-ce35a36e84cf
+- id: 019f5e17-50c1-7557-8016-f09b3cdd06ca
   name: base.group_by
   inputs:
-  - 019f5e05-c4fe-7c7d-8015-5a64ad3fa888
+  - 019f5e17-50c1-708e-8015-121d1359785f
   args:
     group_columns: state
     aggregations: '[{"column": "value", "function": "mean"}, {"column": "id", "function":

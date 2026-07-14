@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_vector_identity (019f5e05-c513-75c4-80ba-701de11f221c)
+Loaded pipeline: gdal_vector_identity (019f5e17-50d7-708b-80ba-73ffab50bd98)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.vector_identity running...
   [3/3] gdal.vector_identity complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 1.075s
+Pipeline complete: 3 block(s) executed (2 cached) in 1.018s

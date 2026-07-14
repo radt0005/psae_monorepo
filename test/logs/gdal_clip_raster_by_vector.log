@@ -1,8 +1,9 @@
-Loaded pipeline: gdal_clip_raster_by_vector (019f5e05-c50a-7423-8075-bdc1fdff2edd)
+Loaded pipeline: gdal_clip_raster_by_vector (019f5e17-50cd-7fc0-8075-8b1b8a26c52a)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
-  [2/3] data.read (cached)
+  [2/3] data.read running...
+  [2/3] data.read complete
   [3/3] gdal.clip_raster_by_vector running...
   [3/3] gdal.clip_raster_by_vector complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 1.035s
+Pipeline complete: 3 block(s) executed (1 cached) in 1.011s

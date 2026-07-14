@@ -1,5 +1,6 @@
-Loaded pipeline: data_list (019f5e05-c51a-713b-80f1-4ec191500464)
+Loaded pipeline: data_list (019f5e17-50df-761a-80f1-107fcb80b526)
 Executing pipeline with 1 block(s)...
-  [1/1] data.list (cached)
+  [1/1] data.list running...
+  [1/1] data.list complete
 
-Pipeline complete: 1 block(s) executed (1 cached) in 2ms
+Pipeline complete: 1 block(s) executed in 16ms

@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_location_info (019f5e05-c50f-70f5-8099-85c43182c511)
+Loaded pipeline: gdal_location_info (019f5e17-50d2-7e1b-8099-1cf0ade8e7c8)
 Executing pipeline with 2 block(s)...
   [1/2] data.read (cached)
   [2/2] gdal.location_info running...
   [2/2] gdal.location_info complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.105s
+Pipeline complete: 2 block(s) executed (1 cached) in 964ms

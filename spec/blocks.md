@@ -399,6 +399,14 @@ Cache keys are derived from:
 - `params.yaml`
 - Runtime environment hash
 
+**Map blocks are never result-cached.**  A map block's result is not
+self-contained: the expansion items reference files under the map's own
+`inputs/` directory, and restoring only `outputs/` from a cache leaves those
+references dangling for any downstream mapped invocation that has to
+execute.  Map blocks are cheap enumerators -- runtimes must always re-execute
+them (their downstream blocks still cache normally, since a deterministic
+map produces identical expansion hashes across runs).
+
 ---
 
 ## 10. Logging

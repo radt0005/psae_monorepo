@@ -1,27 +1,27 @@
-id: 019f5e05-c517-704c-80dd-e46a6d105d2e
+id: 019f5e17-50db-7228-80dd-6f6c98fd48b1
 name: gdal_raster_chain
 version: "1.0"
 description: Read -> warp -> translate -> info chain
 blocks:
-- id: 019f5e05-c517-77f8-80d9-3e4ac221a8a4
+- id: 019f5e17-50db-71ac-80d9-650a199bf4ef
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f5e05-c517-7c13-80da-c357a969d2c1
+- id: 019f5e17-50db-74f0-80da-2029fff2e6fa
   name: gdal.warp
   inputs:
-  - 019f5e05-c517-77f8-80d9-3e4ac221a8a4
+  - 019f5e17-50db-71ac-80d9-650a199bf4ef
   args:
     target_crs: EPSG:32610
     resolution: 0
     resampling: bilinear
     output_format: GTiff
-- id: 019f5e05-c517-7d13-80db-a4cf968ffb5c
+- id: 019f5e17-50db-74fa-80db-fc3e3c30e65c
   name: gdal.translate
   inputs:
-  - 019f5e05-c517-7c13-80da-c357a969d2c1
+  - 019f5e17-50db-74f0-80da-2029fff2e6fa
   args:
     output_format: GTiff
     output_type: Byte
@@ -29,9 +29,9 @@ blocks:
     height: 0
     scale_min: 0
     scale_max: 0
-- id: 019f5e05-c517-70b8-80dc-3d09b8e4803e
+- id: 019f5e17-50db-78d6-80dc-d363763e1f08
   name: gdal.info
   inputs:
-  - 019f5e05-c517-7d13-80db-a4cf968ffb5c
+  - 019f5e17-50db-74fa-80db-fc3e3c30e65c
   args:
     compute_stats: true

@@ -81,6 +81,10 @@ resource "digitalocean_app" "spade" {
         registry_type = "DOCR"
         repository    = "spade-web-ui"
         tag           = var.image_tag
+
+        deploy_on_push {
+          enabled = true
+        }
       }
 
       env {
@@ -150,6 +154,10 @@ resource "digitalocean_app" "spade" {
         registry_type = "DOCR"
         repository    = "spade-scheduler"
         tag           = var.image_tag
+
+        deploy_on_push {
+          enabled = true
+        }
       }
 
       env {
@@ -213,6 +221,10 @@ resource "digitalocean_app" "spade" {
         registry_type = "DOCR"
         repository    = "spade-registry"
         tag           = var.image_tag
+
+        deploy_on_push {
+          enabled = true
+        }
       }
 
       env {
@@ -298,6 +310,10 @@ resource "digitalocean_app" "spade" {
         registry_type = "DOCR"
         repository    = "spade-kms"
         tag           = var.image_tag
+
+        deploy_on_push {
+          enabled = true
+        }
       }
 
       env {

@@ -42,6 +42,16 @@ type Option func(*Worker)
 // When enabled, successful block outputs are stored keyed by
 // core.ComputeCacheKey and subsequent runs with the same key are
 // restored from cache without re-executing the block.
+//
+// NOT YET IMPLEMENTED: the fields are recorded but no lookup/store path
+// consumes them.  When implementing, map blocks (kind: map) must be
+// excluded from both store and lookup.  A map result is not
+// self-contained: its expansion items reference files under the map's
+// own inputs/ directory, which restoring outputs/ does not recreate, so
+// a restored map block leaves any downstream mapped invocation that
+// misses cache with dangling input links.  Enumeration is cheap —
+// always re-execute maps.  See the cache check in cli/cmd/run.go for
+// the reference implementation and spec/blocks.md §9.
 func WithCache(cacheDir string) Option {
 	return func(w *Worker) {
 		w.cacheDir = cacheDir
@@ -319,8 +329,15 @@ func (w *Worker) Run(ctx context.Context, job spade.Job) (core.WorkerResult, err
 	// the current core API we pre-create the directory + symlinks
 	// here, then call Execute — Execute's CreateBlockDirectory is
 	// idempotent (MkdirAll) and WriteParamsYAML overwrites.
-	if err := core.CreateBlockDirectory(inv.InvocationID(), pipelineDir); err != nil {
-		return core.WorkerResult{}, fmt.Errorf("creating block directory: %w", err)
+	//
+	// Reset (wipe + recreate) rather than create: an unacked job the
+	// broker redelivers to this worker may leave a half-populated
+	// directory from the first attempt.  Nothing in it was committed
+	// (upload is the commit point), and reusing it breaks the fresh
+	// re-run — stale input symlinks fail re-setup with EEXIST, and
+	// stale partial outputs would be collected as this attempt's.
+	if err := core.ResetBlockDirectory(inv.InvocationID(), pipelineDir); err != nil {
+		return core.WorkerResult{}, fmt.Errorf("resetting block directory: %w", err)
 	}
 	invWorkDir := filepath.Join(pipelineDir, inv.InvocationID())
 	// Context depths let symlink setup pick the right instance directory

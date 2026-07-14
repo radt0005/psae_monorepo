@@ -1,18 +1,18 @@
-id: 019f5e05-c51b-7a6f-80f6-6710645e6d40
+id: 019f5e17-50df-7bab-80f6-7715cd8bba39
 name: data_read_write_chain
 version: "1.0"
 description: Read raster, write it to output
 blocks:
-- id: 019f5e05-c51b-779e-80f4-0234f84355bc
+- id: 019f5e17-50df-7df9-80f4-6a523fd77364
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_raster.tif
     format: GeoTIFF
-- id: 019f5e05-c51b-7ee9-80f5-e894f2b406a0
+- id: 019f5e17-50df-79cc-80f5-fdb2b45bf93f
   name: data.write
   inputs:
-  - 019f5e05-c51b-779e-80f4-0234f84355bc
+  - 019f5e17-50df-7df9-80f4-6a523fd77364
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/output/data_chain_test.tif
     overwrite: true

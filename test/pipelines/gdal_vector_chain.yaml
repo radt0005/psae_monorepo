@@ -1,25 +1,25 @@
-id: 019f5e05-c518-7bf6-80e1-8569e71b0405
+id: 019f5e17-50dc-77da-80e1-99ad5d160f53
 name: gdal_vector_chain
 version: "1.0"
 description: Read -> vector_translate -> vector_info chain
 blocks:
-- id: 019f5e05-c518-76ec-80de-ebc80217a318
+- id: 019f5e17-50dc-7199-80de-802efb9ed313
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_vectors.geojson
     format: GeoJSON
-- id: 019f5e05-c518-79b3-80df-c091c3ffbbb3
+- id: 019f5e17-50dc-71bf-80df-a6b39a7a1644
   name: gdal.vector_translate
   inputs:
-  - 019f5e05-c518-76ec-80de-ebc80217a318
+  - 019f5e17-50dc-7199-80de-802efb9ed313
   args:
     output_format: GeoJSON
     target_crs: EPSG:32610
     where: ''
     sql: ''
-- id: 019f5e05-c518-7168-80e0-a44bed7d24da
+- id: 019f5e17-50dc-7af0-80e0-29138503e29d
   name: gdal.vector_info
   inputs:
-  - 019f5e05-c518-79b3-80df-c091c3ffbbb3
+  - 019f5e17-50dc-71bf-80df-a6b39a7a1644
   args: {}

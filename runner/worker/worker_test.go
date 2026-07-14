@@ -588,3 +588,146 @@ func isAncestor(parent, child string) bool {
 	}
 	return rel == "." || (len(rel) > 0 && rel[0] != '.')
 }
+
+// TestRun_RedeliveryResetsStaleInvocationDir simulates the broker
+// redelivering an unacked job to a worker whose disk still holds the
+// half-populated invocation directory from the first attempt.  The
+// worker must reset the directory and run fresh: stale input symlinks
+// previously made SetupInputSymlinks fail with EEXIST (reported as a
+// spurious block failure), and stale partial outputs would have been
+// collected as this attempt's results.
+func TestRun_RedeliveryResetsStaleInvocationDir(t *testing.T) {
+	reg, root := setupRegistry(t)
+	workdir := filepath.Join(root, "work")
+
+	// Install the consumer block with a real typed manifest — the worker
+	// loads the executing block's manifest from the install path, and
+	// input resolution needs the declared input.
+	installed := filepath.Join(root, "install")
+	blocksDir := filepath.Join(installed, "blocks")
+	if err := os.MkdirAll(blocksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	consumerYAML := []byte(`id: pkg.consumer
+version: 1.0.0
+kind: standard
+inputs:
+  data:
+    type: file
+outputs:
+  result:
+    type: file
+`)
+	if err := os.WriteFile(filepath.Join(blocksDir, "consumer.yaml"), consumerYAML, 0644); err != nil {
+		t.Fatal(err)
+	}
+	hash, err := core.ComputeContentHash(installed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := core.BlockRegistryEntry{
+		CollectionName:    "pkg",
+		CollectionVersion: "1.0.0",
+		BlockName:         "consumer",
+		BlockID:           "pkg.consumer",
+		Language:          string(core.CollectionLanguageGo),
+		Entrypoint:        "consumer",
+		InstalledPath:     installed,
+		ContentHash:       hash,
+		Kind:              string(core.BlockKindStandard),
+	}
+	if err := reg.RegisterBlock(entry); err != nil {
+		t.Fatal(err)
+	}
+
+	sourceManifest := core.BlockManifest{
+		ID: "pkg.source", Version: "1.0.0", Kind: core.BlockKindStandard,
+		Inputs:  map[string]core.InputDeclaration{},
+		Outputs: map[string]core.OutputDeclaration{"result": {Type: "file"}},
+	}
+	consumerManifest := core.BlockManifest{
+		ID: "pkg.consumer", Version: "1.0.0", Kind: core.BlockKindStandard,
+		Inputs:  map[string]core.InputDeclaration{"data": {Type: "file"}},
+		Outputs: map[string]core.OutputDeclaration{"result": {Type: "file"}},
+	}
+
+	srcID := uuid.New()
+	conID := uuid.New()
+	pipeID := uuid.New()
+	job := spade.Job{
+		Assignment: core.WorkerAssignment{
+			InvocationID: conID.String(),
+			BlockName:    "pkg.consumer",
+			PipelineID:   pipeID,
+			WorkDir:      workdir,
+		},
+		Pipeline: core.Pipeline{
+			Id: pipeID,
+			Blocks: []core.PipelineBlock{
+				{Id: srcID, Name: "pkg.source", Inputs: []core.InputRef{}},
+				{Id: conID, Name: "pkg.consumer", Inputs: []core.InputRef{{ID: srcID}}},
+			},
+		},
+		Manifests: map[string]core.BlockManifest{
+			"pkg.source":   sourceManifest,
+			"pkg.consumer": consumerManifest,
+		},
+	}
+
+	// The upstream block's output exists on disk (it completed before the
+	// crash and would be re-fetched from storage in the cloud model).
+	srcOut := filepath.Join(workdir, srcID.String(), "outputs", "result")
+	if err := os.MkdirAll(srcOut, 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcOut, "data.txt"), []byte("upstream"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Half-populated invocation dir from the interrupted first attempt:
+	// the input symlink is already present (EEXIST hazard) and a stale
+	// partial output is lying around.
+	staleInputs := filepath.Join(workdir, conID.String(), "inputs", "data")
+	if err := os.MkdirAll(staleInputs, 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(srcOut, "data.txt"), filepath.Join(staleInputs, "data.txt")); err != nil {
+		t.Fatal(err)
+	}
+	staleOut := filepath.Join(workdir, conID.String(), "outputs", "result")
+	if err := os.MkdirAll(staleOut, 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staleOut, "stale.txt"), []byte("partial"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := &fakeExecutor{
+		result: core.BlockInvocationResult{Status: core.ExecutionStatusComplete, ExitCode: 0},
+	}
+	w := New(reg, workdir, WithExecutor(fake))
+
+	res, err := w.Run(context.Background(), job)
+	if err != nil {
+		t.Fatalf("Run returned infra error: %v", err)
+	}
+	if res.Status != core.ExecutionStatusComplete {
+		t.Fatalf("redelivered job failed: status=%s error=%s", res.Status, res.Error)
+	}
+	if !fake.called {
+		t.Fatal("executor was never invoked")
+	}
+
+	// The stale partial output must not survive into this attempt.
+	if _, err := os.Stat(filepath.Join(staleOut, "stale.txt")); !os.IsNotExist(err) {
+		t.Error("stale partial output from the first attempt survived the reset")
+	}
+	// The input link was re-created fresh and resolves to upstream data.
+	got, err := os.ReadFile(filepath.Join(staleInputs, "data.txt"))
+	if err != nil {
+		t.Fatalf("reading re-linked input: %v", err)
+	}
+	if string(got) != "upstream" {
+		t.Errorf("input content = %q, want %q", got, "upstream")
+	}
+}

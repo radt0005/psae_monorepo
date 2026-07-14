@@ -35,6 +35,28 @@ func CreateBlockDirectory(invocationID string, workdir string) error {
 	return nil
 }
 
+// ResetBlockDirectory removes any existing invocation directory and
+// recreates it empty.  Use it when (re)starting an invocation whose
+// directory may hold state from an earlier attempt — a broker-redelivered
+// job on a worker, or a CLI re-run with --keep-work-dir.  Nothing from a
+// prior uncommitted attempt is worth keeping (upload/completion is the
+// commit point), and stale state breaks the fresh-working-directory
+// contract of blocks.md §4: leftover input symlinks fail re-setup with
+// EEXIST, and stale partial outputs would be collected as if the new run
+// produced them.
+func ResetBlockDirectory(invocationID string, workdir string) error {
+	// The ID must be a plain path component — never let a malformed ID
+	// walk out of the pipeline directory before RemoveAll.
+	if invocationID == "" || strings.ContainsAny(invocationID, `/\`) || strings.Contains(invocationID, "..") {
+		return fmt.Errorf("invalid invocation ID %q", invocationID)
+	}
+	base := filepath.Join(workdir, invocationID)
+	if err := os.RemoveAll(base); err != nil {
+		return fmt.Errorf("removing stale invocation directory %s: %w", base, err)
+	}
+	return CreateBlockDirectory(invocationID, workdir)
+}
+
 // WriteParamsYAML serializes the block's args to params.yaml in the working directory.
 func WriteParamsYAML(args map[string]any, workDir string) error {
 	data, err := yaml.Marshal(args)

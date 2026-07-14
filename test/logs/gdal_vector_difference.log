@@ -1,8 +1,8 @@
-Loaded pipeline: gdal_vector_difference (019f5e05-c512-7a93-80b2-f88801c9412a)
+Loaded pipeline: gdal_vector_difference (019f5e17-50d6-7f89-80b2-f9487ade26d0)
 Executing pipeline with 3 block(s)...
   [1/3] data.read (cached)
   [2/3] data.read (cached)
   [3/3] gdal.vector_difference running...
   [3/3] gdal.vector_difference complete
 
-Pipeline complete: 3 block(s) executed (2 cached) in 972ms
+Pipeline complete: 3 block(s) executed (2 cached) in 1.015s

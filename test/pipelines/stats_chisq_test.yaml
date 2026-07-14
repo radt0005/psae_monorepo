@@ -1,18 +1,18 @@
-id: 019f5e05-c527-780a-8127-b79b841658b6
+id: 019f5e17-50ec-7f7a-8127-f86cda2286b6
 name: stats_chisq_test
 version: "1.0"
 description: Pearson's chi-squared test of independence between two categorical columns.
 blocks:
-- id: 019f5e05-c526-7279-8125-9cfb47efa429
+- id: 019f5e17-50eb-7edf-8125-6da949f0b7d3
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/stats_data.csv
     format: CSV
-- id: 019f5e05-c526-75c7-8126-dc17730e3ab3
+- id: 019f5e17-50eb-7b93-8126-c714f34accb9
   name: stats.chisq_test
   inputs:
-  - 019f5e05-c526-7279-8125-9cfb47efa429
+  - 019f5e17-50eb-7edf-8125-6da949f0b7d3
   args:
     column: group
     by: region

@@ -1,25 +1,25 @@
-id: 019f5e05-c4fe-795c-8013-f33750f45d11
+id: 019f5e17-50c0-7488-8013-3cfc9fd59da5
 name: base_aggregate
 version: "1.0"
 description: Compute aggregate statistics on value column
 blocks:
-- id: 019f5e05-c4fe-73c0-8010-46df717c63a5
+- id: 019f5e17-50c0-7c1c-8010-c7c5496c69d2
   name: data.read
   inputs: []
   args:
     uri: /home/krbundy/GitHub/psae_monorepo/test/fixtures/test_data.csv
     format: CSV
-- id: 019f5e05-c4fe-7878-8011-3a37a5f0af96
+- id: 019f5e17-50c0-7c71-8011-8adc93641a41
   name: base.csv_to_parquet
   inputs:
-  - 019f5e05-c4fe-73c0-8010-46df717c63a5
+  - 019f5e17-50c0-7c1c-8010-c7c5496c69d2
   args:
     delimiter: ','
     has_header: true
-- id: 019f5e05-c4fe-7969-8012-37dbf3cc62bf
+- id: 019f5e17-50c0-70e8-8012-d6b6172b64ae
   name: base.aggregate
   inputs:
-  - 019f5e05-c4fe-7878-8011-3a37a5f0af96
+  - 019f5e17-50c0-7c71-8011-8adc93641a41
   args:
     aggregations: '[{"column": "value", "function": "mean"}, {"column": "value", "function":
       "sum"}, {"column": "id", "function": "count"}]'

@@ -387,3 +387,59 @@ func TestResolveEntrypoint(t *testing.T) {
 		t.Error("expected error for unsupported language, got nil")
 	}
 }
+
+func TestResetBlockDirectory(t *testing.T) {
+	dir := t.TempDir()
+	invID := uuid.New().String()
+
+	// Simulate a half-populated directory from an interrupted attempt:
+	// a stale (dangling) input symlink and a stale partial output.
+	if err := CreateBlockDirectory(invID, dir); err != nil {
+		t.Fatalf("CreateBlockDirectory: %v", err)
+	}
+	base := filepath.Join(dir, invID)
+	staleInputDir := filepath.Join(base, "inputs", "data")
+	if err := os.MkdirAll(staleInputDir, 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/nonexistent/target", filepath.Join(staleInputDir, "data.txt")); err != nil {
+		t.Fatal(err)
+	}
+	staleOutDir := filepath.Join(base, "outputs", "result")
+	if err := os.MkdirAll(staleOutDir, 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staleOutDir, "stale.txt"), []byte("partial"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ResetBlockDirectory(invID, dir); err != nil {
+		t.Fatalf("ResetBlockDirectory: %v", err)
+	}
+
+	// Fresh structure exists...
+	for _, sub := range []string{"inputs", "outputs", "logs"} {
+		if info, err := os.Stat(filepath.Join(base, sub)); err != nil || !info.IsDir() {
+			t.Errorf("expected fresh %s directory: %v", sub, err)
+		}
+	}
+	// ...and the stale content is gone.
+	if _, err := os.Lstat(filepath.Join(staleInputDir, "data.txt")); !os.IsNotExist(err) {
+		t.Error("stale input symlink survived reset")
+	}
+	if _, err := os.Stat(filepath.Join(staleOutDir, "stale.txt")); !os.IsNotExist(err) {
+		t.Error("stale output file survived reset")
+	}
+
+	// Mapped-invocation IDs are valid path components too.
+	if err := ResetBlockDirectory(invID+".3.0", dir); err != nil {
+		t.Errorf("ResetBlockDirectory on mapped ID: %v", err)
+	}
+
+	// Malformed IDs must be rejected before RemoveAll can walk anywhere.
+	for _, bad := range []string{"", "../escape", "a/b", `a\b`} {
+		if err := ResetBlockDirectory(bad, dir); err == nil {
+			t.Errorf("ResetBlockDirectory(%q) should have been rejected", bad)
+		}
+	}
+}

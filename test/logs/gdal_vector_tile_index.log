@@ -1,7 +1,7 @@
-Loaded pipeline: gdal_vector_tile_index (019f5e05-c510-7f3b-80a6-5fca94af21c9)
+Loaded pipeline: gdal_vector_tile_index (019f5e17-50d4-7865-80a6-d8ff3c8225b8)
 Executing pipeline with 2 block(s)...
   [1/2] data.read_collection (cached)
   [2/2] gdal.vector_tile_index running...
   [2/2] gdal.vector_tile_index complete
 
-Pipeline complete: 2 block(s) executed (1 cached) in 1.14s
+Pipeline complete: 2 block(s) executed (1 cached) in 987ms

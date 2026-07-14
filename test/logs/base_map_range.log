@@ -1,8 +1,8 @@
-Loaded pipeline: base_map_range (019f5e05-c502-765d-8032-75bfa57154b5)
+Loaded pipeline: base_map_range (019f5e17-50c4-7814-8032-3651e584dfe7)
 Executing pipeline with 2 block(s)...
   [1/2] base.map_range running...
   [1/2] base.map_range complete
   [2/2] base.reduce_collection running...
   [2/2] base.reduce_collection complete
 
-Pipeline complete: 2 block(s) executed in 98ms
+Pipeline complete: 2 block(s) executed in 99ms
